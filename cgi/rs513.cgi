@@ -11,32 +11,13 @@ use CGI;
 use CGI::Carp qw(fatalsToBrowser);
 use DBIx::XHTML_Table;
 
-my $q = CGI->new;
+use lib '/usr/lib/cgi-bin/capture/perlmods/share/perl';
+use RSG::Capture::Common;
 
-my $css=qq{
-      table.gridtable {
-        font-family: verdana,arial,sans-serif;
-        font-size:11px;
-        color:#333333;
-        border-width: 1px;
-        border-color: #666666;
-        border-collapse: collapse;
-      }
-      table.gridtable th {
-        border-width: 1px;
-        padding: 8px;
-        border-style: solid;
-        border-color: #666666;
-        background-color: #dedede;
-      }
-      table.gridtable td {
-        border-width: 1px;
-        padding: 8px;
-        border-style: solid;
-        border-color: #666666;
-        background-color: #ffffff;
-      }
-};
+my $cc = RSG::Capture::Common->new();
+my $css = $cc->getGridTableCss();
+
+my $q = CGI->new;
 
 my $dbh = DBI->connect(
   "DBI:ODBC:srazphx12_devr1_DWCORE",
