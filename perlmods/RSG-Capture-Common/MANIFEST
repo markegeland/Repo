@@ -1,0 +1,6 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/RSG-Capture-Common.t
+lib/RSG/Capture/Common.pm
