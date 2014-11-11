@@ -16,7 +16,7 @@ my $q = CGI->new;
 my $dbh = DBI->connect(
   "DBI:ODBC:srazphx12_devr1_DWCORE",
   'DWCORE',
-  'manunited20'
+  ''
 ) or die("DBI Connect Error - $DBI::errstr\n");
 
 $dbh->do(qq{
