@@ -21,7 +21,7 @@ die "$0: Can't set both -prod and -dev\n" if $opt{dev} and $opt{prod};
 my $dbh = DBI->connect(
   "DBI:ODBC:srazphx12_devr1_DWCORE",
   'DWCORE',
-  'manunited20'
+  ''
 ) or die("DBI Connect Error - $DBI::errstr\n");
 
 $dbh->do(qq{
