@@ -111,13 +111,13 @@ while (my ($eeuid,$eeted) = $sth->fetchrow_array) {
 }
 
 # instantiate a UserAgent object for our Capture SOAP calls
-my $ua = LWP::UserAgent->new;
+our $ua = LWP::UserAgent->new;
 
 # instantiate an XML::Twig object to parse the SOAP responses
-my $twig = XML::Twig->new();
+our $twig = XML::Twig->new();
 
 # get a sessionId to be used on future Capture SOAP calls
-my $sessionId = getCaptureSessionId($ua, $twig, $username, $password);
+my $sessionId = getCaptureSessionId($username, $password);
 warn "sessionId=$sessionId\n";
 
 my $userCount = scalar(keys %termDate);
@@ -125,7 +125,7 @@ print "<p>Checking $userCount terminated users\n";
 
 my $i=0;
 foreach my $eeuid (sort keys %termDate) {
-  my $status = getCaptureUserStatus($ua, $twig, $eeuid, $sessionId);
+  my $status = getCaptureUserStatus($eeuid, $sessionId);
 
   $i++;
   my $pct = $i / $userCount * 100;
@@ -137,18 +137,17 @@ foreach my $eeuid (sort keys %termDate) {
   }
 }
 printf("%5.2f%%\r", 100);
+print $q->h3('Done.');
 
 ##
 ## Subroutines
 ##
 
 sub getCaptureUserStatus {
-  my $ua = shift or die;
-  my $twig = shift or die;
   my $login = shift or die;
   my $sessionId = shift or die;
 
-  getCaptureUserStatusViaSOAP($ua, $twig, $login, $sessionId);
+  getCaptureUserStatusViaSOAP($login, $sessionId);
   #getCaptureUserStatusViaFile($login);
 }
 
@@ -182,8 +181,6 @@ sub getCaptureUserStatusViaFile {
 }
 
 sub getCaptureUserStatusViaSOAP {
-  my $ua = shift or die;
-  my $twig = shift or die;
   my $login = shift or die;
   my $sessionId = shift or die;
   
@@ -230,8 +227,6 @@ sub getCaptureUserStatusViaSOAP {
 }
 
 sub getCaptureSessionId {
-  my $ua = shift or die;
-  my $twig = shift or die;
   my $username = shift or die;
   my $password = shift or die;
 
