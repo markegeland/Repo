@@ -1,0 +1,1 @@
+return commerce.postPricingFormulas("") + commerce.captureAdHocConfigInfoToPrintOnOutput() ;

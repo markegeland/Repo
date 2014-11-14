@@ -1,0 +1,23 @@
+/* 
+ *   Republic Services Capture CSS
+ * 
+ *   Created to allow overriding CSS options not easily customizable through the BMI interface.
+ *   Please be sure to add detailed comments describing what you are overriding.
+ * 
+ *   20141028 - John Palubinskas - initial development to hide the Trash folder on the Quote List (commerce_namager.jsp)
+ * 
+ * 
+ */
+
+/*custom CSS selector to hide the Trash icon and folder on the commerce_manager.jsp 'Quote List' page <tr id="-2" class="dropTarget">*/
+tr[id='-2'].dropTarget
+{
+	display: none;
+}
+/* The line item grid has a warning above it that would display if we allow paging...but we don't.  It is set to visibility: hidden, 
+   but that leaves a large gap between the Services header and the line-item grid. 
+   <ul id="line-item-grid-pagination-warning" class="error-text" style="visibility: hidden;"> */
+#line-item-grid-pagination-warning
+{
+	display: none;
+}
