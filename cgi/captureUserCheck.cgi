@@ -7,6 +7,8 @@ use CGI;
 use CGI::Carp qw(fatalsToBrowser);
 use DBI;
 use Text::CSV_XS;
+use HTML::Table;
+
 
 use lib '/usr/lib/cgi-bin/capture/perlmods/share/perl';
 use RSG::Capture::Common;
@@ -69,8 +71,8 @@ print
 
 my $dbh = DBI->connect(
   "DBI:ODBC:srazphx12_devr1_DWCORE",
-  'DWCORE',
-  'manunited20'
+  'ReadOnly',
+  'to*B3ws#d8'
 ) or die("DBI Connect Error - $DBI::errstr\n");
 
 $dbh->do(qq{
@@ -86,9 +88,9 @@ my $username = $q->param('username');
 my $password = $q->param('password');
 my $since    = $q->param('since');
 
-exit unless $username && $password;
+exit unless $username && $password && $since;
 
-$since =~ s/-//g;
+$since =~ s/-//g;		# turn yyyy-mm-dd into yyyymmdd
 warn "since=$since\n";
 
 # find logins in the InfoPro RS513 file who have a non-zero termination date
@@ -124,20 +126,47 @@ my $userCount = scalar(keys %termDate);
 print "<p>Checking $userCount terminated users\n";
 
 my $i=0;
+my @problemUsers;
 foreach my $eeuid (sort keys %termDate) {
-  my $status = getCaptureUserStatus($eeuid, $sessionId);
+  my ($status,$bm_login) = getCaptureUserStatus($eeuid, $sessionId);
 
   $i++;
   my $pct = $i / $userCount * 100;
-  printf("%5.2f%%\r", $pct) if (($i % 10) == 0);
+  printf("%5.2f%%", $pct) if (($i % 10) == 0);
   print ".";
 
   if ($status eq 'Active') {
-    print "<p>User $eeuid, terminated on $termDate{$eeuid} shows as Active in Capture!<br>";
+    push(@problemUsers, $bm_login);
+    print "<p>User $bm_login, terminated on $termDate{$bm_login} shows as Active in Capture!<br>";
   }
 }
-printf("%5.2f%%\r", 100);
+printf("%5.2f%%", 100);
+
+my $table = HTML::Table->new;
+$table->setClass('gridtable');
+
+$table->addRow('Login','Termination Date','Capture Status','In hierarchy_exceptions?');
+$table->setRowHead(-1);
+
+foreach my $bm_login (@problemUsers) {
+  # check as-is case, upper case, and lower case versions of the login against hierarchy_exceptions
+  my $he_record_count=0;
+
+  foreach my $login ($bm_login, uc $bm_login, lc $bm_login) {
+    foreach my $fieldName ('User_Login','Level_1_Approver','Level_2_Approver','Level_3_Approver') {
+      $he_record_count += getHierarchyExceptionsRow($login,$sessionId,$fieldName);
+    }
+  }
+  
+  warn "he_record_count=$he_record_count\n";
+  $table->addRow($bm_login, $termDate{$bm_login}, 'Active', $he_record_count ? 'Yes' : 'No');
+}
+
+print $table->getTable;
+
 print $q->h3('Done.');
+
+print $q->end_html;
 
 ##
 ## Subroutines
@@ -215,15 +244,18 @@ sub getCaptureUserStatusViaSOAP {
   );
 
   my $status;
+  my $bm_login;
   if ($response->is_success) {
     $twig->parse($response->decoded_content);
-    $status = $twig->first_elt('bm:userInfo')->first_child_text('bm:status');
+    $status   = $twig->first_elt('bm:userInfo')->first_child_text('bm:status');
+    $bm_login = $twig->first_elt('bm:userInfo')->first_child_text('bm:login');
+    warn "status=$status bm_login=$bm_login\n";
   }
   else {
-    $status = 'Unknown';
+    ($status, $bm_login) = ('Unknown','Unknown');
   }
 
-  return $status;
+  return ($status, $bm_login);
 }
 
 sub getCaptureSessionId {
@@ -265,4 +297,53 @@ sub getCaptureSessionId {
 
   return $sessionId = $twig->first_elt('bm:sessionId')->text;
 
+}
+
+sub getHierarchyExceptionsRow {
+  my $login     = shift or die;
+  my $sessionId = shift or die;
+  my $fieldName = shift or die;
+
+  my $getHierarchyExceptionsRowMessage = qq{<?xml version="1.0" encoding="UTF-8"?>
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+      <soapenv:Header>
+        <bm:userInfo xmlns:bm="urn:soap.bigmachines.com">
+          <bm:sessionId>$sessionId</bm:sessionId>
+        </bm:userInfo>
+        <bm:category xmlns:bm="urn:soap.bigmachines.com">Data Tables</bm:category>
+        <bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
+          <bm:schemaLocation>$captureBase/bmfsweb/republicservices/schema/v1_0/datatables/Hierarchy_Exceptions.xsd</bm:schemaLocation>
+        </bm:xsdInfo>
+      </soapenv:Header>
+      <soapenv:Body>
+        <bm:get xmlns:bm="urn:soap.bigmachines.com">
+          <bm:DataTables bm:table_name="Hierarchy_Exceptions">
+            <bm:criteria>
+              <bm:field>$fieldName</bm:field>
+              <bm:value>$login</bm:value>
+              <bm:comparator>=</bm:comparator>
+            </bm:criteria>
+          </bm:DataTables>
+        </bm:get>
+      </soapenv:Body>
+    </soapenv:Envelope>
+  };
+
+  my $soapUrl="$captureBase/v1_0/receiver";
+
+  my $response = $ua->post(
+    $soapUrl,
+    Content_Type => 'text/xml;charset=utf-8',
+    SOAPAction => 'urn:soap.bigmachines.com#get',
+    Content => $getHierarchyExceptionsRowMessage
+  );
+
+  my $records_returned;
+  if ($response->is_success) {
+    warn $response->decoded_content, "\n";
+    $twig->parse($response->decoded_content);
+    $records_returned = $twig->first_elt('bm:records_returned')->text;
+  }
+
+  return $records_returned;
 }
