@@ -1,0 +1,1 @@
+return _document_number + "-" + _system_buyside_id;
