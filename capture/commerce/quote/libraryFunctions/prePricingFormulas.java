@@ -20,9 +20,14 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20131213 - Srikar - Added new line item loop to store line item data into dictionaries
             20140923 - John Palubinskas - Added AdHoc PerHaul, Monthly, OneTime flags to break out on proposal
             20141008 - John Palubinskas - Fixed DRY rates to pull from division table, then 1/2 haul rate
-            20141021 - Julie Felberg - Added Container Group Logic
+            20141021 - Julie Felberg - Added containerGroupDict dictionary and containerGroupLine.  The containerGroupDict houses the container groups 
+                    pulled from config for each line and containerGroupLine is populated from the dictionary during line level loop.  Pass containerGroupLine instead of containerGroup
+                    to GuardrailCurrentInputDict 
             20141022 - James Shrenk - Emergency fix to override large container route type
-
+            20141023 - John Palubinskas - Make divisionFeeRate lookup use the key (divisionNumber, infopro_div_nbr) in order to pull the correct rates
+                         for a division that has multiple InfoPro divs per Lawson div.
+            20141027 - Julie Felberg - Passed ContainerGroupLine instead of containerGroup to GuardrailInputDict
+            20141107 - Aaron Quintanilla - Removed price for Hand Pickup delivery
         
 =====================================================================================================
 */
@@ -311,15 +316,15 @@ for line in line_process{
         if(not(containskey(modelNameDict, docNum))){
             put(modelNameDict, docNum, line._model_name);
         }
-        //container group logic
-	containerGroup = "";
-	containerGroup = getconfigattrvalue(docNum, "containerGroup_config");
-	if(isnull(containerGroup)){
-		containerGroup = "";
-	}
-		
-	put(containerGroupDict, docNum, containerGroup);
-	//end container group logic
+        //20141021 container group logic
+    containerGroup = "";
+    containerGroup = getconfigattrvalue(docNum, "containerGroup_config");
+    if(isnull(containerGroup)){
+        containerGroup = "";
+    }
+        
+    put(containerGroupDict, docNum, containerGroup);
+    //end container group logic
         //Small Container
         if(line._model_name == SMALL_CONTAINER){
             liftsPerContainer = getconfigattrvalue(docNum, "liftsPerContainer_s");
@@ -469,16 +474,16 @@ for line in line_process{
                 if(Is_ERF_On_FRF_db == "1"){
                     is_ERF_On_FRF_charged = "Yes";
                 }
-				
-				//If the user has selected the fix value, use it, otherwise don't set fee here but use the divisionRate fee
-				if(find(feesToCharge_quote, "Fixed Fuel Recovery Fee (FRF)") > -1 ){
-					frfPct = getFloat(eachRecord, "frf_rate_pct");
-					frfRate = frfPct/100;
-				}
-				if(find(feesToCharge_quote, "Fixed Environment Recover Fee (ERF)" ) > -1){
-				    erfPct = getFloat(eachRecord, "erf_rate_pct");
-					erfRate = erfPct/100;
-				}
+                
+                //If the user has selected the fix value, use it, otherwise don't set fee here but use the divisionRate fee
+                if(find(feesToCharge_quote, "Fixed Fuel Recovery Fee (FRF)") > -1 ){
+                    frfPct = getFloat(eachRecord, "frf_rate_pct");
+                    frfRate = frfPct/100;
+                }
+                if(find(feesToCharge_quote, "Fixed Environment Recover Fee (ERF)" ) > -1){
+                    erfPct = getFloat(eachRecord, "erf_rate_pct");
+                    erfRate = erfPct/100;
+                }
                  
                 print "This is third frf " + string(frfRate);
                 
@@ -1091,6 +1096,7 @@ for line in line_process{
             put(guardrailInputDict, "isCompactorCustomerOwned", string(compactorCustomerOwned));
             put(guardrailInputDict, "routeType", routeTypeDervied); 
             put(guardrailInputDict, "customer_id", _quote_process_customer_id);  //J.Felberg passing additional fields for FRF and ERF calculations
+            print "put containerGroup line 1094";
             put(guardrailInputDict, "containerGroup", containerGroupForTransaction_quote);  //J.Felberg passing additional fields for FRF and ERF calculations
             put(guardrailInputDict, "siteNumber_quote", siteNumber_quote); //J.Felberg passing additional fields for FRF and ERF calculations
             
@@ -1099,8 +1105,8 @@ for line in line_process{
             print guardrailInputDict;
             }
             
-			//JFelberg Fees
-			put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
+            //JFelberg Fees
+            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
             guardrailOutputDict = util.calculateGuardrails(guardrailInputDict);
             
             guardrailDebugInputDict = guardrailInputDict;
@@ -1263,9 +1269,9 @@ for line in line_process{
             
             print "this is the input for small containers";
             print guardrailInputDict;
-			
-			//Jfelberg
-			put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
+            
+            //Jfelberg
+            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
             guardrailOutputDict = util.calculateGuardrails(guardrailInputDict);
             
             guardrailDebugInputDict = guardrailInputDict;
@@ -1491,16 +1497,19 @@ for line in line_process{
             put(guardrailCurrentInputDict, "routeType", routeTypeDerived_db); 
             put(guardrailCurrentInputDict, "customer_id", _quote_process_customer_id);
             
+            //20141021 
             containerGroupLine = "";
             if(containskey(containerGroupDict, line._parent_doc_number)){
-		containerGroupLine = get(containerGroupDict, line._parent_doc_number);
-	    }
-	    if(containerGroupLine == ""){
-		containerGroupLine = containerGroupForTransaction_quote;
-	    }
+                containerGroupLine = get(containerGroupDict, line._parent_doc_number);
+            }
+            if(containerGroupLine == ""){
+                containerGroupLine = containerGroupForTransaction_quote;
+            }
             put(guardrailCurrentInputDict, "containerGroup", containerGroupLine);
             print "My Container Group for line " + line._document_number + " is: " + containerGroupLine;
-            put(guardrailCurrentInputDict, "newCustomerConfig", string(newCustomerConfig)); //Use this instead of Sales Activity for customer type
+            //end 20141021
+            
+        put(guardrailCurrentInputDict, "newCustomerConfig", string(newCustomerConfig)); //Use this instead of Sales Activity for customer type
             put(guardrailCurrentInputDict, "siteNumber_quote", siteNumber_quote);
             
             /*if(DEBUG){
@@ -1508,7 +1517,7 @@ for line in line_process{
             print guardrailCurrentInputDict;
             }*/
             //Jfelberg fees
-			put(guardrailCurrentInputDict, "feesToCharge", feesToCharge_quote);
+            put(guardrailCurrentInputDict, "feesToCharge", feesToCharge_quote);
             guardrailCurrentOutputDict = util.calculateGuardrails(guardrailCurrentInputDict);
             
             guardrailDebugInputDict = guardrailCurrentInputDict;
@@ -1678,7 +1687,9 @@ for line in line_process{
             put(guardrailInputDict, "competitiveBidAmount", competitiveBidAmountStr);
             put(guardrailInputDict, "customer_id", _quote_process_customer_id);
             put(guardrailInputDict, "current_wasteCategory", wasteCategory_db);
-            put(guardrailInputDict, "containerGroup", containerGroupForTransaction_quote);
+        //20141027          
+            put(guardrailInputDict, "containerGroup", containerGroupLine);
+        //20141027 end
             put(guardrailInputDict, "initialTerm_quote", string(initialTerm));
             put(guardrailInputDict, "customer_zip", _quote_process_siteAddress_quote_zip);
             put(guardrailInputDict, "segment", segment_quote);
@@ -1708,8 +1719,8 @@ for line in line_process{
                 print guardrailInputDict;
             }*/
             
-			//JFelberg Fees
-			put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
+            //JFelberg Fees
+            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
             //Return actual results to guardrailOutputDict - this dictionary will be used later in the script, so it should have modified/new configuration calculations
             guardrailOutputDict = util.calculateGuardrails(guardrailInputDict);
             
@@ -1907,6 +1918,13 @@ for line in line_process{
                     targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
                     stretchPriceStr = get(guardrailOutputDict, "DEL");
                     stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+                }
+                //AQ 11/07/2104
+                if(line._part_custom_field9 == "HP"){
+                    floorPriceStr = "0.0";
+                    basePriceStr = "0.0";
+                    targetPriceStr = "0.0";
+                    stretchPriceStr = "0.0";
                 }
             }
             elif(rateTypeLower == "exchange"){
