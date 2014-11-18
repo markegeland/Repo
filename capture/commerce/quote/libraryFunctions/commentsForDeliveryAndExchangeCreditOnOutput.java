@@ -71,6 +71,12 @@ for line in line_process{
 				creditStr = creditStr + "<p>" + "Valued Customer Discount - Exchange for " + routeType + " " + containerSize + " yard - " + formatascurrency(excCredit, "USD") + "</p>";
 			}
 		}
+		if(line.rateType_line == "Removal"){
+			remCredit = line.totalTargetPrice_line -  line.sellPrice_line ;
+			if(excCredit > 0.0){
+				creditStr = creditStr + "<p>" + "Valued Customer Discount - Removal for " + routeType + " " + containerSize + " yard - " + formatascurrency(remCredit, "USD") + "</p>";
+			}
+		}
 		if(line.rateType_line == "Installation"){
 			installationChg = line.sellPrice_line ;
 			if(installationChg > 0.0){
