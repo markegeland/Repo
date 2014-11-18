@@ -11,6 +11,8 @@ Output:  		String Dictionary - Contains attribute name and value pairs for use i
 
 Updates:	Srikar - 02/05/2014 - Updated basePrice, targetPriceAdj, stretchPriceAdj formulas
 Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formulas for small container
+		 J Felberg - 11/15/2014 - Changed "Fixed Environmental Recovery Fee (ERF)" to "Fixed Environment Recovery Fee (ERF)"
+     J Palubinskas - 11/17/2014 - Updated divisionFeeRate queries to look up based on Lawson and InfoPro division
     
 =====================================================================================================
 */
@@ -456,7 +458,8 @@ if(isnumber(isContainerCustomerOwnedStr)){
 
 
 //Get the ERF on FRF flag based on division & Info pro number from divisionFeeRate table
-divisionFeeRateRS = bmql("SELECT erf_on_frf FROM divisionFeeRate WHERE divisionNumber = $division AND (infopro_div_nbr = $infoProDivNum OR infopro_div_nbr = '0' OR infopro_div_nbr IS NULL) ORDER BY infopro_div_nbr ASC");
+divisionFeeRateRS = bmql("SELECT erf_on_frf FROM divisionFeeRate WHERE divisionNumber = $division AND infopro_div_nbr = $infoProDivNum");
+
 for eachRecord in divisionFeeRateRS{
 	erfOnFrfFlag = getInt(eachRecord, "erf_on_frf");
 	break;
@@ -598,7 +601,7 @@ if(isExistingCustomer){ //If its a new business for existing customer
 frfRate = 0.0;
 erfRate = 0.0;
 adminAmount = 0.0;
-divisionFeeRateRecordSet = bmql("SELECT fRFRate, eRFRate, infopro_div_nbr, adminAmount FROM divisionFeeRate WHERE divisionNumber = $division ORDER BY infopro_div_nbr ASC"); //ordering by infopro_div_nbr ASC to move all blank info_pro_div_nbr records to bottom of the resultset
+divisionFeeRateRecordSet = bmql("SELECT fRFRate, eRFRate, infopro_div_nbr, adminAmount FROM divisionFeeRate WHERE divisionNumber = $division AND infopro_div_nbr = $infoProDivNum");
 	
 for eachRecord in divisionFeeRateRecordSet{
 	
@@ -616,10 +619,12 @@ for eachRecord in divisionFeeRateRecordSet{
 if(find(get(stringDict, "feesToCharge"), "Fixed Fuel Recovery Fee (FRF)") > -1){
 	frfRateStr = string(frf_rate_pct);
 }	
-	
-if(find(get(stringDict, "feesToCharge"), "Fixed Environmental Recovery Fee (ERF)") > -1){
-	erfRateStr = string(erf_rate_pct);
+
+//Edit from 11/15/2014
+if(find(get(stringDict, "feesToCharge"), "Fixed Environment Recovery Fee (ERF)") > -1){
+	erfRateStr = string(erf_rate_pct);	
 }
+
 
 if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(get(stringDict, "feesToCharge"))) AND find(get(stringDict, "feesToCharge"), "Admin Fee") > -1 ){
 	adminAmountStr = string(Admin_Rate);
