@@ -28,7 +28,6 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
                          for a division that has multiple InfoPro divs per Lawson div.
             20141027 - Julie Felberg - Passed ContainerGroupLine instead of containerGroup to GuardrailInputDict
             20141107 - Aaron Quintanilla - Removed price for Hand Pickup delivery
-			20141118 - Aaron Quintanilla - Set Removal Floor to 0.0 and to set removal guardrails by quantity
         
 =====================================================================================================
 */
@@ -1939,15 +1938,10 @@ for line in line_process{
                 }
             }elif(rateTypeLower == "removal"){
                 if(containskey(guardrailOutputDict, "REM")){
-                    //floorPriceStr = get(guardrailOutputDict, "REM");    //Changed 11/18/14 AQ
-					floorPriceStr = "0.0";    
-                    floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+                    floorPriceStr = get(guardrailOutputDict, "REM");    
                     basePriceStr = get(guardrailOutputDict, "REM");
-                    basePriceStr = string(atof(basePriceStr) * line._price_quantity);
                     targetPriceStr = get(guardrailOutputDict, "REM");
-                    targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
                     stretchPriceStr = get(guardrailOutputDict, "REM");
-                    stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
                 }
             }elif(rateTypeLower == "washout"){
                 if(containskey(guardrailOutputDict, "WAS")){
