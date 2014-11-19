@@ -7,6 +7,7 @@ use CGI;
 use CGI::Carp qw(fatalsToBrowser);
 use DBI;
 use Text::CSV_XS;
+use Text::Template;
 use HTML::Table;
 
 
@@ -15,7 +16,7 @@ use RSG::Capture::Common;
 
 $|=1;				# turn off stdout buffering
 
-my $cc = RSG::Capture::Common->new();
+our $cc = RSG::Capture::Common->new();
 my $css = $cc->getGridTableCss();
 
 my $q = CGI->new;
@@ -55,6 +56,12 @@ print
     ),
     $q->h1('Capture User Check'),
     $q->h3($captureBase),
+    'This utility performs the following steps:<ul>',
+    '<li>Connects to InfoPro and finds all logins in the RS513 file terminated since the given date',
+    "<li>For each of those logins, queries Capture via Web Services to get that login's Capture status",
+    "<li>If a login is terminated in the RS513 but active in Capture, checks for the login's existence in the Capture hierarchy_exceptions table",
+    "<li>Displays a tabular summary of its findings",
+    "</ul>",
     $q->start_form,
     "Your Capture Login: ",    $q->textfield('username'),      $q->p,
     "Your Capture Password: ", $q->password_field('password'), $q->p,
@@ -123,7 +130,7 @@ my $sessionId = getCaptureSessionId($username, $password);
 warn "sessionId=$sessionId\n";
 
 my $userCount = scalar(keys %termDate);
-print "<p>Checking $userCount terminated users\n";
+print "<p>Checking $userCount terminated users against Capture";
 
 my $i=0;
 my @problemUsers;
@@ -154,7 +161,7 @@ foreach my $bm_login (@problemUsers) {
 
   foreach my $login ($bm_login, uc $bm_login, lc $bm_login) {
     foreach my $fieldName ('User_Login','Level_1_Approver','Level_2_Approver','Level_3_Approver') {
-      $he_record_count += getHierarchyExceptionsRow($login,$sessionId,$fieldName);
+      $he_record_count += getHierarchyExceptionsRowCount($login,$sessionId,$fieldName);
     }
   }
   
@@ -209,30 +216,52 @@ sub getCaptureUserStatusViaFile {
   
 }
 
+sub getCaptureSessionId {
+  my $username = shift or die;
+  my $password = shift or die;
+
+  my $tt = Text::Template->new(
+    TYPE   => 'STRING',
+    SOURCE => $cc->getCapturegetSessionIdMessageTemplate()
+  );
+
+  my $loginMessage = $tt->fill_in(HASH => {
+    captureBase => $captureBase,
+    username    => $username,
+    password    => $password,
+  });
+
+  my $soapUrl="$captureBase/v1_0/receiver";
+
+  my $response = $ua->post(
+    $soapUrl,
+    Content_Type => 'text/xml;charset=utf-8',
+    SOAPAction => 'urn:soap.bigmachines.com#login',
+    Content => $loginMessage
+  );
+
+  die $response->status_line unless $response->is_success;
+
+  $twig->parse($response->decoded_content);
+
+  return $sessionId = $twig->first_elt('bm:sessionId')->text;
+
+}
+
 sub getCaptureUserStatusViaSOAP {
   my $login = shift or die;
   my $sessionId = shift or die;
-  
-  my $getUserMessage = qq{<?xml version="1.0" encoding="UTF-8"?>
-  <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-    <soapenv:Header>
-      <bm:userInfo xmlns:bm="urn:soap.bigmachines.com">
-	<bm:sessionId>$sessionId</bm:sessionId>
-      </bm:userInfo>
-      <bm:category xmlns:bm="urn:soap.bigmachines.com">Users</bm:category>
-      <bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
-	<bm:schemaLocation>$captureBase/bmfsweb/republicservices/schema/v1_0/users/Users.xsd</bm:schemaLocation>
-      </bm:xsdInfo>
-    </soapenv:Header>
-    <soapenv:Body>
-      <bm:getUser xmlns:bm="urn:soap.bigmachines.com">
-	<bm:userInfo>
-	  <bm:login>$login</bm:login>
-	</bm:userInfo>
-      </bm:getUser>
-    </soapenv:Body>
-  </soapenv:Envelope>
-  };
+
+  my $tt = Text::Template->new(
+    TYPE   => 'STRING',
+    SOURCE => $cc->getCapturegetSessionIdMessageTemplate()
+  );
+
+  my $getUserMessage = $tt->fill_in(HASH => {
+    sessionId   => $sessionId,
+    captureBase => $captureBase,
+    login       => $login,
+  });
 
   my $soapUrl="$captureBase/v1_0/receiver";
 
@@ -258,76 +287,22 @@ sub getCaptureUserStatusViaSOAP {
   return ($status, $bm_login);
 }
 
-sub getCaptureSessionId {
-  my $username = shift or die;
-  my $password = shift or die;
-
-  my $loginMessage = qq{<?xml version="1.0" encoding="UTF-8"?>
-  <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-    <soapenv:Header>
-      <bm:category xmlns:bm="urn:soap.bigmachines.com">Security</bm:category>
-      <bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
-	<bm:schemaLocation>$captureBase/bmfsweb/republicservices/schema/v1_0/security/Security.xsd</bm:schemaLocation>
-      </bm:xsdInfo>
-    </soapenv:Header>
-    <soapenv:Body>
-      <bm:login xmlns:bm="urn:soap.bigmachines.com">
-	<bm:userInfo>
-	  <bm:username>$username</bm:username>
-	  <bm:password>$password</bm:password>
-	  <bm:sessionCurrency/>
-	</bm:userInfo>
-      </bm:login>
-    </soapenv:Body>
-  </soapenv:Envelope>
-  };
-
-  my $soapUrl="$captureBase/v1_0/receiver";
-
-  my $response = $ua->post(
-    $soapUrl,
-    Content_Type => 'text/xml;charset=utf-8',
-    SOAPAction => 'urn:soap.bigmachines.com#login',
-    Content => $loginMessage
-  );
-
-  die $response->status_line unless $response->is_success;
-
-  $twig->parse($response->decoded_content);
-
-  return $sessionId = $twig->first_elt('bm:sessionId')->text;
-
-}
-
-sub getHierarchyExceptionsRow {
+sub getHierarchyExceptionsRowCount {
   my $login     = shift or die;
   my $sessionId = shift or die;
   my $fieldName = shift or die;
 
-  my $getHierarchyExceptionsRowMessage = qq{<?xml version="1.0" encoding="UTF-8"?>
-    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-      <soapenv:Header>
-        <bm:userInfo xmlns:bm="urn:soap.bigmachines.com">
-          <bm:sessionId>$sessionId</bm:sessionId>
-        </bm:userInfo>
-        <bm:category xmlns:bm="urn:soap.bigmachines.com">Data Tables</bm:category>
-        <bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
-          <bm:schemaLocation>$captureBase/bmfsweb/republicservices/schema/v1_0/datatables/Hierarchy_Exceptions.xsd</bm:schemaLocation>
-        </bm:xsdInfo>
-      </soapenv:Header>
-      <soapenv:Body>
-        <bm:get xmlns:bm="urn:soap.bigmachines.com">
-          <bm:DataTables bm:table_name="Hierarchy_Exceptions">
-            <bm:criteria>
-              <bm:field>$fieldName</bm:field>
-              <bm:value>$login</bm:value>
-              <bm:comparator>=</bm:comparator>
-            </bm:criteria>
-          </bm:DataTables>
-        </bm:get>
-      </soapenv:Body>
-    </soapenv:Envelope>
-  };
+  my $tt = Text::Template->new(
+    TYPE   => 'STRING',
+    SOURCE => $cc->getCapturegetHierarchyExceptionsMessageTemplate()
+  );
+
+  my $getHierarchyExceptionsRowMessage = $tt->fill_in(HASH => {
+    sessionId   => $sessionId,
+    captureBase => $captureBase,
+    fieldName   => $fieldName,
+    login       => $login,
+  });
 
   my $soapUrl="$captureBase/v1_0/receiver";
 
