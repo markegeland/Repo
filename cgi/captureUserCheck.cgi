@@ -7,7 +7,7 @@ use CGI;
 use CGI::Carp qw(fatalsToBrowser);
 use DBI;
 use Text::CSV_XS;
-use Text::Template;
+use Template;
 use HTML::Table;
 
 
@@ -220,16 +220,20 @@ sub getCaptureSessionId {
   my $username = shift or die;
   my $password = shift or die;
 
-  my $tt = Text::Template->new(
-    TYPE   => 'STRING',
-    SOURCE => $cc->getCapturegetSessionIdMessageTemplate()
-  );
+  my $tt = Template->new;
 
-  my $loginMessage = $tt->fill_in(HASH => {
-    captureBase => $captureBase,
-    username    => $username,
-    password    => $password,
-  });
+  my $templateText = $cc->getCapturegetSessionIdMessageTemplate();
+  my $loginMessage;
+  
+  $tt->process(
+    \$templateText,
+    {
+      captureBase => $captureBase,
+      username    => $username,
+      password    => $password,
+    },
+    \$loginMessage
+  );
 
   my $soapUrl="$captureBase/v1_0/receiver";
 
@@ -252,16 +256,19 @@ sub getCaptureUserStatusViaSOAP {
   my $login = shift or die;
   my $sessionId = shift or die;
 
-  my $tt = Text::Template->new(
-    TYPE   => 'STRING',
-    SOURCE => $cc->getCapturegetSessionIdMessageTemplate()
-  );
+  my $tt = Template->new;
+  my $templateText = $cc->getCapturegetUserMessageTemplate();
+  my $getUserMessage;
 
-  my $getUserMessage = $tt->fill_in(HASH => {
-    sessionId   => $sessionId,
-    captureBase => $captureBase,
-    login       => $login,
-  });
+  $tt->process(
+    \$templateText,
+    {
+      sessionId   => $sessionId,
+      captureBase => $captureBase,
+      login       => $login,
+    },
+    \$getUserMessage
+  );
 
   my $soapUrl="$captureBase/v1_0/receiver";
 
@@ -292,17 +299,20 @@ sub getHierarchyExceptionsRowCount {
   my $sessionId = shift or die;
   my $fieldName = shift or die;
 
-  my $tt = Text::Template->new(
-    TYPE   => 'STRING',
-    SOURCE => $cc->getCapturegetHierarchyExceptionsMessageTemplate()
-  );
+  my $tt = Template->new;
+  my $templateText = $cc->getCapturegetHierarchyExceptionsMessageTemplate();
+  my $getHierarchyExceptionsRowMessage;
 
-  my $getHierarchyExceptionsRowMessage = $tt->fill_in(HASH => {
-    sessionId   => $sessionId,
-    captureBase => $captureBase,
-    fieldName   => $fieldName,
-    login       => $login,
-  });
+  $tt->process(
+    \$templateText,
+    {
+      sessionId   => $sessionId,
+      captureBase => $captureBase,
+      fieldName   => $fieldName,
+      login       => $login,
+    },
+    \$getHierarchyExceptionsRowMessage
+  );
 
   my $soapUrl="$captureBase/v1_0/receiver";
 
