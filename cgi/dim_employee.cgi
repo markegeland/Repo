@@ -4,8 +4,6 @@
 #
 
 use strict;
-use Getopt::Long;
-use Data::Dumper;
 use DBI;
 use CGI;
 use CGI::Carp qw(fatalsToBrowser);
