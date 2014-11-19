@@ -1012,4 +1012,10 @@ form[name="bmForm"][action*="crm_browse_dialog"] a#populate.button-text {
 }
 
 
+/* STR History Tables */
+.strHistFutureRate{
+	background-color: yellow;
+	font-weight: bold;
+	color: red;
+}
 /* @end */
