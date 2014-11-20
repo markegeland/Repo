@@ -30,8 +30,11 @@ Based on that, there are few quick points to summarize:
 3. Sync up local repos with remote Capture repos. (git fetch/merge, or git pull)
 4. Create a new branch for the feature. (git checkout -b new-branch-name develop)
 5. Edit files to implement awesome feature. (use your favorite editor)
-6. Test your changes in Capture Dev.
-7. Merge feature branch into develop. (git checkout develop, git merge --no-ff new-branch-name)
-8. Delete your feature branch (git branch -d new-branch-name)
-9. Push your feature to capture/develop (git push capture develop)
-10. :beers:
+6. Stage files as you progress with the changes. (git add filename)
+7. Test your changes in Capture Dev.
+8. Commit your changes to the feature branch. (git commit -m "#issue made awesome feature")
+9. Merge feature branch into develop. (git checkout develop, git merge --no-ff new-branch-name)
+10. Delete your feature branch (git branch -d new-branch-name)
+11. Push your feature to capture/develop (git push capture develop)
+12. Open [the issues list](https://github.com/RepublicServicesRepository/Capture/issues), upload any testing documentation you have, add any notes for the test team that will help them, set the issue to 'test', and find the next issue to work on.
+11. :beers:
