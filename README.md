@@ -27,11 +27,11 @@ Based on that, there are few quick points to summarize:
 
 1. Get coffee :coffee:
 2. Open [the issues list](https://github.com/RepublicServicesRepository/Capture/issues) to figure out what to work on.  Ok, high priority issue assigned to me, let's work on that.  Add a 'development' [label](https://github.com/RepublicServicesRepository/Capture/labels) to the issue so the team knows we're actively working on it.
-3. Sync up local repos with remote Capture repos. (git fetch/merge, or git pull)
-4. Create a new branch for the feature. (git checkout -b new-branch-name develop)
+3. Sync up local repos with remote Capture repos. (`git fetch/merge`, or `git pull`)
+4. Create a new branch for the feature. (`git checkout -b new-branch-name develop`)
 5. Edit files to implement awesome feature. (use your favorite editor)
 6. Test your changes in Capture Dev.
-7. Merge feature branch into develop. (git checkout develop, git merge --no-ff new-branch-name)
-8. Delete your feature branch (git branch -d new-branch-name)
-9. Push your feature to capture/develop (git push capture develop)
+7. Merge feature branch into develop. (`git checkout develop`, `git merge --no-ff new-branch-name`)
+8. Delete your feature branch (`git branch -d new-branch-name`)
+9. Push your feature to capture/develop (`git push capture develop`)
 10. :beers:
