@@ -34,8 +34,6 @@ Based on that, there are few quick points to summarize:
 7. Merge feature branch into develop. (`git checkout develop`, `git merge --no-ff new-branch-name`)
 8. Delete your feature branch (`git branch -d new-branch-name`)
 9. Push your feature to capture/develop (`git push capture develop`)
-10. :beers:
-11. sleep :-)
 12. Open [the issues list](https://github.com/RepublicServicesRepository/Capture/issues), upload any testing documentation you have, add any notes for the test team that will help them, set the issue to 'test', and find the next issue to work on.
 13. :beers:
 
