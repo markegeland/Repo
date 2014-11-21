@@ -35,3 +35,5 @@ Based on that, there are few quick points to summarize:
 8. Delete your feature branch (git branch -d new-branch-name)
 9. Push your feature to capture/develop (git push capture develop)
 10. :beers:
+
+11. sleep :-)
