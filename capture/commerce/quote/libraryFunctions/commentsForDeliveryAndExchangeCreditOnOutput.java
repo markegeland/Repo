@@ -1,3 +1,5 @@
+//12-01-2014 - GD - Changed the input to dictionary from containerCodeDerived to routeTypeDervied
+
 retStr = "";
 creditStr = "";
 installStr = "";
@@ -17,8 +19,8 @@ for line in line_process{
 		//put(routeTypeDict, docNum, line._part_custom_field9);
 		if(line._model_variable_name == "containers_m"){
 			containerSize = getconfigattrvalue(docNum, "containerSize");
-			if(getconfigattrvalue(docNum, "containerCodeDerived") <> ""){
-				put(routeTypeDict, docNum, getconfigattrvalue(docNum, "containerCodeDerived"));
+			if(getconfigattrvalue(docNum, "routeTypeDervied") <> ""){
+				put(routeTypeDict, docNum, getconfigattrvalue(docNum, "routeTypeDervied"));
 			}
 			if(getconfigattrvalue(docNum, "tentativePickupDays") <> ""){
 				put(pickupDaysDict, docNum, getconfigattrvalue(docNum, "tentativePickupDays"));
