@@ -28,6 +28,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
                          for a division that has multiple InfoPro divs per Lawson div.
             20141027 - Julie Felberg - Passed ContainerGroupLine instead of containerGroup to GuardrailInputDict
             20141107 - Aaron Quintanilla - Removed price for Hand Pickup delivery
+            20141202 - Julie Felberg - Replaced estHaulsPerMonth_l with totalEstimatedHaulsMonth_l
         
 =====================================================================================================
 */
@@ -878,7 +879,7 @@ for line in line_process{
             frequencyStr = getconfigattrvalue(line._parent_doc_number, "frequency");
             // 20141022(James): overwrite routeTypeDervied variable from above for large container
             routeTypeDervied = getconfigattrvalue(line._parent_doc_number, "routeTypeDervied");
-            oncallHaulsStr = getconfigattrvalue(line._parent_doc_number, "estHaulsPerMonth_l"); //Used as quantity for on-call parts
+            oncallHaulsStr = getconfigattrvalue(line._parent_doc_number, "totalEstimatedHaulsMonth_l"); //Used as quantity for on-call parts
             frequencyAttribute = getconfigattrvalue(line._parent_doc_number, "haulsPerPeriod");
             containerSize = getconfigattrvalue(line._parent_doc_number, "equipmentSize_l");
             rental = getconfigattrvalue(line._parent_doc_number, "rental");
