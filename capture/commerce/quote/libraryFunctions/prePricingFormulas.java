@@ -28,6 +28,8 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
                          for a division that has multiple InfoPro divs per Lawson div.
             20141027 - Julie Felberg - Passed ContainerGroupLine instead of containerGroup to GuardrailInputDict
             20141107 - Aaron Quintanilla - Removed price for Hand Pickup delivery
+			20141118 - Aaron Quintanilla - Set Removal Floor to 0.0 and to set removal guardrails by quantity
+			20141201 - Aaron Quintanilla - Added logic to have per unit delivery charges for use in output
             20141202 - Julie Felberg - Replaced estHaulsPerMonth_l with totalEstimatedHaulsMonth_l
         
 =====================================================================================================
@@ -103,7 +105,8 @@ containerGroupDict = dict("string"); //container group logic
 containerGroup = "";
 containerGroupLine = "";
 
-
+//AQ 11/20/2014
+hasDelivery = false;
 
 /*These dictionaries are declared only for debugging purposes*/
 pricingDebugInputDict = dict("string");
@@ -730,6 +733,8 @@ dryUIDict = dict("string");
 washoutDict = dict("string");
 washoutUIDict = dict("string");
 
+deliveryUIDict = dict("string"); //20141201 AQ
+
 for line in line_process{
 
     //Set the value of partLineItem. Returns true for each line that is not a model
@@ -763,6 +768,8 @@ for line in line_process{
         
         put(removeDict, line._document_number, string(line.divisionRemove_line));
         put(removeUIDict, line._document_number, string(line.divisionRemove_ui_line));
+		
+		put(deliveryUIDict, line._document_number, string(line.divisionDelivery_ui_line));
     }
     if(line._parent_doc_number <> ""){  //Only apply pricing to non-model line items
 
@@ -1919,6 +1926,7 @@ for line in line_process{
                     targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
                     stretchPriceStr = get(guardrailOutputDict, "DEL");
                     stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+					hasDelivery = true;
                 }
                 //AQ 11/07/2104
                 if(line._part_custom_field9 == "HP"){
@@ -1939,10 +1947,18 @@ for line in line_process{
                 }
             }elif(rateTypeLower == "removal"){
                 if(containskey(guardrailOutputDict, "REM")){
-                    floorPriceStr = get(guardrailOutputDict, "REM");    
+                    //floorPriceStr = get(guardrailOutputDict, "REM");    //Changed 11/18/14 AQ
+					floorPriceStr = "0.0";    
+                    floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
                     basePriceStr = get(guardrailOutputDict, "REM");
+                    basePriceStr = string(atof(basePriceStr) * line._price_quantity);
                     targetPriceStr = get(guardrailOutputDict, "REM");
+                    targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
                     stretchPriceStr = get(guardrailOutputDict, "REM");
+                    stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+					if(hasDelivery){
+						returnStr = returnStr + line._document_number + "~hasDelivery_line~true|";
+					}
                 }
             }elif(rateTypeLower == "washout"){
                 if(containskey(guardrailOutputDict, "WAS")){
@@ -2007,11 +2023,14 @@ for line in line_process{
             
             divisionDryStr_ui = get(dryUIDict, line._parent_doc_number);
             divisionWashoutStr_ui = get(washoutUIDict, line._parent_doc_number);
+			
+			divisionDelStr_ui = get(deliveryUIDict, line._parent_doc_number); // 20141201 AQ
             
             print "--divisionReloStr_ui--"; print divisionReloStr_ui;
             
             if(containskey(guardrailOutputDict, "DEL")){
                 divisionDeliveryStr = get(guardrailOutputDict, "DEL");
+				divisionDelStr_ui = get(guardrailOutputDict, "DEL"); // 20141201 AQ
             }
             
             
@@ -2199,6 +2218,7 @@ for line in line_process{
                                 + parentDoc + "~" + "divisionExtLift_ui_line" + "~" + divisionExtLiftStr_ui + "|"
                                 + parentDoc + "~" + "divisionExtYard_ui_line" + "~" + divisionExtYdStr_ui + "|"
                                 + parentDoc + "~" + "divisionRemove_ui_line" + "~" + divisionRemStr_ui + "|"
+								+ parentDoc + "~" + "divisionDelivery_ui_line" + "~" + divisionDelStr_ui + "|" //20141201 AQ
                                 + parentDoc + "~" + "divisionWAS_ui_line" + "~" + divisionWashoutStr_ui + "|"
                                 + parentDoc + "~" + "exchangeLineItemExists_line" + "~" + string(get(exchangeExistsDict, parentDoc)) + "|";
                               
@@ -2271,7 +2291,8 @@ for line in line_process{
         containerType = "";
         wasteType = getconfigattrvalue(line._document_number, "wasteType");
         routeTypeDerived = getconfigattrvalue(line._document_number, "routeTypeDervied");
-        
+        hasDelivery = false;
+		
         if(containskey(existingCustDataDict, line._document_number+":containerType")){
             containerType = get(existingCustDataDict, line._document_number+":containerType");
         }
