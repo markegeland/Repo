@@ -6,6 +6,7 @@ use XML::Twig;
 use CGI;
 use CGI::Carp qw(fatalsToBrowser);
 use HTML::Table;
+use Template;
 
 use lib '/usr/lib/cgi-bin/capture/perlmods/share/perl';
 use RSG::Capture::Common;
@@ -26,6 +27,7 @@ print
     ),
     $q->h1('Capture User Lookup'),
     $q->h3($captureBase),
+    '<p>This utility uses Web Service calls against Capture to print information about a given Capture login',
     $q->start_form,
     "User: ", $q->textfield('username'), $q->p,
     "Password: ", $q->password_field('password'), $q->p,
@@ -40,27 +42,23 @@ my $lookup   = $q->param('lookup');
 
 exit unless $username && $password && $lookup;
 
-my $loginMessage = qq{<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-  <soapenv:Header>
-    <bm:category xmlns:bm="urn:soap.bigmachines.com">Security</bm:category>
-    <bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
-      <bm:schemaLocation>$captureBase/bmfsweb/testrepublicservices/schema/v1_0/security/Security.xsd</bm:schemaLocation>
-    </bm:xsdInfo>
-  </soapenv:Header>
-  <soapenv:Body>
-    <bm:login xmlns:bm="urn:soap.bigmachines.com">
-      <bm:userInfo>
-        <bm:username>$username</bm:username>
-        <bm:password>$password</bm:password>
-        <bm:sessionCurrency/>
-      </bm:userInfo>
-    </bm:login>
-  </soapenv:Body>
-</soapenv:Envelope>
-};
+my $tt = Template->new;
+
+my $templateText = $cc->getCapturegetSessionIdMessageTemplate();
+my $loginMessage;
+  
+$tt->process(
+  \$templateText,
+  {
+    captureBase => $captureBase,
+    username    => $username,
+    password    => $password,
+  },
+  \$loginMessage
+);
 
 my $soapUrl="$captureBase/v1_0/receiver";
+
 my $ua = LWP::UserAgent->new;
 
 my $response = $ua->post(
@@ -78,26 +76,18 @@ $twig->parse($response->decoded_content);
 
 $sessionId = $twig->first_elt('bm:sessionId')->text;
 
-my $getUserMessage = qq{<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-  <soapenv:Header>
-    <bm:userInfo xmlns:bm="urn:soap.bigmachines.com">
-      <bm:sessionId>$sessionId</bm:sessionId>
-    </bm:userInfo>
-    <bm:category xmlns:bm="urn:soap.bigmachines.com">Users</bm:category>
-    <bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
-      <bm:schemaLocation>$captureBase/bmfsweb/testrepublicservices/schema/v1_0/users/Users.xsd</bm:schemaLocation>
-    </bm:xsdInfo>
-  </soapenv:Header>
-  <soapenv:Body>
-    <bm:getUser xmlns:bm="urn:soap.bigmachines.com">
-      <bm:userInfo>
-        <bm:login>$lookup</bm:login>
-      </bm:userInfo>
-    </bm:getUser>
-  </soapenv:Body>
-</soapenv:Envelope>
-};
+$templateText = $cc->getCapturegetUserMessageTemplate();
+my $getUserMessage;
+  
+$tt->process(
+  \$templateText,
+  {
+    sessionId   => $sessionId,
+    captureBase => $captureBase,
+    login       => $lookup,
+  },
+  \$getUserMessage
+);
 
 $response = $ua->post(
   $soapUrl,

@@ -68,6 +68,86 @@ sub getGridTableCss {
   ];
 }
 
+sub getCapturegetSessionIdMessageTemplate {
+  my $self = shift;
+
+  return q(<?xml version="1.0" encoding="UTF-8"?>
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+      <soapenv:Header>
+	<bm:category xmlns:bm="urn:soap.bigmachines.com">Security</bm:category>
+	<bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
+	  <bm:schemaLocation>[% captureBase %]/bmfsweb/republicservices/schema/v1_0/security/Security.xsd</bm:schemaLocation>
+	</bm:xsdInfo>
+      </soapenv:Header>
+      <soapenv:Body>
+	<bm:login xmlns:bm="urn:soap.bigmachines.com">
+	  <bm:userInfo>
+	    <bm:username>[% username %]</bm:username>
+	    <bm:password>[% password %]</bm:password>
+	    <bm:sessionCurrency/>
+	  </bm:userInfo>
+	</bm:login>
+      </soapenv:Body>
+    </soapenv:Envelope>
+  );
+}
+
+sub getCapturegetUserMessageTemplate {
+  my $self = shift;
+
+  return q(<?xml version="1.0" encoding="UTF-8"?>
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+      <soapenv:Header>
+	<bm:userInfo xmlns:bm="urn:soap.bigmachines.com">
+	  <bm:sessionId>[% sessionId %]</bm:sessionId>
+	</bm:userInfo>
+	<bm:category xmlns:bm="urn:soap.bigmachines.com">Users</bm:category>
+	<bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
+	  <bm:schemaLocation>[% captureBase %]/bmfsweb/republicservices/schema/v1_0/users/Users.xsd</bm:schemaLocation>
+	</bm:xsdInfo>
+      </soapenv:Header>
+      <soapenv:Body>
+	<bm:getUser xmlns:bm="urn:soap.bigmachines.com">
+	  <bm:userInfo>
+	    <bm:login>[% login %]</bm:login>
+	  </bm:userInfo>
+	</bm:getUser>
+      </soapenv:Body>
+    </soapenv:Envelope>
+  );
+
+}
+
+
+sub getCapturegetHierarchyExceptionsMessageTemplate {
+  my $self = shift;
+
+  return q(<?xml version="1.0" encoding="UTF-8"?>
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+      <soapenv:Header>
+        <bm:userInfo xmlns:bm="urn:soap.bigmachines.com">
+          <bm:sessionId>[% sessionId %]</bm:sessionId>
+        </bm:userInfo>
+        <bm:category xmlns:bm="urn:soap.bigmachines.com">Data Tables</bm:category>
+        <bm:xsdInfo xmlns:bm="urn:soap.bigmachines.com">
+          <bm:schemaLocation>[% captureBase %]/bmfsweb/republicservices/schema/v1_0/datatables/Hierarchy_Exceptions.xsd</bm:schemaLocation>
+        </bm:xsdInfo>
+      </soapenv:Header>
+      <soapenv:Body>
+        <bm:get xmlns:bm="urn:soap.bigmachines.com">
+          <bm:DataTables bm:table_name="Hierarchy_Exceptions">
+            <bm:criteria>
+              <bm:field>[% fieldName %]</bm:field>
+              <bm:value>[% login %]</bm:value>
+              <bm:comparator>=</bm:comparator>
+            </bm:criteria>
+          </bm:DataTables>
+        </bm:get>
+      </soapenv:Body>
+    </soapenv:Envelope>
+  );
+}
+
 # Preloaded methods go here.
 
 1;

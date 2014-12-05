@@ -21,11 +21,13 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              11/26/13 - Latha - Added code for approvals
              01/30/14 - Srikar - Formulas -> BML conversion
              02/11/14 - Zach - Added additional Delivery line functionality for Doc Engine
-             ....other changes were made that were not documented between these entries
+             ...other changes were made that were not documented between these entries
              09/09/14 - John (Republic) - Fixed issue where ERF was being set to 0.00 if FRF was unchecked.
              09/15/14 - Blabes (Republic) - Fixed Hierarchy_Exceptions processing to match that used by User_Hierarchy
              09/24/14 - John (Republic) - Added AdHoc line items to grandTotalSell_quote and totalOneTimeAmount_quote
 			 09/25/14 - Julie (Oracle) - Added logic to calculate the total number of containers that have a 1 time delivery fee
+			 11/11/14 - Aaron Q (Oracle) - Added logic to manage container removal/delivery in place of exchange code, including credit for removal
+			 11/18/14 - Aaron Q (Oracle) - Added exchange charge value from removal in place of exchange codes.
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -64,13 +66,13 @@ largeMonthlyHaulPriceInclFees_Recycling = 0.0;
 largeMonthlyDisposalPriceInclFees_Recycling = 0.0;
 largeMonthlyRentalPriceInclFees_Recycling = 0.0;
 
-largeMonthlyTotalPriceInclFees = 0.0; //Both Solid waste and recylicng combined - large
+largeMonthlyTotalPriceInclFees = 0.0; //Both Solid waste and recycling combined - large
 largeMonthlyRevenue_SolidWaste = 0.0; //Only solid waste - large
 largeMonthlyRevenue_Recycling = 0.0; //Only Recycling - small
 largeMonthlyNetRevenue_SolidWaste = 0.0; //Only solid waste - large
 largeMonthlyNetRevenue_Recycling = 0.0; //Only Recycling - small
 
-smallMonthlyPriceIncludingFees = 0.0; //Both Solid waste and recylicng combined - small
+smallMonthlyPriceIncludingFees = 0.0; //Both Solid waste and recycling combined - small
 smallMonthlyRevenue_SolidWaste = 0.0; //Only solid waste - small
 smallMonthlyRevenue_Recycling = 0.0; //Only Recycling - small 
 smallMonthlyNetRevenue_SolidWaste = 0.0; //Only solid waste - small
@@ -98,6 +100,8 @@ deliveryERFandFRFTotal = 0.0;
 exchangeChargeSubtotal = 0.0;
 oneTimeExchangeCredit = 0.0;
 exchangeERFandFRFTotal = 0.0;
+hasDeliveryArr = string[]; //ParentDocNo Used to determine if there is an exchange happening using a deliver and removal instead of a single exchange line AQ 11-11-14
+hasRemovalDict = dict("float"); //ParentDocNo => line price
 
 //Installation Charges Variables
 installationChargeSubtotal = 0.0;
@@ -329,7 +333,7 @@ for line in line_process{
 		//End of Total Price calculation
 		
 		//Begin special calculations for Delivery line items
-		//08/18/2014 - 3-9457966641 if deliveryPrice is increase, that should become the new deliverysubtotal, howevr, if it is decreased, the default value will be subtotal
+		//08/18/2014 - 3-9457966641 if deliveryPrice is increased, that should become the new deliverysubtotal, however, if it is decreased, the default value will be subtotal
 		if(line.rateType_line == "Delivery"){
 			if(line.totalTargetPrice_line > line.sellPrice_line){
 				deliveryChargeSubtotal = deliveryChargeSubtotal + line.totalTargetPrice_line;
@@ -358,6 +362,12 @@ for line in line_process{
 			oneTimeExchangeCredit = oneTimeExchangeCredit + (line.totalTargetPrice_line - line.sellPrice_line); //Credit is Sell/Proposed Price - Target Price
 			exchangeERFandFRFTotal = exchangeERFandFRFTotal + FRF_CONST + ERF_CONST;
 			totalOneTimePrice = totalOneTimePrice + totalPrice;
+		}
+		elif(line.rateType_line == "Delivery"){
+			append(hasDeliveryArr, line._parent_doc_number);
+		}
+		elif(line.rateType_line == "Removal"){
+			put(hasRemovalDict, line._parent_doc_number, line.sellPrice_line);
 		}
 		
 		//Installation line item
@@ -515,7 +525,8 @@ for line in line_process{
 					largeMonthlyRentalPriceInclFees_Recycling = largeMonthlyRentalPriceInclFees_Recycling + (totalPrice * 365/12);
 				}
 			}	
-		}elif(line.rateType_line == "Base" AND line.isPartLineItem_line){
+		}
+		elif(line.rateType_line == "Base" AND line.isPartLineItem_line){
 			smallMonthlyPriceIncludingFees = smallMonthlyPriceIncludingFees + totalPrice;
 			if(lower(line.wasteCategory_line) == "solid waste"){
 				smallMonthlyRevenue_SolidWaste = smallMonthlyRevenue_SolidWaste + totalPrice; //totalPrice includes fee except adminRate, but admin should be added only once at quote level, hence only shown in totalRevenue but not smallContainerRevenue
@@ -939,6 +950,13 @@ divisionExecManagerGroup = "d" + division_quote + "ExecManagers";
 	}
 }*/
 
+//If exchange is done with separate removal and delivery line items, add credit for full amount of removal
+for each in hasDeliveryArr{
+	if (containsKey(hasRemovalDict, each)){
+		//oneTimeExchangeCredit = oneTimeExchangeCredit + get(hasRemovalDict, each);
+		exchangeChargeSubtotal = exchangeChargeSubtotal + get(hasRemovalDict, each);
+	}
+}
 
 
 //Write totals to quote attributes
