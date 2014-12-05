@@ -10,9 +10,10 @@ Input:   		stringDict: String Dictionary - Contains values of Config and Commerc
 Output:  		String Dictionary - Contains attribute name and value pairs for use in Config or Commerce
 
 Updates:	Srikar - 02/05/2014 - Updated basePrice, targetPriceAdj, stretchPriceAdj formulas
-Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formulas for small container
+            Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formulas for small container
 		 J Felberg - 11/15/2014 - Changed "Fixed Environmental Recovery Fee (ERF)" to "Fixed Environment Recovery Fee (ERF)"
      J Palubinskas - 11/17/2014 - Updated divisionFeeRate queries to look up based on Lawson and InfoPro division
+		20141204 - Aaron Quintanilla - Corrected Industrial Flat Rate Disposal Price Rounding Error
     
 =====================================================================================================
 */
@@ -2117,25 +2118,32 @@ if(priceType == "Large Containers"){
 		//disposalBase = (disposalPerTonFeeAdj / (1 + feePct));
 		//disposalTarget = (disposalPerTonFeeAdj / (1 + feePct));
 		//disposalStretch = (disposalPerTonFeeAdj / (1 + feePct)); */
-		//Round Disposal Base, Target, Stretch - Should we round even if Rental is not selected?
-		if(rounding_ind_dsp > 0){
-			targetRoundArr = float[];
-				append(targetRoundArr,disposalBase);
-				append(targetRoundArr,disposalTarget);
-			stretchRoundArr = float[];
-				append(stretchRoundArr, disposalTarget);
-				append(stretchRoundArr, disposalStretch);
-			disposalBase = ceil(disposalBase/rounding_ind_dsp) * rounding_ind_dsp;
-			disposalTarget = ceil(max(targetRoundArr)/rounding_ind_dsp) * rounding_ind_dsp;
-			disposalStretch = ceil(max(stretchRoundArr)/rounding_ind_dsp) * rounding_ind_dsp;
-			print "Disposal Values: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch;
-		}
+		//Round Disposal Base, Target, Stretch - Should we round even if Rental is not selected? 
+		//Changed 20121204 AQ
+		
+		targetRoundArr = float[];
+			append(targetRoundArr,disposalBase);
+			append(targetRoundArr,disposalTarget);
+		stretchRoundArr = float[];
+			append(stretchRoundArr, disposalTarget);
+			append(stretchRoundArr, disposalStretch);
+		
+		disposalTarget = max(targetRoundArr);
+		disposalStretch = max(stretchRoundArr);
+		print "Disposal Values: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch;
+		
 		disposalFloor = disposalFloor /( 1 + feePct);
 		disposalBase = disposalBase /( 1 + feePct);
 		disposalTarget = disposalTarget /( 1 + feePct);
 		disposalStretch = disposalStretch /( 1 + feePct);
-		
 		print "Disposal 3: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch; print rounding_ind_dsp;
+		
+		if(rounding_ind_dsp > 0){
+			disposalBase = ceil(disposalBase/rounding_ind_dsp) * rounding_ind_dsp;
+			disposalTarget = ceil(disposalTarget/rounding_ind_dsp) * rounding_ind_dsp;
+			disposalStretch = ceil(disposalStretch/rounding_ind_dsp) * rounding_ind_dsp;
+		}
+		print "Disposal 4: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch; print rounding_ind_dsp;
 		put(returnDict, "disposalStretch", string(disposalStretch));
 		put(returnDict, "disposalBase", string(disposalBase));
 		put(returnDict, "disposalTarget", string(disposalTarget));
