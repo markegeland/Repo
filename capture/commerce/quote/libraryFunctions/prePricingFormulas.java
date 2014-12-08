@@ -31,6 +31,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			20141118 - Aaron Quintanilla - Set Removal Floor to 0.0 and to set removal guardrails by quantity
 			20141201 - Aaron Quintanilla - Added logic to have per unit delivery charges for use in output
             20141202 - Julie Felberg - Replaced estHaulsPerMonth_l with totalEstimatedHaulsMonth_l
+            20141205 - Julie Felberg - Added code to set default when totalEstimatedHaulMonth_l has not been populated
         
 =====================================================================================================
 */
@@ -904,6 +905,9 @@ for line in line_process{
             
             if(isnumber(oncallHaulsStr)){
                 oncallHauls = atof(oncallHaulsStr);
+            }
+            else{
+            	oncallHauls = 0.0;
             }
             
             if(customerOwnedCompactor == "true"){
