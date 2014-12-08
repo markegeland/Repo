@@ -10,7 +10,7 @@ Input:   		stringDict: String Dictionary - Contains values of Config and Commerc
 Output:  		String Dictionary - Contains attribute name and value pairs for use in Config or Commerce
 
 Updates:	Srikar - 02/05/2014 - Updated basePrice, targetPriceAdj, stretchPriceAdj formulas
-Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formulas for small container
+            Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formulas for small container
 		 J Felberg - 11/15/2014 - Changed "Fixed Environmental Recovery Fee (ERF)" to "Fixed Environment Recovery Fee (ERF)"
      J Palubinskas - 11/17/2014 - Updated divisionFeeRate queries to look up based on Lawson and InfoPro division
 		20141204 - Aaron Quintanilla - Corrected Industrial Flat Rate Disposal Price Rounding Error

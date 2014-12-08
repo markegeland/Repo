@@ -1002,7 +1002,7 @@ a.list-field[href*="crm_browse_address_dialog"]:after {
 input[type="radio"][name="populate"], input[type="radio"][name="shipping"] {
 	visibility: hidden;
 }
-tr.view-header td:first-child{
+form[name="bmForm"][action*="crm_browse_dialog"] tr.view-header td:first-child{
     background-color: #002a4a;
     color: #002a4a;
 }
