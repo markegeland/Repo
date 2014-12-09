@@ -789,7 +789,7 @@ default_disposal_3p_float = 0.0;
 	//Final Asset Cost calculation
 	//containerMaintPerLift comes from a data table, liftsPerMonth calculated earlier
 	//assetCost = (containerMaintPerLift * liftsPerMonth) + totalContainerDepreciation + totalTruckDepreciation;
-	assetCost = totalContainerDepreciation + total_compactor_depr_maint + totalTruckDepreciation + (containerMaintPerLift * liftsPerMonth);
+	assetCost = totalContainerDepreciation + total_compactor_depr_maint + totalTruckDepreciation + (containerMaintPerLift * liftsPerMonth* (1-isCustomerOwned));
 	put(returnDict, "assetCost", string(assetCost));
 	//print "--assetCost--"; print assetCost;
 	//=============================== END - Asset Cost Calculation ===============================//
@@ -845,7 +845,7 @@ put(returnDict, "commission", string(commission));
 //Final ROI calculation
 //containerValue comes from data table
 //ROI = ((containerValue * containerQuantity + workingCapital + truckAllocatedValue) * floorROI / 12.0) + commission;
- ROI = ((truckAllocatedValue + ((containerValue + compactorValue) * containerQuantity) + workingCapital) * floorROI / 12) + commission;	
+ ROI = ((truckAllocatedValue + ((containerValue * (1 - isCustomerOwned) + compactorValue * (1 - isCustomerOwned)) * containerQuantity) + workingCapital) * floorROI / 12) + commission;
  
 put(returnDict, "ROI", string(ROI));
 
