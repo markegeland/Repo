@@ -10,10 +10,11 @@ Input:   		stringDict: String Dictionary - Contains values of Config and Commerc
 Output:  		String Dictionary - Contains attribute name and value pairs for use in Config or Commerce
 
 Updates:	Srikar - 02/05/2014 - Updated basePrice, targetPriceAdj, stretchPriceAdj formulas
-            Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formulas for small container
+Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formulas for small container
 		 J Felberg - 11/15/2014 - Changed "Fixed Environmental Recovery Fee (ERF)" to "Fixed Environment Recovery Fee (ERF)"
      J Palubinskas - 11/17/2014 - Updated divisionFeeRate queries to look up based on Lawson and InfoPro division
 		20141204 - Aaron Quintanilla - Corrected Industrial Flat Rate Disposal Price Rounding Error
+		20141210 - Aaron Quintanilla - Corrected disposal fee removal 
     
 =====================================================================================================
 */
@@ -1933,8 +1934,8 @@ if(priceType == "Large Containers"){
 	
 	//Moved as part of SR 3-9437035701
 	if( feePct <> -1.0){
-		disposalFloor = (allocatedDisposalFlag * disposalCostPerTon); // / (1 + feePct);
-		put(returnDict, "disposalFloor", string(disposalFloor));
+		disposalFloor = (allocatedDisposalFlag * disposalCostPerTon); 
+		//put(returnDict, "disposalFloor", string(disposalFloor));  //AQ 2014-12-10
 
 		//Removed ceiling before rounding
 		disposalBase = (disposalRatePerTon * allocatedDisposalFlag);// / (1 + feePct));
@@ -2132,7 +2133,7 @@ if(priceType == "Large Containers"){
 		disposalStretch = max(stretchRoundArr);
 		print "Disposal Values: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch;
 		
-		disposalFloor = disposalFloor /( 1 + feePct);
+		disposalFloor = disposalFloor /( 1 + feePct); //AQ 2014-12-10
 		disposalBase = disposalBase /( 1 + feePct);
 		disposalTarget = disposalTarget /( 1 + feePct);
 		disposalStretch = disposalStretch /( 1 + feePct);
@@ -2144,6 +2145,7 @@ if(priceType == "Large Containers"){
 			disposalStretch = ceil(disposalStretch/rounding_ind_dsp) * rounding_ind_dsp;
 		}
 		print "Disposal 4: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch; print rounding_ind_dsp;
+		put(returnDict, "disposalFloor", string(disposalFloor));
 		put(returnDict, "disposalStretch", string(disposalStretch));
 		put(returnDict, "disposalBase", string(disposalBase));
 		put(returnDict, "disposalTarget", string(disposalTarget));
