@@ -2133,7 +2133,7 @@ if(priceType == "Large Containers"){
 		disposalStretch = max(stretchRoundArr);
 		print "Disposal Values: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch;
 		
-		disposalFloor = disposalFloor /( 1 + feePct); //AQ 2014-12-10
+		disposalFloor = disposalFloor /( 1 + feePct);
 		disposalBase = disposalBase /( 1 + feePct);
 		disposalTarget = disposalTarget /( 1 + feePct);
 		disposalStretch = disposalStretch /( 1 + feePct);
@@ -2145,7 +2145,7 @@ if(priceType == "Large Containers"){
 			disposalStretch = ceil(disposalStretch/rounding_ind_dsp) * rounding_ind_dsp;
 		}
 		print "Disposal 4: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch; print rounding_ind_dsp;
-		put(returnDict, "disposalFloor", string(disposalFloor));
+		put(returnDict, "disposalFloor", string(disposalFloor)); //AQ 2014-12-10
 		put(returnDict, "disposalStretch", string(disposalStretch));
 		put(returnDict, "disposalBase", string(disposalBase));
 		put(returnDict, "disposalTarget", string(disposalTarget));
