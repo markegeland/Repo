@@ -89,7 +89,7 @@ s/\A(\d)\Z/oow:$1/ for @allLabelNames;
 @allLabelNames = sort(@allLabelNames);
 
 
-#print STDERR Data::Dumper::Dumper(\@issues);
+print STDERR Data::Dumper::Dumper(\@issues);
 #print STDERR Data::Dumper::Dumper(\@labels);
 
 my $table = HTML::Table->new;
@@ -102,7 +102,21 @@ my $csv = Text::CSV_XS->new({
   'diag_verbose' => 2,
 });
 
-my @header = ('Number','User','Title','Last Updated','Assignee','Body','State','Closed At','Milestone','Labels', @allLabelNames);
+my @header = (
+  'Number',
+  'User',
+  'Title',
+  'Last Updated',
+  'Current Assignee',
+  'Body',
+  'State',
+  'Closed At',
+  'Milestone',
+  'First Assignee',
+  'Labels',
+  @allLabelNames
+);
+
 my @rows;
 push(@rows, \@header);
 
@@ -123,6 +137,21 @@ foreach my $issue (sort {$a->{number} <=> $b->{number}} @issues) {
     push(@labelArray, $labelHash->{name});
   }
 
+  # call the "events" API to get all events associated with this issue
+  # https://api.github.com/repos/RepublicServicesRepository/Capture/issues/255/events
+  my @events = $github->issue->event(undef,'RepublicServicesRepository/Capture',$issue->{number});
+  while($github->issue->has_next_page) {
+    push @events, $github->issue->next_page;
+  }
+  
+  my $firstAssignee;
+  foreach my $event (sort {$a->{created_at} cmp $b->{created_at}} @events) {
+    next unless $event->{event} eq 'assigned';
+    $firstAssignee = $event->{assignee}->{login};
+    print STDERR "firstAssignee=$firstAssignee\n";
+    last;
+  }
+
   # change any image references to HTML format
   $issue->{body} =~ s&\!\[image\]\((.*)\)&<a href="$1">image</a>&g;
 
@@ -140,6 +169,7 @@ foreach my $issue (sort {$a->{number} <=> $b->{number}} @issues) {
 	     $issue->{state},
 	     $issue->{closed_at},
 	     $issue->{milestone}->{title},
+	     $firstAssignee,
 	     join(' ',sort(@labelArray)));
 
   foreach my $label (@allLabelNames) {
@@ -184,9 +214,10 @@ elsif ($download_xlsx) {
   $worksheet->set_column('G:G',   8, $format_align); # State
   $worksheet->set_column('H:H',  18, $format_align); # Closed At
   $worksheet->set_column('I:I',  30, $format_align); # Milestone
-  $worksheet->set_column('J:J',  20, $format_wrap);  # Labels
+  $worksheet->set_column('J:J',  18, $format_wrap);  # First Assignee
+  $worksheet->set_column('K:K',  20, $format_wrap);  # Labels
 
-  $worksheet->set_column('K:AX', 21, $format_align); # Label bit columns
+  $worksheet->set_column('L:AY', 21, $format_align); # Label bit columns
   
   $worksheet->write_col('A1',\@rows);
   $workbook->close();
