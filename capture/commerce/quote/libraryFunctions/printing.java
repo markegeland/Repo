@@ -1,3 +1,18 @@
+/* 
+================================================================================
+Name:   Printing
+Author:   None
+Create date:  Header created 11/6/2014
+Description:  Runs on the print action to set attributes specifically needed for the documents.        
+Input:      Does not take in any parameters.  Uses quote and line level attributes.                    
+Output:     String (documentNumber + "~" + attributeVariableName + "~" + value + "|")
+
+Updates:    20141106 Added logic to set the after year 1-4 dates based on the effective service date.  And, created the header. 
+     	    20141112 Commented out logic from 20141106 due to emergency migration, put logic back in on	20141113
+            20141212 JPalubinskas - #240 Updated afterYear#Date_quote to hold MM/YYYY format
+=====================================================================================================
+*/
+
 res = "";
 dBAName = "";
 oneTimeLinesExist = false;
@@ -18,6 +33,7 @@ flatPriceDict = dict("float");
 rentalPriceDict = dict("float");
 deliveryPriceDict = dict("float");
 haulsPerMonthDict = dict("float"); //This dict will hold the part line items estimatedLifts_line value, but not the model line items value.
+
 
 totalDisposalTons = 0.0;
 
@@ -350,8 +366,6 @@ if(len(reasonCode) > 3){	//If the reasonCode is a valid string, get the two-digi
 }
 
 
-
-
 //Get DBA Name for the selected division
 resultset = bmql("SELECT DBA_Name, is_legal_entity_name FROM Div_DBA_Names WHERE Division_Nbr = $division_quote");
 dBANameArr = string[];
@@ -433,25 +447,33 @@ for record in lawsonDivisionRS{
 	supportPhone = get(record, "support_phone");
 }
 
-//JFelberg Ad Hoc Consideration
 if (adHocOneTimeExists_quote == true){
 	oneTimeLinesExist = true;
 }
 
-res = res //+ "1~dBAName_quote~"+finalDBAName+"|"
-		//dBAName_quote has been replaced with a text area attribute
-	  + "1~dBAName_TextArea_quote~" + finalDBAName + "|"
-          + "1~frontTCContent_quote~"+Front_TC+"|"
-          + "1~rearTCContent_quote~"+Rear_TC+"|"
-		  + "1~displayDeliveryCreditsModelWise_quote~"+string(displayDeliveryCreditsModelWise)+"|"
-		  + "1~totalDisposalTons_quote~"+string(totalDisposalTons)+"|"
-		  + "1~totalDeliveryCredit_quote~"+string(totalDeliveryCredit)+"|"
-		  + "1~reasonCodeOutput_quote~"+reasonCodeOutput+"|"
-		  + "1~initialTermForDocument_quote~"+initialTermForDocOutput+"|"
-		  + "1~renewalTermForDocument_quote~"+renewalTermForDocOutput+"|"
-		  + "1~supportPhone_quote~"+supportPhone+"|"
-		  + "1~closedContainerExists_quote~"+string(closeContainerExists)+"|"
-		  + "1~serviceCloseDate_quote~"+ closeDateStr + "|"
-		  + "1~oneTimeLinesExist_quote~"+ string(oneTimeLinesExist) + "|";
+
+EffectiveYear = atoi(substring(effectiveServiceDate_quote, 0, 4));
+AfterYear1Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(EffectiveYear + 1);
+AfterYear2Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(EffectiveYear + 2);
+AfterYear3Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(EffectiveYear + 3);
+AfterYear4Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(EffectiveYear + 4);
+
+res = res + "1~afterYear1Date_quote~"                  + AfterYear1Date + "|"
+          + "1~afterYear2Date_quote~"                  + AfterYear2Date + "|"
+          + "1~afterYear3Date_quote~"                  + AfterYear3Date + "|"
+          + "1~afterYear4Date_quote~"                  + AfterYear4Date + "|"
+          + "1~dBAName_TextArea_quote~"                + finalDBAName + "|"
+          + "1~frontTCContent_quote~"                  + Front_TC + "|"
+          + "1~rearTCContent_quote~"                   + Rear_TC + "|"
+          + "1~displayDeliveryCreditsModelWise_quote~" + string(displayDeliveryCreditsModelWise) + "|"
+          + "1~totalDisposalTons_quote~"               + string(totalDisposalTons) + "|"
+          + "1~totalDeliveryCredit_quote~"             + string(totalDeliveryCredit) + "|"
+          + "1~reasonCodeOutput_quote~"                + reasonCodeOutput + "|"
+          + "1~initialTermForDocument_quote~"          + initialTermForDocOutput + "|"
+          + "1~renewalTermForDocument_quote~"          + renewalTermForDocOutput + "|"
+          + "1~supportPhone_quote~"                    + supportPhone + "|"
+          + "1~closedContainerExists_quote~"           + string(closeContainerExists) +"|"
+          + "1~serviceCloseDate_quote~"                + closeDateStr + "|"
+          + "1~oneTimeLinesExist_quote~"               + string(oneTimeLinesExist) + "|";
  	 
 return res;

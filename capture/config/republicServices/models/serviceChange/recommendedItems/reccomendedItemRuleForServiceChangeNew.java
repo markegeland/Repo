@@ -76,21 +76,7 @@ if(containerSize_sc == "No Change"){
 			break;
 		}
 	}
-	/*
-	loopArray = int[1000];
-	tempSize = atof(containerSize_readonly);
-	for count in loopArray{
-		if(findinarray(sizeArray,string(tempSize)) >= 0){
-			break;
-		}else{
-			if(tempSize < 4.0){
-				tempSize = tempSize + 0.01;
-			}else{
-				tempSize = tempSize + 1;
-			}
-		}
-	}
-	*/
+
 }else{
 	tempSize = containerSize_sc;
 }
