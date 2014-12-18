@@ -1,1 +1,1 @@
-return commerce.monthlyTotalsSummaryView();
+return commerce.monthlyTotalsSummaryView(); 
