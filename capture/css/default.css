@@ -1,0 +1,408 @@
+/***************************************************************************************
+ * container.css
+ *
+ * 20141217 John Palubinskas - updated .required .attribute-label to be font color #000
+ *
+ *
+ ***************************************************************************************/
+ 
+/* Tab Table Properties */
+.tab-content,
+.tab-content .loading {
+    font-family: Tahoma, Arial, Helvetica, sans-serif; 
+    font-size: 10pt;
+    font-weight: normal;
+    font-style: normal;
+    color: #000000;
+    text-decoration: none;
+    background-color: #FFFFFF;
+}
+
+/* Tab Title Properties */
+.tab-header { 
+    font-family: Tahoma, Arial, Helvetica, sans-serif; 
+    font-size: 12pt;
+    font-weight: bold;
+    font-style: normal;
+    color: #000000;
+    text-decoration: none;
+}
+
+/* Tab Help Properties */
+.tab-help { 
+    font-family: Tahoma, Arial, Helvetica, sans-serif; 
+    font-size: 10pt;
+    font-weight: normal;
+    font-style: normal;
+    color: #000000;
+    text-decoration: none;
+}
+
+/* Group Table Properties */
+.group-content {
+    margin: 2px 2px;
+}
+.group-inner {
+    background-color: #FFFFFF;
+    border-color: #000000;
+    border-width: 0px;
+    border-style: none;
+}
+
+/* Group Title Properties */
+.group-header {
+    font-family: Tahoma, Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    font-weight: bold;
+    font-style: normal;
+    color: #000000;
+    text-decoration: none;
+}
+
+/* Attribute Label Properties */
+.attribute-label {
+    font-family: Tahoma, Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    font-weight: normal;
+    font-style: normal;
+    color: #000000;
+    text-decoration: none; 
+}
+
+/* Required Attribute Label Properties */
+.required .attribute-label {
+    font-family: Tahoma, Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    font-weight: normal;
+    font-style: normal;
+    text-decoration: none;
+    color: #000000;
+}
+
+/* Constraint Message Properties */
+.constraint-message,
+.tab-constraint {
+    font-family: Tahoma, Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    font-weight: normal;
+    font-style: normal;
+    text-decoration: none;
+    border-left-color: #FF0000;
+}
+
+.attribute-inner .constraint-message {
+    color: #FF0000;
+}
+
+/* Recommendation Message Properties */
+.recommendation-message {
+    font-family: Tahoma, Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    font-weight: normal;
+    font-style: normal;
+    text-decoration: none;
+    border-left-color: #0000FF;
+}
+
+.attribute-inner .recommendation-message {
+    color: #0000FF;
+}
+
+/* Previous Value Message Properties */
+.prev-message {
+    font-family: Tahoma, Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    font-weight: normal;
+    font-style: normal;
+    text-decoration: none;
+    border-left-color: #006699;
+}
+
+.attribute-inner .prev-message {
+    color: #006699;
+}
+
+/* Constrained Menu Value Properties */
+select.attribute-field .constrained {
+    font-weight: normal;
+    font-style: normal;
+    color: #000000; 
+    text-decoration: none;    
+    background-color: #808080; 
+}
+
+/* Attribute Image Properties */
+.attribute-image { 
+    border-width: 0px; 
+    width: 30px;
+    height: 30px; 
+}
+
+/* Image Menu Properties */
+.cfg-ss-dropdown .cfg-im-grid,
+.cfg-ms-dropdown .cfg-im-grid,
+.cfg-im-dropdown-copy {
+    background-color: #FFFFFF;
+    border: 1px solid #000000;
+}
+
+.cfg-image-menu .cfg-im-item,
+.cfg-im-dropdown-copy .cfg-im-item {
+    /* Adds a border of the same width as hover (so the items stay the same size while hovering) */
+    /*   and color as the background (so it's invisible) */ 
+    border: 1px solid #FFFFFF;
+}
+
+/* Hover style for the options */
+.cfg-im-grid .hover {
+    border: 1px solid #CCCCCC;
+    background-color: #FFFFFF;
+    background-image: url();
+}
+
+/* Selected style for the options */
+.cfg-im-grid .selected, .cfg-im-value .selected {
+    border: 1px solid #336699;
+    background-color: #FFFFFF;
+    background-image: url();
+}
+
+/*Forced Set style for the options */
+.cfg-image-menu-read-only .selected {
+    border: 1px solid #336699;
+    background-color: #FFFFFF;
+    background-image: url();
+}
+
+/* Constrained options style (non-IE) */
+.cfg-image-menu .constrained,
+.cfg-im-dropdown-copy .constrained {
+    opacity: 0.2;
+}
+
+/* Constrained options (for IE) */
+.cfg-image-menu .constrained, .cfg-image-menu .constrained img,
+.cfg-im-dropdown-copy .constrained, .cfg-im-dropdown-copy .constrained img {
+    filter: alpha(opacity=20.0);
+}
+
+/* Attribute Set Table Properties */
+.array {
+    background-color: #CCCCCC;
+    border-color: #000000;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.array thead th {
+    background-color: #DBEFFF;
+}
+
+.array td, .array th {
+    background-color: #FFFFFF;
+}
+
+.array .even td, .array .even th {
+    background-color: #F0FAFD;
+}
+
+.array tr td.previous-value {
+    border-top-color: #006699;
+}
+
+.array tr td.recommended {
+    border-top-color: #0000FF;
+}
+
+.array tr td.constrained {
+    border-top-color: #FF0000;
+}
+
+.array-add {
+    background-image: url(/img/config/add.png);
+}
+
+.array-remove {
+    background-image: url(/img/config/delete.png);
+}
+
+/****************************************************
+ * Legacy CSS Rules
+ ****************************************************/
+
+/* Start Tab Body Properties */
+.tab-table { 
+	font-family: Tahoma, Arial, Helvetica, sans-serif; 
+	font-size: 10pt;
+	font-weight: normal;
+	font-style: normal;
+	color: #000000;
+	text-decoration: none;
+	background-color: #FFFFFF;
+}
+/* End Tab Body Properties */
+
+/* Start Horizontal Groups Table Spacing Properties */
+.table-spacing-horz {
+	width: 2px;
+}
+/* End Horizontal Groups Spacing Properties */
+
+/* Start Vertical Groups Table Spacing Properties */
+.table-spacing-vert {
+	height: 2px;
+}
+/* End Vertical Groups Spacing Properties */
+
+/* Start Tab Title Properties */
+.tab-title { 
+	font-family: Tahoma, Arial, Helvetica, sans-serif; 
+	font-size: 12pt;
+	font-weight: bold;
+	font-style: normal;
+	color: #000000;
+	text-decoration: none;
+}
+/* End Tab Title Properties */
+
+/* Start Tab Help-Text Properties */
+.tab-helptext { 
+	font-family: Tahoma, Arial, Helvetica, sans-serif; 
+	font-size: 10pt;
+	font-weight: normal;
+	font-style: normal;
+	color: #000000;
+	text-decoration: none;
+}
+/* End Tab Help-Text Properties */
+
+/* Start Group Table Properties */
+.group-table {
+	background-color: #FFFFFF;
+	border-color: #000000;
+	border-width: 0px;
+	border-style: none;
+}
+/* End Group Table Properties */
+
+/* Start Group Title Properties */
+.group-title {
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: bold;
+	font-style: normal;
+	color: #000000;
+	text-decoration: none;
+}
+/* End Group Title Properties */
+
+/* Start Attribute Label General Properties */
+.attr-label {
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: normal;
+	font-style: normal;
+	color: #000000;
+	text-decoration: none;	
+}
+/* End Attribute Label General Properties */
+
+/* Start Required Attribute Label Properties*/
+.reqattr-label {
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: normal;
+	font-style: normal;
+	color: #FF0000;
+	text-decoration: none;
+}
+/* End Required Attribute Label Properties*/
+
+/* Start Constraint Message Properties */
+.cons-msg {
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: normal;
+	font-style: normal;
+	color: #FF0000;
+	text-decoration: none;
+}
+/* End Constraint Message Properties */
+
+/* Start Recommendation Message Properties */
+.rec-msg {
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: normal;
+	font-style: normal;
+	color: #0000FF;
+	text-decoration: none;
+}
+/* End Recommendation Message Properties */
+
+/* Start Previous Value Message Properties */
+.prev-msg {
+	font-family: Tahoma, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: normal;
+	font-style: normal;
+	color: #006699;
+	text-decoration: none;
+}
+/* End Previous Value Message Properties */
+/*  --- Configuration Constrained Attribute Options --- */
+.constrainedValue { 
+	font-family: Tahoma; 
+	font-size: 8pt; 
+	font-weight: normal;
+	font-style: normal;
+	color: #000000; 
+	text-decoration: none;	
+	background-color: #808080; 
+}
+/*  --- Configuration Normal Attribute Options --- */
+.normalValue { 
+	font-family: Tahoma; 
+	font-size: 8pt;
+	font-weight: normal;
+	font-style: normal;
+	color: #555555; 
+	text-decoration: none;	
+	background-color: #FFFFFF; 
+}
+
+/* -- Attribute Image --  */
+.configAttributeImage { 
+	border-width: 0px; 
+	width: 30px;
+	height: 30px; 
+}
+	
+/* Start Attribute Set Table Properties */
+.attr-set-table {
+	background-color: #CCCCCC;
+	border-color: #000000;
+	border-width: 1px;
+	border-style: solid;
+}
+/* End Attribute Set Table Properties */
+
+/* Start set element increment image */
+.set-incr-img {
+	 background-image: url(/img/config/add.png);
+	 border: 0;
+	 cursor: pointer;
+	 width:19px;
+	 height:19px;
+}
+/* End set element increment image */
+
+/* Start set element decrement image */
+.set-decr-img {
+	 background-image: url(/img/config/delete.png);
+	 border: 0;
+	 cursor: pointer;
+	 width:19px;
+	 height:19px;
+}
+/* End set element decrement image */

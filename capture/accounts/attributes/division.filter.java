@@ -10,6 +10,7 @@ Input:       division_quote: String - Division of quote
 Output:      String (documentNumber + "~" + attributeVariableName + "~" + value + "|")
 
 Updates:     20141106 - John Palubinskas - updated to sort the division list array
+             20141218 - John Palubinskas - fix for 2014 R1 upgrade, split function
 =====================================================================================================
 */
 groupsArr = string[];
@@ -19,6 +20,7 @@ infoProArr = string[][];
 divisionStr = "";
 corporateUser = false;
 retStr = "";
+
 if(_group_var_name <> ""){
     groupsArr = split(_group_var_name, "~");
 }
@@ -26,14 +28,17 @@ if(_group_var_name <> ""){
 //This works for Non-zero division groups where division Number will always have 4 characters
 for eachGrp in groupsArr{
     if(len(eachGrp) >= 5){
-        eachGrpCharArr = split(eachGrp, "");// sub string does not work here, hence did the following, even in comments that 'word' is not supported
-        if(isnumber(eachGrpCharArr[2]) AND isnumber(eachGrpCharArr[3]) AND isnumber(eachGrpCharArr[4]) AND isnumber(eachGrpCharArr[5])){
-            divisionStr = eachGrpCharArr[2] + eachGrpCharArr[3] + eachGrpCharArr[4] + eachGrpCharArr[5];
+
+        eachGrpCharArr = split(eachGrp, "");
+
+        if(isnumber(eachGrpCharArr[1]) AND isnumber(eachGrpCharArr[2]) AND isnumber(eachGrpCharArr[3]) AND isnumber(eachGrpCharArr[4])){ 
+            divisionStr = eachGrpCharArr[1] + eachGrpCharArr[2] + eachGrpCharArr[3] + eachGrpCharArr[4]; 
         }else{
-            if(eachGrpCharArr[2] == "0"){
+            if(eachGrpCharArr[1] == "0"){
                 corporateUser  = true;
             }
         }
+
         if(isnumber(divisionStr)){
             if(findinarray(lawsonDivArr, divisionStr) == -1){
                 append(lawsonDivArr, divisionStr);
@@ -84,4 +89,5 @@ if(corporateUser){
 if(NOT(isempty(retStrArr))){
     retStr = join(retStrArr, ",");
 }
+
 return retStr;
