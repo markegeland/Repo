@@ -817,10 +817,10 @@ if(_system_current_step_var == "adjustPricing"){
 	
 	//J. Felberg 20150105
 	if(grandTotalFloor_quote > grandTotalSell_quote){
-		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red") + "|";
+		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red") + "|";
 	}
 	else{
-		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "black") + "|";
+		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "black") + "|";
 	}
 
 	//build an array with all 3 possible "spellings" of the current login
