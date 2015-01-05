@@ -816,7 +816,7 @@ if(_system_current_step_var == "adjustPricing"){
 	approvalReasonHTML = util.setApprovalReasonDisplay(level1ApprovalReasonArr, level2ApprovalReasonArr);
 	
 	//J. Felberg 20150105
-	if(grandTotalFloor_quote > grandTotalSell_quote){
+	if(grandTotalFloor > grandTotalSell){
 		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red") + "|";
 	}
 	else{
