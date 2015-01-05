@@ -28,7 +28,7 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
 			 09/25/14 - Julie (Oracle) - Added logic to calculate the total number of containers that have a 1 time delivery fee
 			 11/11/14 - Aaron Q (Oracle) - Added logic to manage container removal/delivery in place of exchange code, including credit for removal
 			 11/18/14 - Aaron Q (Oracle) - Added exchange charge value from removal in place of exchange codes.
-
+	     01/05/15 - Julie (Oracle) - Populating the approval attribute for the approval e-mails.  Added a new util (setApprovalReasonDisplayWithColor)
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
 =======================================================================================================================
@@ -814,6 +814,14 @@ if(_system_current_step_var == "adjustPricing"){
 
 	//Build HTML to display approval reasons on the quote
 	approvalReasonHTML = util.setApprovalReasonDisplay(level1ApprovalReasonArr, level2ApprovalReasonArr);
+	
+	//J. Felberg 20150105
+	if(grandTotalFloor_quote > grandTotalSell_quote){
+		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red") + "|";
+	}
+	else{
+		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "black") + "|";
+	}
 
 	//build an array with all 3 possible "spellings" of the current login
 	append(userLoginArray, lower(_system_user_login));
