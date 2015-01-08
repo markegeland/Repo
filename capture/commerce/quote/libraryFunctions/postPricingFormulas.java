@@ -28,6 +28,8 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
 			 09/25/14 - Julie (Oracle) - Added logic to calculate the total number of containers that have a 1 time delivery fee
 			 11/11/14 - Aaron Q (Oracle) - Added logic to manage container removal/delivery in place of exchange code, including credit for removal
 			 11/18/14 - Aaron Q (Oracle) - Added exchange charge value from removal in place of exchange codes.
+             01/06/15 - John (Republic) - #207 Updated ERF logic to use eRFOnFRF_quote to apply or not apply ERF on FRF.
+             01/07/15 - John (Republic) - #321 Replaced calls to the util.eval function with util.evaluate
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -146,15 +148,9 @@ for line in line_process{
 		
 		
 		// Begin Calculate ERF & FRF Fees
-		//Begin ERF Fees calculation for each line item
-		/*erfAmountTarget = line.targetPrice_line;
-		erfAmountFloor = line.floorPrice_line;
-		erfAmountBase = line.basePrice_line;
-		erfAmountStretch = line.stretchPrice_line;
-		erfAmountSell = line.sellPrice_line;*/
 
+		//ERF Fees per line item
 		if(isFRFWaived_quote == 1){ //If FRF Waived
-			//Added 7/8/14, if-condition when user doesn't select administrative fee
 			//20140909 JP: added adminRateAlreadyAppliedOnLine check since ERF was being set to 0.00 if FRF was unchecked
 			if(includeAdmin_quote == "No" OR adminRateAlreadyAppliedOnLine){
 				erfAmountSell = line.sellPrice_line * erfRate_quote;	
@@ -163,7 +159,6 @@ for line in line_process{
 				erfAmountBase = line.basePrice_line * erfRate_quote;
 				erfAmountStretch = line.stretchPrice_line * erfRate_quote;
 			}
-			//Added 7/8/14, including admin rate to erf 
 			else{
 				if(NOT(adminRateAlreadyAppliedOnLine)){
 					erfAmountSell = (line.sellPrice_line + adminRate_quote) * erfRate_quote;	
@@ -176,32 +171,25 @@ for line in line_process{
 				}	
 			}
 		}else{
-			//Added 7/8/14, if-condition when user doesn't select administrative fee
 			if(includeAdmin_quote == "No" OR adminRateAlreadyAppliedOnLine){
-				erfAmountSell = (line.sellPrice_line * (1 + frfRate_quote)) * erfRate_quote;
-				erfAmountTarget = (line.targetPrice_line * (1 + frfRate_quote)) * erfRate_quote;
-				erfAmountFloor = (line.floorPrice_line * (1 + frfRate_quote)) * erfRate_quote;
-				erfAmountBase = (line.basePrice_line * (1 + frfRate_quote)) * erfRate_quote;
-				erfAmountStretch = (line.stretchPrice_line * (1 + frfRate_quote)) * erfRate_quote;
+				erfAmountSell = (line.sellPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				erfAmountTarget = (line.targetPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				erfAmountFloor = (line.floorPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				erfAmountBase = (line.basePrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				erfAmountStretch = (line.stretchPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
 			}
-			//Added 7/8/14, including admin rate to erf 
 			else{
-				//if((docNumOfLineAdminRateApplied == line._document_number) OR NOT(adminRateAlreadyAppliedOnLine)){
-					erfAmountSell = (line.sellPrice_line + adminRate_quote) * (1 + frfRate_quote) * erfRate_quote;
-					erfAmountTarget = (line.targetPrice_line + adminRate_quote) *  (1 + frfRate_quote) * erfRate_quote;
-					erfAmountFloor = (line.floorPrice_line + adminRate_quote) * (1 + frfRate_quote) * erfRate_quote;
-					erfAmountBase = (line.basePrice_line + adminRate_quote) * (1 + frfRate_quote) * erfRate_quote;
-					erfAmountStretch = (line.stretchPrice_line + adminRate_quote) * (1 + frfRate_quote) * erfRate_quote;
-					docNumOfLineAdminRateApplied = line._document_number;
-					adminRateAlreadyAppliedOnLine = true;
-				//}	
+				erfAmountSell = (line.sellPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				erfAmountTarget = (line.targetPrice_line + adminRate_quote) *  (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				erfAmountFloor = (line.floorPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				erfAmountBase = (line.basePrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				erfAmountStretch = (line.stretchPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				docNumOfLineAdminRateApplied = line._document_number;
+				adminRateAlreadyAppliedOnLine = true;
 			}
 		}
-
-		//End ERF Fees calculation for each line item
 		
-		//FRF Fees Per each Line item
-		//Added 7/8/14, if-condition when user doesn't select administrative fee
+		//FRF Fees per line item
 		if(includeAdmin_quote == "No" OR (adminRateAlreadyAppliedOnLine AND docNumOfLineAdminRateApplied <> line._document_number)){
 			frfAmountTarget = line.targetPrice_line * frfRate_quote;
 			frfAmountFloor = line.floorPrice_line * frfRate_quote;
@@ -209,7 +197,6 @@ for line in line_process{
 			frfAmountBase = line.basePrice_line * frfRate_quote;
 			frfAmountStretch = line.stretchPrice_line * frfRate_quote;
 		}
-		//Added 7/8/14, including admin rate to frf 
 		else{
 			frfAmountTarget = (line.targetPrice_line + adminRate_quote) * frfRate_quote;
 			frfAmountFloor = (line.floorPrice_line + adminRate_quote)* frfRate_quote;
@@ -218,7 +205,6 @@ for line in line_process{
 			frfAmountStretch = (line.stretchPrice_line + adminRate_quote)* frfRate_quote;
 			docNumOfLineAdminRateApplied = line._document_number;
 			adminRateAlreadyAppliedOnLine = true;
-		//End of FRF Fees Per each Line item
 		}
 		
 		
@@ -727,7 +713,7 @@ if(_system_current_step_var == "adjustPricing"){
 	put(attrDict, "fRFCharged_quote", fRFCharged_quote);
 
 	for eachRec in approvalTriggersRecordSet{
-		if(util.eval(get(eachRec, "Condition"),attrDict) == "TRUE"){
+		if(util.evaluate(get(eachRec, "Condition"),attrDict) == "TRUE"){
 			if(get(eachRec, "ManagerAndSupervisor") == "Approval"){
 				if(findinarray(level1ApprovalReasonArr, get(eachRec, "ReasonText")) == -1){
 					append(level1ApprovalReasonArr, get(eachRec, "ReasonText"));
@@ -782,7 +768,7 @@ if(_system_current_step_var == "adjustPricing"){
 			put(attrDict, "basePrice_line",string(line.basePrice_line));
 		}
 		for eachRec in approvalTriggersRecordSet{
-			if(util.eval(get(eachRec, "Condition"),attrDict) == "TRUE"){
+			if(util.evaluate(get(eachRec, "Condition"),attrDict) == "TRUE"){
 				if(get(eachRec, "ManagerAndSupervisor") == "Approval"){
 					if(findinarray(level1ApprovalReasonArr, get(eachRec, "ReasonText")) == -1){
 						append(level1ApprovalReasonArr, get(eachRec, "ReasonText"));
