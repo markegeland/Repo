@@ -1,5 +1,3 @@
-//12-01-2014 - GD - Changed the input to dictionary from containerCodeDerived to routeTypeDervied
-
 retStr = "";
 creditStr = "";
 installStr = "";
@@ -19,8 +17,8 @@ for line in line_process{
 		//put(routeTypeDict, docNum, line._part_custom_field9);
 		if(line._model_variable_name == "containers_m"){
 			containerSize = getconfigattrvalue(docNum, "containerSize");
-			if(getconfigattrvalue(docNum, "routeTypeDervied") <> ""){
-				put(routeTypeDict, docNum, getconfigattrvalue(docNum, "routeTypeDervied"));
+			if(getconfigattrvalue(docNum, "containerCodeDerived") <> ""){
+				put(routeTypeDict, docNum, getconfigattrvalue(docNum, "containerCodeDerived"));
 			}
 			if(getconfigattrvalue(docNum, "tentativePickupDays") <> ""){
 				put(pickupDaysDict, docNum, getconfigattrvalue(docNum, "tentativePickupDays"));
@@ -32,8 +30,8 @@ for line in line_process{
 				minTons = getconfigattrvalue(docNum, "minimumTonshaul_l");
 				put(minTonsDict, docNum, minTons);
 			}
-			if(getconfigattrvalue(docNum, "containerCodeDerived") <> ""){
-				put(routeTypeDict, docNum, getconfigattrvalue(docNum, "containerCodeDerived"));
+			if(getconfigattrvalue(docNum, "routeTypeDervied") <> ""){
+				put(routeTypeDict, docNum, getconfigattrvalue(docNum, "routeTypeDervied"));
 			}
 			if(getconfigattrvalue(docNum, "tentativePickupDays") <> ""){
 				put(pickupDaysDict, docNum, getconfigattrvalue(docNum, "tentativePickupDays"));
@@ -71,6 +69,12 @@ for line in line_process{
 			excCredit = line.totalTargetPrice_line -  line.sellPrice_line ;
 			if(excCredit > 0.0){
 				creditStr = creditStr + "<p>" + "Valued Customer Discount - Exchange for " + routeType + " " + containerSize + " yard - " + formatascurrency(excCredit, "USD") + "</p>";
+			}
+		}
+		if(line.rateType_line == "Removal"){
+			remCredit = line.totalTargetPrice_line -  line.sellPrice_line ;
+			if(remCredit > 0.0){
+				creditStr = creditStr + "<p>" + "Valued Customer Discount - Removal for " + routeType + " " + getconfigattrvalue(line._parent_doc_number,"containerSize_readOnly") + " yard - " + formatascurrency(remCredit, "USD") + "</p>";
 			}
 		}
 		if(line.rateType_line == "Installation"){

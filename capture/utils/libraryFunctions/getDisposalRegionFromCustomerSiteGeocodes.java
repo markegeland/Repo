@@ -1,3 +1,8 @@
+// 20141222 JPalubinskas - This function is not being actively called.  Well, it is in prePricing, but we
+//                         never hit the line.  We are saving the function for now since it was developed.
+//                         In order to get past the compile errors, I commented out the BMQL call at the 
+//                         bottom of the function that was referencing DisposalCosts_Comm incorrectly.
+
 DELIM = "^_^";
 polygonRegionDict = dict("string");
 geoCodeArr = split(geoCodes,DELIM);
@@ -113,9 +118,10 @@ for eachId in polygonIdArr{
 }
 //Get Disposal cost based on the polygon 
 dispCost = "";
-disposalCosts = bmql("SELECT Disp_Site_Cost FROM DisposalCosts_Comm WHERE PolygonId = $resultPolygon");
-for each in disposalCosts{
-	dispCost = get(each,"Disp_Site_Cost");
-}
+// 20141222 JP
+//disposalCosts = bmql("SELECT dsp_site_cost FROM DisposalCosts_Comm WHERE PolygonId = $resultPolygon");
+//for each in disposalCosts{
+//	dispCost = get(each,"dsp_site_cost");
+//}
 
 return dispCost;

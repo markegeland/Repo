@@ -21,12 +21,17 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              11/26/13 - Latha - Added code for approvals
              01/30/14 - Srikar - Formulas -> BML conversion
              02/11/14 - Zach - Added additional Delivery line functionality for Doc Engine
-             ....other changes were made that were not documented between these entries
+             ...other changes were made that were not documented between these entries
              09/09/14 - John (Republic) - Fixed issue where ERF was being set to 0.00 if FRF was unchecked.
              09/15/14 - Blabes (Republic) - Fixed Hierarchy_Exceptions processing to match that used by User_Hierarchy
              09/24/14 - John (Republic) - Added AdHoc line items to grandTotalSell_quote and totalOneTimeAmount_quote
 			 09/25/14 - Julie (Oracle) - Added logic to calculate the total number of containers that have a 1 time delivery fee
-
+			 11/11/14 - Aaron Q (Oracle) - Added logic to manage container removal/delivery in place of exchange code, including credit for removal
+			 11/18/14 - Aaron Q (Oracle) - Added exchange charge value from removal in place of exchange codes.
+             01/05/15 - Julie (Oracle) - Populating the approval attribute for the approval e-mails.  Added a new util (setApprovalReasonDisplayWithColor)
+			 01/06/15 - John (Republic) - #207 Updated ERF logic to use eRFOnFRF_quote to apply or not apply ERF on FRF.
+             01/07/15 - John (Republic) - #321 Replaced calls to the util.eval function with util.evaluate
+             
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
 =======================================================================================================================
@@ -64,13 +69,13 @@ largeMonthlyHaulPriceInclFees_Recycling = 0.0;
 largeMonthlyDisposalPriceInclFees_Recycling = 0.0;
 largeMonthlyRentalPriceInclFees_Recycling = 0.0;
 
-largeMonthlyTotalPriceInclFees = 0.0; //Both Solid waste and recylicng combined - large
+largeMonthlyTotalPriceInclFees = 0.0; //Both Solid waste and recycling combined - large
 largeMonthlyRevenue_SolidWaste = 0.0; //Only solid waste - large
 largeMonthlyRevenue_Recycling = 0.0; //Only Recycling - small
 largeMonthlyNetRevenue_SolidWaste = 0.0; //Only solid waste - large
 largeMonthlyNetRevenue_Recycling = 0.0; //Only Recycling - small
 
-smallMonthlyPriceIncludingFees = 0.0; //Both Solid waste and recylicng combined - small
+smallMonthlyPriceIncludingFees = 0.0; //Both Solid waste and recycling combined - small
 smallMonthlyRevenue_SolidWaste = 0.0; //Only solid waste - small
 smallMonthlyRevenue_Recycling = 0.0; //Only Recycling - small 
 smallMonthlyNetRevenue_SolidWaste = 0.0; //Only solid waste - small
@@ -98,6 +103,8 @@ deliveryERFandFRFTotal = 0.0;
 exchangeChargeSubtotal = 0.0;
 oneTimeExchangeCredit = 0.0;
 exchangeERFandFRFTotal = 0.0;
+hasDeliveryArr = string[]; //ParentDocNo Used to determine if there is an exchange happening using a deliver and removal instead of a single exchange line AQ 11-11-14
+hasRemovalDict = dict("float"); //ParentDocNo => line price
 
 //Installation Charges Variables
 installationChargeSubtotal = 0.0;
@@ -142,15 +149,9 @@ for line in line_process{
 		
 		
 		// Begin Calculate ERF & FRF Fees
-		//Begin ERF Fees calculation for each line item
-		/*erfAmountTarget = line.targetPrice_line;
-		erfAmountFloor = line.floorPrice_line;
-		erfAmountBase = line.basePrice_line;
-		erfAmountStretch = line.stretchPrice_line;
-		erfAmountSell = line.sellPrice_line;*/
 
+		//ERF Fees per line item
 		if(isFRFWaived_quote == 1){ //If FRF Waived
-			//Added 7/8/14, if-condition when user doesn't select administrative fee
 			//20140909 JP: added adminRateAlreadyAppliedOnLine check since ERF was being set to 0.00 if FRF was unchecked
 			if(includeAdmin_quote == "No" OR adminRateAlreadyAppliedOnLine){
 				erfAmountSell = line.sellPrice_line * erfRate_quote;	
@@ -159,7 +160,6 @@ for line in line_process{
 				erfAmountBase = line.basePrice_line * erfRate_quote;
 				erfAmountStretch = line.stretchPrice_line * erfRate_quote;
 			}
-			//Added 7/8/14, including admin rate to erf 
 			else{
 				if(NOT(adminRateAlreadyAppliedOnLine)){
 					erfAmountSell = (line.sellPrice_line + adminRate_quote) * erfRate_quote;	
@@ -172,32 +172,25 @@ for line in line_process{
 				}	
 			}
 		}else{
-			//Added 7/8/14, if-condition when user doesn't select administrative fee
 			if(includeAdmin_quote == "No" OR adminRateAlreadyAppliedOnLine){
-				erfAmountSell = (line.sellPrice_line * (1 + frfRate_quote)) * erfRate_quote;
-				erfAmountTarget = (line.targetPrice_line * (1 + frfRate_quote)) * erfRate_quote;
-				erfAmountFloor = (line.floorPrice_line * (1 + frfRate_quote)) * erfRate_quote;
-				erfAmountBase = (line.basePrice_line * (1 + frfRate_quote)) * erfRate_quote;
-				erfAmountStretch = (line.stretchPrice_line * (1 + frfRate_quote)) * erfRate_quote;
+				erfAmountSell = (line.sellPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				erfAmountTarget = (line.targetPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				erfAmountFloor = (line.floorPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				erfAmountBase = (line.basePrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				erfAmountStretch = (line.stretchPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
 			}
-			//Added 7/8/14, including admin rate to erf 
 			else{
-				//if((docNumOfLineAdminRateApplied == line._document_number) OR NOT(adminRateAlreadyAppliedOnLine)){
-					erfAmountSell = (line.sellPrice_line + adminRate_quote) * (1 + frfRate_quote) * erfRate_quote;
-					erfAmountTarget = (line.targetPrice_line + adminRate_quote) *  (1 + frfRate_quote) * erfRate_quote;
-					erfAmountFloor = (line.floorPrice_line + adminRate_quote) * (1 + frfRate_quote) * erfRate_quote;
-					erfAmountBase = (line.basePrice_line + adminRate_quote) * (1 + frfRate_quote) * erfRate_quote;
-					erfAmountStretch = (line.stretchPrice_line + adminRate_quote) * (1 + frfRate_quote) * erfRate_quote;
-					docNumOfLineAdminRateApplied = line._document_number;
-					adminRateAlreadyAppliedOnLine = true;
-				//}	
+				erfAmountSell = (line.sellPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				erfAmountTarget = (line.targetPrice_line + adminRate_quote) *  (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				erfAmountFloor = (line.floorPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				erfAmountBase = (line.basePrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				erfAmountStretch = (line.stretchPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+				docNumOfLineAdminRateApplied = line._document_number;
+				adminRateAlreadyAppliedOnLine = true;
 			}
 		}
-
-		//End ERF Fees calculation for each line item
 		
-		//FRF Fees Per each Line item
-		//Added 7/8/14, if-condition when user doesn't select administrative fee
+		//FRF Fees per line item
 		if(includeAdmin_quote == "No" OR (adminRateAlreadyAppliedOnLine AND docNumOfLineAdminRateApplied <> line._document_number)){
 			frfAmountTarget = line.targetPrice_line * frfRate_quote;
 			frfAmountFloor = line.floorPrice_line * frfRate_quote;
@@ -205,7 +198,6 @@ for line in line_process{
 			frfAmountBase = line.basePrice_line * frfRate_quote;
 			frfAmountStretch = line.stretchPrice_line * frfRate_quote;
 		}
-		//Added 7/8/14, including admin rate to frf 
 		else{
 			frfAmountTarget = (line.targetPrice_line + adminRate_quote) * frfRate_quote;
 			frfAmountFloor = (line.floorPrice_line + adminRate_quote)* frfRate_quote;
@@ -214,7 +206,6 @@ for line in line_process{
 			frfAmountStretch = (line.stretchPrice_line + adminRate_quote)* frfRate_quote;
 			docNumOfLineAdminRateApplied = line._document_number;
 			adminRateAlreadyAppliedOnLine = true;
-		//End of FRF Fees Per each Line item
 		}
 		
 		
@@ -329,7 +320,7 @@ for line in line_process{
 		//End of Total Price calculation
 		
 		//Begin special calculations for Delivery line items
-		//08/18/2014 - 3-9457966641 if deliveryPrice is increase, that should become the new deliverysubtotal, howevr, if it is decreased, the default value will be subtotal
+		//08/18/2014 - 3-9457966641 if deliveryPrice is increased, that should become the new deliverysubtotal, however, if it is decreased, the default value will be subtotal
 		if(line.rateType_line == "Delivery"){
 			if(line.totalTargetPrice_line > line.sellPrice_line){
 				deliveryChargeSubtotal = deliveryChargeSubtotal + line.totalTargetPrice_line;
@@ -358,6 +349,12 @@ for line in line_process{
 			oneTimeExchangeCredit = oneTimeExchangeCredit + (line.totalTargetPrice_line - line.sellPrice_line); //Credit is Sell/Proposed Price - Target Price
 			exchangeERFandFRFTotal = exchangeERFandFRFTotal + FRF_CONST + ERF_CONST;
 			totalOneTimePrice = totalOneTimePrice + totalPrice;
+		}
+		elif(line.rateType_line == "Delivery"){
+			append(hasDeliveryArr, line._parent_doc_number);
+		}
+		elif(line.rateType_line == "Removal"){
+			put(hasRemovalDict, line._parent_doc_number, line.sellPrice_line);
 		}
 		
 		//Installation line item
@@ -515,7 +512,8 @@ for line in line_process{
 					largeMonthlyRentalPriceInclFees_Recycling = largeMonthlyRentalPriceInclFees_Recycling + (totalPrice * 365/12);
 				}
 			}	
-		}elif(line.rateType_line == "Base" AND line.isPartLineItem_line){
+		}
+		elif(line.rateType_line == "Base" AND line.isPartLineItem_line){
 			smallMonthlyPriceIncludingFees = smallMonthlyPriceIncludingFees + totalPrice;
 			if(lower(line.wasteCategory_line) == "solid waste"){
 				smallMonthlyRevenue_SolidWaste = smallMonthlyRevenue_SolidWaste + totalPrice; //totalPrice includes fee except adminRate, but admin should be added only once at quote level, hence only shown in totalRevenue but not smallContainerRevenue
@@ -716,7 +714,7 @@ if(_system_current_step_var == "adjustPricing"){
 	put(attrDict, "fRFCharged_quote", fRFCharged_quote);
 
 	for eachRec in approvalTriggersRecordSet{
-		if(util.eval(get(eachRec, "Condition"),attrDict) == "TRUE"){
+		if(util.evaluate(get(eachRec, "Condition"),attrDict) == "TRUE"){
 			if(get(eachRec, "ManagerAndSupervisor") == "Approval"){
 				if(findinarray(level1ApprovalReasonArr, get(eachRec, "ReasonText")) == -1){
 					append(level1ApprovalReasonArr, get(eachRec, "ReasonText"));
@@ -771,7 +769,7 @@ if(_system_current_step_var == "adjustPricing"){
 			put(attrDict, "basePrice_line",string(line.basePrice_line));
 		}
 		for eachRec in approvalTriggersRecordSet{
-			if(util.eval(get(eachRec, "Condition"),attrDict) == "TRUE"){
+			if(util.evaluate(get(eachRec, "Condition"),attrDict) == "TRUE"){
 				if(get(eachRec, "ManagerAndSupervisor") == "Approval"){
 					if(findinarray(level1ApprovalReasonArr, get(eachRec, "ReasonText")) == -1){
 						append(level1ApprovalReasonArr, get(eachRec, "ReasonText"));
@@ -803,6 +801,14 @@ if(_system_current_step_var == "adjustPricing"){
 
 	//Build HTML to display approval reasons on the quote
 	approvalReasonHTML = util.setApprovalReasonDisplay(level1ApprovalReasonArr, level2ApprovalReasonArr);
+	
+	//J. Felberg 20150105
+	if(grandTotalFloor > grandTotalSell){
+		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red") + "|";
+	}
+	else{
+		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "black") + "|";
+	}
 
 	//build an array with all 3 possible "spellings" of the current login
 	append(userLoginArray, lower(_system_user_login));
@@ -939,6 +945,13 @@ divisionExecManagerGroup = "d" + division_quote + "ExecManagers";
 	}
 }*/
 
+//If exchange is done with separate removal and delivery line items, add credit for full amount of removal
+for each in hasDeliveryArr{
+	if (containsKey(hasRemovalDict, each)){
+		//oneTimeExchangeCredit = oneTimeExchangeCredit + get(hasRemovalDict, each);
+		exchangeChargeSubtotal = exchangeChargeSubtotal + get(hasRemovalDict, each);
+	}
+}
 
 
 //Write totals to quote attributes

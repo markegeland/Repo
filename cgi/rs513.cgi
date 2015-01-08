@@ -41,7 +41,7 @@ print $q->start_html(
 );
 print $q->h1('InfoPro RS513 Query');
 print $q->start_form;
-print $q->p('Enter EEUID:');
+print $q->p('Enter Employee Login or EEN:');
 print $q->textfield('eeuid');
 print $q->submit('submit');
 print $q->end_form;
@@ -51,11 +51,12 @@ my $eeuid = $q->param('eeuid');
 
 my $linkedServer = 'infopro';
 
-exit unless $submit;
+exit unless $eeuid;
 
 $eeuid = uc $eeuid;
 
-# look for a table description on our specific library.file
+my $cgiLink = $q->url();
+
 my $sql = qq{
 SELECT * FROM OPENQUERY($linkedServer,
  'SELECT eeen    AS een,
@@ -71,9 +72,12 @@ SELECT * FROM OPENQUERY($linkedServer,
          eeemail AS Email,
          eedoh   AS Hire_Date,
          eeted   AS Term_Date,
-         eesta   AS Status
+         eesta   AS Status,
+         ''<a href="$cgiLink?eeuid='' || eespren || ''">'' || eespren || ''</a>'' AS Supervisor_EEN,
+         ''<a href="$cgiLink?eeuid='' || eedivsm || ''">'' || eedivsm || ''</a>'' AS Sales_Mgr_EEN,
+         ''<a href="$cgiLink?eeuid='' || eedivgm || ''">'' || eedivgm || ''</a>'' AS GM_EEN
     FROM cufile.rs513wf\@a
-   WHERE eeuid=''$eeuid''
+   WHERE eeuid=''$eeuid'' OR eeen=''$eeuid''
    FOR FETCH ONLY WITH UR')
 };
 
