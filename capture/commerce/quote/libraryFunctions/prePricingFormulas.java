@@ -33,6 +33,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20141202 - Julie Felberg - Replaced estHaulsPerMonth_l with totalEstimatedHaulsMonth_l
             20141205 - Julie Felberg - Added code to set default when totalEstimatedHaulMonth_l has not been populated
             20150105 - John Palubinskas - #207 add logic to support ERF on FRF flag from divisionFeeRate table
+            20150109 - Julie Felberg - Added logic to populate the direct cost attributes (search "direct cost" for the code)
         
 =====================================================================================================
 */
@@ -117,7 +118,14 @@ pricingDebugOutputDict = dict("string");
 guardrailDebugInputDict = dict("string");
 guardrailDebugOutputDict = dict("string");
 /*End of debugging dictionaries*/
-            
+
+//Default attributes for direct cost
+smallSWCost = 0.0;
+smallRecCost = 0.0;
+largeSWCost = 0.0;
+largeRecCost = 0.0;
+totalContCost = 0.0;
+
 //=============================== END - Variable Initialization ===============================//
 
 //=============================== START - Get FRF & ERF Rates ===============================//
@@ -2219,7 +2227,26 @@ for line in line_process{
 								  + parentDoc + "~" + "divisionDelivery_ui_line" + "~" + divisionDelStr_ui + "|" //20141201 AQ
                                   + parentDoc + "~" + "divisionWAS_ui_line" + "~" + divisionWashoutStr_ui + "|"
                                   + parentDoc + "~" + "exchangeLineItemExists_line" + "~" + string(get(exchangeExistsDict, parentDoc)) + "|";
-                              
+             
+             //Set Direct Cost attributes
+		if(container == SMALL_CONTAINER){
+			if(lower(wasteCategory_db) == "solid waste"){
+				smallSWCost = smallSWCost + floorPrice;
+			}
+			if(lower(wasteCategory_db) == "recycling"){
+				smallRecCost = smallRecCost + floorPrice;
+			}
+		if(container == LARGE_CONTAINER){
+			if(lower(wasteCategory_db) == "solid waste"){
+				largeSWCost = largeSWCost + floorPrice;
+			}
+			if(lower(wasteCategory_db) == "recycling"){
+				largeRecCost = largeRecCost + floorPrice;
+			}
+		}
+				
+		totalContCost = totalContCost + floorPrice;					
+		//end Direct Cost attributes                 
             //=============================== END - Assign Guardrails to Outputs ===============================//  
         }
         else{   //For Ad-Hoc parts, the floor, base, target, and stretch are all the value entered by the user
@@ -2437,5 +2464,13 @@ returnStr = returnStr + "1~" + "industrialExists_quote" + "~" + string(industria
                       + "1~" + "isERFAndFRFChargedOnAdmin_quote" + "~" + isERFAndFRFChargedOnAdmin + "|"
                       + "1~" + "hiddenExisitingTerm" + "~" + string(diffMthRnd) + "|" 
                       + "1~" + "existingTermFlag_quote" + "~" + string(lessThan90Days) + "|";
+
+//============================= Start - Set direct cost attributes ======================================//
+returnStr = returnStr + "1~" + "smallSolidWasteCost_quote" + "~" + string(smallSWCost) + "|"
+					  + "1~" + "smallRecyclingCost_quote" + "~" + string(smallRecCost) + "|"
+					  + "1~" + "largeSolidWasteCost_quote" + "~" + string(largeSWCost) + "|"
+					  + "1~" + "largeRecyclingCost_quote" + "~" + string(largeRecCost) + "|"
+					  + "1~" + "totalContainerCost_quote" + "~" + string(totalContCost) + "|";
+//============================= End - Set direct cost attributes ======================================//
 
 return returnStr;
