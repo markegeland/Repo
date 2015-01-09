@@ -2229,7 +2229,8 @@ for line in line_process{
                                   + parentDoc + "~" + "exchangeLineItemExists_line" + "~" + string(get(exchangeExistsDict, parentDoc)) + "|";
              
              //Set Direct Cost attributes
-		if(container == SMALL_CONTAINER){
+             //can't user wasteCategory_db, commenting out code until find another variable to use
+	/*	if(container == SMALL_CONTAINER){
 			if(lower(wasteCategory_db) == "solid waste"){
 				smallSWCost = smallSWCost + floorPrice;
 			}
@@ -2243,7 +2244,7 @@ for line in line_process{
 			if(lower(wasteCategory_db) == "recycling"){
 				largeRecCost = largeRecCost + floorPrice;
 			}
-		}
+		}*/
 				
 		totalContCost = totalContCost + floorPrice;					
 		//end Direct Cost attributes                 
