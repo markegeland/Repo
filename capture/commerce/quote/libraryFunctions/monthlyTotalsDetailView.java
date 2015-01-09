@@ -217,6 +217,7 @@ if(isExistingCustomer){
 }
 returnStr = returnStr	+ "</tr>";	//End of Admin fees	
 //Start of Commission Section
+/*
 if(parseShowSmall == true){
 	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
 							+ "<td >Small Container Commission on Recurring Monthly Revenue</td>"
@@ -270,7 +271,7 @@ if(showCommission == true){
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[3]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[4]),"USD") + "</td>"
 							+ "</tr>";		
-}				
+} */				
 //End of Commission Section				
 returnStr = returnStr 	+ "<tr class=\"totalRow\">" //Start of Grand Totals row
 						+ "<td  >Total Estimated Amount</td>";
@@ -288,7 +289,7 @@ if(isExistingCustomer){
 	returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(total_change_amount_incl_fees,"USD") + "</td>";
 }
 returnStr = returnStr	+ "</tr>"//End of Grand Totals row
-						+ "<tr style='display:none;'>" //Start of Commissions - Hide this for Pilot
+						/*+ "<tr style='display:none;'>" //Start of Commissions - Hide this for Pilot
 						+ "<td  >Est. Commission</td>";
 if(NOT(isSalesrep)){
 	returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(totalCommissionFloor_quote,"USD") + "</td>";
@@ -303,7 +304,7 @@ returnStr = returnStr   + "<td  align=\"center\" >" +  formatascurrency(totalCom
 if(isExistingCustomer){	
 	returnStr = returnStr + "<td  align=\"center\" >" +  "Commission Value" + "</td>";
 }
-returnStr = returnStr + "</tr>" //End of Commissions
+returnStr = returnStr + "</tr>" */ //End of Commissions
 						+ "</table>";
 
 //=============================== End - Building HTML String ===============================//
