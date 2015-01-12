@@ -1,3 +1,39 @@
+/* ================================================================================
+       Name: calc_commission
+     Author: Blake Henderson (Oracle)
+Create date: December 2014
+Description: Used by Compensation feature to output comp info on Pricing page.
+        
+Input:      feesToCharge_quote:
+            customerRateRestriction_quote:
+            division_RO_quote:
+            initialTerm_quote:
+            industry_readOnly_quote:
+            segment_readOnly_quote:
+            smallMonthlyTotalFloor_quote:
+            smallMonthlyTotalBase_quote:
+            smallMonthlyTotalTarget_quote:
+            smallMonthlyTotalStretch_quote:
+            smallMonthlyTotalProposed_quote:
+            largeMonthlyTotalFloor_quote:
+            largeMonthlyTotalBase_quote:
+            largeMonthlyTotalTarget_quote:
+            largeMonthlyTotalStretch_quote:
+            largeMonthlyTotalProposed_quote:
+            area_quote:
+            compOwnerLogin_quote:
+                    
+Output:     String (documentNumber + "~" + attributeVariableName + "~" + value + "|")
+
+Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to prevent RTE when doing a
+                                          get on a dictionary that doesn't contain the key.  Looping fix.
+            20150112 - John Palubinsaks - completely comment out function so that we don't hit the divide by 0
+                                          error in production.
+
+================================================================================ */
+ret = "";
+
+/*
 //CREATE MODEL DICTIONARY WHICH STORES CHILDREN DOCUMENT NUMBERS 
 showERF = false;
 showFRF = false;
@@ -9,7 +45,7 @@ if(find(feesToCharge_quote, "FRF") <> -1){
 }
 showSmall = false;
 showLarge = false;
-ret = "";
+//ret = "";
 upperCreator = upper(compOwnerLogin_quote);
 lowerCreator = lower(compOwnerLogin_quote);
 creatorCode = "";
@@ -27,6 +63,7 @@ if(creatorCode == ""){
 }
 
 //IDENTIFIER DICTIONARIES
+tempModelDict = dict("string");
 modelDict = dict("string");
 modelCategory = dict("string");
 //DICTIONARIES USED FOR FINAL CALCULATIONS
@@ -84,6 +121,12 @@ for line in line_process{
 	if(line._parent_doc_number <> ""){
 		addFrfErf = false;
 		if(modelName == "Containers"){ 
+			put(floorDelivery,line._parent_doc_number,0.0);
+			put(baseDelivery,line._parent_doc_number,0.0);
+			put(targetDelivery,line._parent_doc_number,0.0);
+			put(stretchDelivery,line._parent_doc_number,0.0);
+			put(proposedDelivery,line._parent_doc_number,0.0);
+			put(tempModelDict,line._parent_doc_number,line._document_number);
 			if(find(line._line_item_comment,"Base")<>-1){
 				put(floorModelPrice,line._parent_doc_number,line.totalFloorPrice_line);
 				put(baseModelPrice,line._parent_doc_number,line.totalBasePrice_line);
@@ -136,6 +179,12 @@ for line in line_process{
 			}
 		}
 		elif(modelName == "Large Containers"){
+			put(floorDelivery,line._parent_doc_number,0.0);
+			put(baseDelivery,line._parent_doc_number,0.0);
+			put(targetDelivery,line._parent_doc_number,0.0);
+			put(stretchDelivery,line._parent_doc_number,0.0);
+			put(proposedDelivery,line._parent_doc_number,0.0);
+			put(tempModelDict,line._parent_doc_number,line._document_number);
 			tempFloorFees = 0.0;
 			tempBaseFees = 0.0;
 			tempTargetFees = 0.0;
@@ -189,7 +238,7 @@ for line in line_process{
 	else{
 		modelName = line._model_name;
 		if(line._model_name=="Large Containers"){
-			put(modelDict,line._document_number,line._document_number);
+			put(tempModelDict,line._document_number,"");
 			showLarge = true;
 			put(modelCategory,line._document_number,"LARGE CONTAINER");
 			tempTons = atof(getconfigattrvalue(line._document_number,"estTonsHaul_l"));
@@ -201,7 +250,7 @@ for line in line_process{
 			put(estHaulsPerMonth,line._document_number,tempHaulsPerMonth);
 		}
 		elif(line._model_name=="Containers"){
-			put(modelDict,line._document_number,line._document_number);
+			put(tempModelDict,line._document_number,"");
 			showSmall = true;
 			put(modelCategory,line._document_number,"SMALL CONTAINER");
 		}
@@ -215,7 +264,16 @@ targetLargeTotal = 0.0;
 stretchLargeTotal = 0.0;
 proposedLargeTotal = 0.0;
 for container in largeContainerCalc{
+
 	modelDocNumber = container;
+	// Initialize dictionaries - 20141229
+	if(NOT containskey(floorRental,modelDocNumber)){
+		put(floorRental,modelDocNumber,0.0);
+		put(baseRental,modelDocNumber,0.0);
+		put(targetRental,modelDocNumber,0.0);
+		put(stretchRental,modelDocNumber,0.0);
+		put(proposedRental,modelDocNumber,0.0);
+	}
 	if(NOT containskey(floorDisposal,modelDocNumber)){
 		put(floorDisposal,modelDocNumber,0.0);
 		put(baseDisposal,modelDocNumber,0.0);
@@ -223,25 +281,45 @@ for container in largeContainerCalc{
 		put(stretchDisposal,modelDocNumber,0.0);
 		put(proposedDisposal,modelDocNumber,0.0);
 	}
+	if(NOT containskey(floorHaul,modelDocNumber)){
+		put(floorHaul,modelDocNumber,0.0);
+		put(baseHaul,modelDocNumber,0.0);
+		put(targetHaul,modelDocNumber,0.0);
+		put(stretchHaul,modelDocNumber,0.0);
+		put(proposedHaul,modelDocNumber,0.0);
+	}
+
 	tempTons = get(estTons,modelDocNumber);
 	tempHaulsPerMonth = get(estHaulsPerMonth,modelDocNumber);
 	floorCalc = get(floorRental,modelDocNumber)+(get(floorDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(floorHaul,modelDocNumber)*tempHaulsPerMonth);
 	floorLargeTotal = floorLargeTotal + floorCalc;
 	put(floorModelPrice,modelDocNumber,floorCalc);
+
 	baseCalc = get(baseRental,modelDocNumber)+(get(baseDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(baseHaul,modelDocNumber)*tempHaulsPerMonth);
 	baseLargeTotal = baseLargeTotal + baseCalc;
 	put(baseModelPrice,modelDocNumber,baseCalc);
+
 	targetCalc = get(targetRental,modelDocNumber)+(get(targetDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(targetHaul,modelDocNumber)*tempHaulsPerMonth);
 	targetLargeTotal = targetLargeTotal + targetCalc;
 	put(targetModelPrice,modelDocNumber,targetCalc);
+
 	stretchCalc = get(stretchRental,modelDocNumber)+(get(stretchDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(stretchHaul,modelDocNumber)*tempHaulsPerMonth);
 	stretchLargeTotal = stretchLargeTotal + stretchCalc;
 	put(stretchModelPrice,modelDocNumber,stretchCalc);
+
 	proposedCalc = get(proposedRental,modelDocNumber)+(get(proposedDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(proposedHaul,modelDocNumber)*tempHaulsPerMonth);
 	proposedLargeTotal = proposedLargeTotal + proposedCalc;
 	put(proposedModelPrice,modelDocNumber,proposedCalc);
 }
 
+//Loop through tempModelDict to create modelDict
+tempModelLoop = keys(tempModelDict);
+for each in tempModelLoop{
+	modelDocNumber = each;
+	if(get(tempModelDict,modelDocNumber)<>""){
+		put(modelDict,modelDocNumber,"");
+	}
+}
 modelLoop = keys(modelDict);
 i = 0;
 for each in modelLoop{
@@ -732,5 +810,5 @@ ret = ret + "1~hTMLdetailSmall~" + detailSmall + "|"
 	+ "1~hTMLshowLarge~"+ string(shouldShowLarge) + "|"
 	+ "1~hTMLshouldShowSmall~" + string(showSmall) + "|"
 	+ "1~hTMLshouldShowLarge~" + string(showLarge) + "|"; 
-
+*/
 return ret;
