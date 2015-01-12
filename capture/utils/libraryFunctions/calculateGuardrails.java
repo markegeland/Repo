@@ -15,6 +15,7 @@ Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formula
      J Palubinskas - 11/17/2014 - Updated divisionFeeRate queries to look up based on Lawson and InfoPro division
 		20141204 - Aaron Quintanilla - Corrected Industrial Flat Rate Disposal Price Rounding Error
 		20141210 - Aaron Quintanilla - Corrected disposal fee removal 
+		20151201 - Gaurav Dawar - Lines: 278, 2282, 2304, 2345 - Changes made to fix delivery amount when there is a change in container code in service change.
     
 =====================================================================================================
 */
@@ -275,6 +276,7 @@ if(containskey(stringDict, "isCompactorCustomerOwned")){
 	}
 }
 routeType = "";
+routeType_updated = "";//Initializing new variable
 if(containskey(stringDict, "routeType")){
 	routeType = get(stringDict, "routeType");
 }
@@ -2233,8 +2235,8 @@ if(isExistingCustomer AND serviceChangeType <> ""){
 
 quotes = "\"";
 
-//Get rates for new customer from Div_Service_Price table
-divServicePriceRS = bmql("SELECT infopro_div_nbr, serviceCode, containerType, servicePrice, divisionNumber FROM Div_Service_Price WHERE (divisionNumber = $division OR divisionNumber = '0') AND (serviceCode IN $serviceCodesArray) AND (containerType = $routeTypeDerived_current OR containerType IS NULL OR containerType = $quotes) ORDER BY infopro_div_nbr ASC"); //ordering by ASC makes sure all records with info pro div number blank are at bottom
+//Get rates for new customer from Div_Service_Price table//added "OR containerType = $routeType" in bmql filtering to include results for both new and old container codes
+divServicePriceRS = bmql("SELECT infopro_div_nbr, serviceCode, containerType, servicePrice, divisionNumber FROM Div_Service_Price WHERE (divisionNumber = $division OR divisionNumber = '0') AND (serviceCode IN $serviceCodesArray) AND (containerType = $routeTypeDerived_current OR containerType = $routeType OR containerType IS NULL OR containerType = $quotes) ORDER BY infopro_div_nbr ASC"); //ordering by ASC makes sure all records with info pro div number blank are at bottom
 	print "---divServicePriceRS--"; print divServicePriceRS;
 if(cr_new_business == 1 AND isExistingCustomer AND serviceChangeType <> ""){ //If its a new business for existing customer
 	/*Select rates from tables listed below in same order
@@ -2278,7 +2280,13 @@ if(cr_new_business == 1 AND isExistingCustomer AND serviceChangeType <> ""){ //I
 			service_Price_db = getFloat(eachRecord, "servicePrice");
 			division_Number_db = get(eachRecord, "divisionNumber");
 			infopro_div_nbr = get(eachRecord, "infopro_div_nbr");
-			if(division_Number_db == division AND (findinarray(serviceCodesArray, service_Code_db) > -1) AND container_Type_db ==  routeTypeDerived_current AND infopro_div_nbr == infoProDivNum){
+			if(service_Code_db == "DEL"){
+				routeType_updated = routeType;
+			}
+			else{
+				routeType_updated = routeTypeDerived_current;
+			}
+			if(division_Number_db == division AND (findinarray(serviceCodesArray, service_Code_db) > -1) AND container_Type_db ==  routeType_updated AND infopro_div_nbr == infoProDivNum){
 				if(not(containskey(ratesDict, service_Code_db))){
 					put(ratesDict, service_Code_db, service_Price_db);
 				}
@@ -2294,7 +2302,13 @@ if(cr_new_business == 1 AND isExistingCustomer AND serviceChangeType <> ""){ //I
 				container_Type_db = get(eachRecord, "containerType");
 				service_Price_db = getFloat(eachRecord, "servicePrice");
 				division_Number_db = get(eachRecord, "divisionNumber");
-				if(division_Number_db == division AND (findinarray(serviceCodesArray, service_Code_db) > -1) AND container_Type_db ==  routeTypeDerived_current){
+				if(service_Code_db == "DEL"){
+					routeType_updated = routeType;
+				}
+				else{
+					routeType_updated = routeTypeDerived_current;
+				}
+				if(division_Number_db == division AND (findinarray(serviceCodesArray, service_Code_db) > -1) AND container_Type_db ==  routeType_updated){
 					if(not(containskey(ratesDict, service_Code_db))){
 						put(ratesDict, service_Code_db, service_Price_db);
 					}
@@ -2329,7 +2343,13 @@ if(cr_new_business == 1 AND isExistingCustomer AND serviceChangeType <> ""){ //I
 				container_Type_db = get(eachRecord, "containerType");
 				service_Price_db = getFloat(eachRecord, "servicePrice");
 				division_Number_db = get(eachRecord, "divisionNumber");
-				if(division_Number_db == "0" AND (findinarray(serviceCodesArray, service_Code_db) > -1) AND container_Type_db ==  routeTypeDerived_current){
+				if(service_Code_db == "DEL"){
+					routeType_updated = routeType;
+				}
+				else{
+					routeType_updated = routeTypeDerived_current;
+				}
+				if(division_Number_db == "0" AND (findinarray(serviceCodesArray, service_Code_db) > -1) AND container_Type_db ==  routeType_updated){
 					if(not(containskey(ratesDict, service_Code_db))){
 						put(ratesDict, service_Code_db, service_Price_db);
 					}

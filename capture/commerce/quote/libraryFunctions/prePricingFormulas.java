@@ -34,6 +34,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20141205 - Julie Felberg - Added code to set default when totalEstimatedHaulMonth_l has not been populated
             20150105 - John Palubinskas - #207 add logic to support ERF on FRF flag from divisionFeeRate table
             20150109 - Julie Felberg - Added logic to populate the direct cost attributes (search "direct cost" for the code)
+			20151201 - Gaurav Dawar - Lines: 458 - Changes made to fix delivery amount when there is a change in container code in service change.
         
 =====================================================================================================
 */
@@ -455,7 +456,7 @@ for line in line_process{
                 containerSize_db = get(eachRecord, "Container_Size");
                 quantity_db = string(getint(eachRecord, "container_cnt"));
                 compactor_db = get(eachRecord, "has_Compactor");
-                routeTypeDerived_db = get(eachRecord, "Container_Cd");//This is route type derived
+                routeTypeDerived_db = getconfigattrvalue(docNum, "containerCodes_SC");//get(eachRecord, "Container_Cd");//This is route type derived should be what is currently selected on config page by the user in case of a service change
                 onsiteTimeInMins_db = "0";//get(eachRecord, "onsiteTimeInMins");//To be added in table
                 wasteCategory_db = get(eachRecord, "waste_type"); //Account status considers waste category as waste type
                 Is_FRF_On_db = string(getint(eachRecord, "is_frf_charged"));
