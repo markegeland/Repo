@@ -27,9 +27,13 @@ Output:     String (documentNumber + "~" + attributeVariableName + "~" + value +
 
 Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to prevent RTE when doing a
                                           get on a dictionary that doesn't contain the key.  Looping fix.
+            20150112 - John Palubinsaks - completely comment out function so that we don't hit the divide by 0
+                                          error in production.
 
 ================================================================================ */
+ret = "";
 
+/*
 //CREATE MODEL DICTIONARY WHICH STORES CHILDREN DOCUMENT NUMBERS 
 showERF = false;
 showFRF = false;
@@ -41,7 +45,7 @@ if(find(feesToCharge_quote, "FRF") <> -1){
 }
 showSmall = false;
 showLarge = false;
-ret = "";
+//ret = "";
 upperCreator = upper(compOwnerLogin_quote);
 lowerCreator = lower(compOwnerLogin_quote);
 creatorCode = "";
@@ -806,5 +810,5 @@ ret = ret + "1~hTMLdetailSmall~" + detailSmall + "|"
 	+ "1~hTMLshowLarge~"+ string(shouldShowLarge) + "|"
 	+ "1~hTMLshouldShowSmall~" + string(showSmall) + "|"
 	+ "1~hTMLshouldShowLarge~" + string(showLarge) + "|"; 
-
+*/
 return ret;
