@@ -29,6 +29,7 @@ Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to 
                                           get on a dictionary that doesn't contain the key.  Looping fix.
             20150112 - John Palubinsaks - completely comment out function so that we don't hit the divide by 0
                                           error in production.
+			20150109 - Gaurav Dawar - Line 789, added this piece to hide the commission for temporary accounts
 
 ================================================================================ */
 ret = "";
@@ -785,6 +786,10 @@ for area in areaQuery{
 		showLarge = false;
 	}
 } 
+if(accountType_quote == "Temporary"){ //added this piece to hide the commission for temporary accounts
+	showSmall = false;
+	showLarge = false;
+}
 if(queryResponseOne == false OR queryResponseTwo == false){
 	showSmall = false;
 	showLarge = false;
