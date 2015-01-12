@@ -1,4 +1,4 @@
-/*
+/* 
 ================================================================================
 Name:   monthlyTotalsHTML_quote line default
 Author:   Zach Schlieder
@@ -39,6 +39,23 @@ if(lower(salesActivity_quote) == "existing customer"){
 total_change_in_fees = totalERFFRFAdminSellAmount_quote - smallExistingTotalFee_quote; //includes change in fees of frf, erf and admin
 total_change_amount_incl_fees = grandTotalSell_quote - totalRevenueBefore_quote;
 
+//return string parser for Calc_commission
+parserResults = calcCommReturnString; //The Return String comes in the format of (Document Number ~ Attribute Name ~ Attribute's Value That's why all indexes selected start index of [2] and increase by multiples of 3 
+parserResults = replace(parserResults,"|","~");
+attributes = split(parserResults,"~");
+parseTotal = attributes[20];	
+parseTotalPct = attributes[23];
+parseShowSmall = false;
+if(attributes[26]=="true"){parseShowSmall = true;}	
+parseShowLarge = false;
+if(attributes[29]=="true"){parseShowLarge = true;}
+
+summaryTotal = split(ParseTotal,"^_^");
+summaryTotalPct = split(ParseTotalPct,"^_^");
+showCommission = false;
+if(parseShowSmall == true OR parseShowLarge == true){
+	showCommission = true;
+}
 
 /******************************** END OF CALCULATIONS IN THIS SCRIPT ****************************/
 
@@ -117,8 +134,27 @@ returnStr = returnStr	+ "<td align=\"center\" >" +  formatascurrency(totalERFFRF
 if(isExistingCustomer){	
 	returnStr = returnStr + "<td align=\"center\" >" +  formatascurrency(total_change_in_fees,"USD") + "</td>";
 }
-returnStr = returnStr	+ "</tr>"	//End of fees					
-						+ "<tr  class='totalRow'>" //Start of Grand Totals row
+returnStr = returnStr	+ "</tr>";	//End of fees					
+//Start of Commission Output Section
+/* if(showCommission == true){
+	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
+							+ "<td >Total Estimated Commission</td>"
+							+ "<td align=\"center\" >" + formatascurrency(atof(summaryTotal[0]),"USD") + "</td>"
+							+ "<td align=\"center\" >" + formatascurrency(atof(summaryTotal[1]),"USD") + "</td>"
+							+ "<td align=\"center\" >" + formatascurrency(atof(summaryTotal[2]),"USD") + "</td>"
+							+ "<td align=\"center\" >" + formatascurrency(atof(summaryTotal[3]),"USD") + "</td>"
+							+ "<td align=\"center\" >" + formatascurrency(atof(summaryTotal[4]),"USD") + "</td>"
+							+ "</tr>"		
+							+ "<tr class='rs_tr_td_style'>" 
+							+ "<td >Total Estimated Commission Rate on Recurring Revenue</td>"
+							+ "<td align=\"center\" >" + string(round(atof(summaryTotalPct[0])*100,2)) + "%" + "</td>"
+							+ "<td align=\"center\" >" + string(round(atof(summaryTotalPct[1])*100,2)) + "%" + "</td>"
+							+ "<td align=\"center\" >" + string(round(atof(summaryTotalPct[2])*100,2)) + "%" + "</td>"
+							+ "<td align=\"center\" >" + string(round(atof(summaryTotalPct[3])*100,2)) + "%" + "</td>"
+							+ "<td align=\"center\" >" + string(round(atof(summaryTotalPct[4])*100,2)) + "%" + "</td>"
+							+ "</tr>";								
+}//End of Commission Output Section */
+returnStr = returnStr	+ "<tr  class='totalRow'>" //Start of Grand Totals row
 						+ "<td >Total Estimated Amount</td>";
 if(NOT isSalesrep){
 	returnStr = returnStr 	+ "<td align=\"center\" >" +  formatascurrency(grandTotalFloor_quote,"USD") + "</td>";
@@ -134,7 +170,7 @@ if(isExistingCustomer){
 	returnStr = returnStr + "<td align=\"center\" >" +  formatascurrency(total_change_amount_incl_fees,"USD") + "</td>";
 }
 returnStr = returnStr	+ "</tr>"//End of Grand Totals row
-						+ "<tr style='display:none;'>" //Start of Commissions - Hide this for Pilot
+						/* + "<tr style='display:none;'>" //Start of Commissions - Hide this for Pilot
 						+ "<td >Est. Commission</td>";
 if(NOT(isSalesrep)){
 	returnStr = returnStr + "<td align=\"center\" >" +  formatascurrency(totalCommissionFloor_quote,"USD") + "</td>";
@@ -149,7 +185,7 @@ returnStr = returnStr   + "<td align=\"center\" >" +  formatascurrency(totalComm
 if(isExistingCustomer){	
 	returnStr = returnStr + "<td align=\"center\" >" +  "Commission Value" + "</td>";
 }
-returnStr = returnStr + "</tr>" //End of Commissions
+returnStr = returnStr + "</tr>" */ //End of Commissions 
 						+ "</table>";
 
 //=============================== End - Building HTML String ===============================//

@@ -10,6 +10,7 @@ Input:      30 quote level attributes, see debugger for list
 Output:     String (documentNumber + "~" + attributeVariableName + "~" + value + "|")
 
 Updates:    20141007 - JPalubinskas - Added contID_readOnly_quote for contID F/O indicator
+            20141218 - JPalubinskas - Upgrade fix for split function
         
 =====================================================================================================
 */
@@ -48,8 +49,8 @@ if(_quote_process_siteAddress_quote_phone <> ""){
 		if(isnumber(_quote_process_siteAddress_quote_phone) AND len(_quote_process_siteAddress_quote_phone) == 10){
 			tempPhoneArr = split(_quote_process_siteAddress_quote_phone, "");
 			print "--tempPhoneArr--"; print tempPhoneArr;
-			code = tempPhoneArr[1] + tempPhoneArr[2] + tempPhoneArr[3];
-			formattedSiteAddrPhone = "(" + code + ") " + tempPhoneArr[4] + tempPhoneArr[5] + tempPhoneArr[6] + "-" + tempPhoneArr[7] + tempPhoneArr[8] + tempPhoneArr[9] + tempPhoneArr[10] ;
+			code = tempPhoneArr[0] + tempPhoneArr[1] + tempPhoneArr[2];
+			formattedSiteAddrPhone = "(" + code + ") " + tempPhoneArr[3] + tempPhoneArr[4] + tempPhoneArr[5] + "-" + tempPhoneArr[6] + tempPhoneArr[7] + tempPhoneArr[8] + tempPhoneArr[9] ;
 			retStr = retStr + "1~sitePhone_readOnly_quote~" + formattedSiteAddrPhone + "|";
 		} 
 	}else{
