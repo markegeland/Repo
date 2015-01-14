@@ -35,7 +35,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150105 - John Palubinskas - #207 add logic to support ERF on FRF flag from divisionFeeRate table
             20150109 - Julie Felberg - Added logic to populate the direct cost attributes (search "direct cost" for the code)
 			20151201 - Gaurav Dawar - Lines: 458 - Changes made to fix delivery amount when there is a change in container code in service change.
-        
+            20150114 - Julie Felberg - Added { at line 2396 because the loop wasn't closed.  Switched how I pull the waste type for direct cost
 =====================================================================================================
 */
 
@@ -2393,7 +2393,7 @@ for line in line_process{
         returnStr = returnStr + "1~" + "includeSampleInvoice_quote" + "~" + "false" + "|";
     }
 }
-
+}
 //=============================== START - AdHoc ===============================//
 adHocDescription = "";
 adHocFeeType = "";
