@@ -2231,24 +2231,25 @@ for line in line_process{
              
              //Set Direct Cost attributes
              //can't user wasteCategory_db, commenting out code until find another variable to use
-	/*	if(container == SMALL_CONTAINER){
-			if(lower(wasteCategory_db) == "solid waste"){
+		if(container == SMALL_CONTAINER){
+			//small 
+			if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
 				smallSWCost = smallSWCost + floorPrice;
 			}
-			if(lower(wasteCategory_db) == "recycling"){
+			if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
 				smallRecCost = smallRecCost + floorPrice;
 			}
 		if(container == LARGE_CONTAINER){
-			if(lower(wasteCategory_db) == "solid waste"){
+			if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
 				largeSWCost = largeSWCost + floorPrice;
 			}
-			if(lower(wasteCategory_db) == "recycling"){
+			if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
 				largeRecCost = largeRecCost + floorPrice;
 			}
-		}*/
+		}
 				
 		totalContCost = totalContCost + floorPrice;					
-		//end Direct Cost attributes                 
+		//end Direct Cost attributes                
             //=============================== END - Assign Guardrails to Outputs ===============================//  
         }
         else{   //For Ad-Hoc parts, the floor, base, target, and stretch are all the value entered by the user
