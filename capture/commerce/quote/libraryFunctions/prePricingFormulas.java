@@ -2231,19 +2231,19 @@ for line in line_process{
              
              //Set Direct Cost attributes
              //can't user wasteCategory_db, commenting out code until find another variable to use
-		if(container == SMALL_CONTAINER){
+		if(container == "SMALL_CONTAINER"){
 			//small 
-			if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+			if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
 				smallSWCost = smallSWCost + floorPrice;
 			}
-			if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
+			if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
 				smallRecCost = smallRecCost + floorPrice;
 			}
-		if(container == LARGE_CONTAINER){
-			if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+		if(container == "LARGE_CONTAINER"){
+			if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
 				largeSWCost = largeSWCost + floorPrice;
 			}
-			if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
+			if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
 				largeRecCost = largeRecCost + floorPrice;
 			}
 		}
