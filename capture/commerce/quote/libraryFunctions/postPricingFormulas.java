@@ -28,10 +28,13 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
 			 09/25/14 - Julie (Oracle) - Added logic to calculate the total number of containers that have a 1 time delivery fee
 			 11/11/14 - Aaron Q (Oracle) - Added logic to manage container removal/delivery in place of exchange code, including credit for removal
 			 11/18/14 - Aaron Q (Oracle) - Added exchange charge value from removal in place of exchange codes.
-             01/05/15 - Julie (Oracle) - Populating the approval attribute for the approval e-mails.  Added a new util (setApprovalReasonDisplayWithColor)
-			 01/06/15 - John (Republic) - #207 Updated ERF logic to use eRFOnFRF_quote to apply or not apply ERF on FRF.
+
+             01/06/15 - John (Republic) - #207 Updated ERF logic to use eRFOnFRF_quote to apply or not apply ERF on FRF.
              01/07/15 - John (Republic) - #321 Replaced calls to the util.eval function with util.evaluate
-             
+             01/10/15 - Mike (Republic) - #247 Zero prices should not affect the guard rails.  If zero rates are present, they should go through an approver
+			 01/15/15 - Julie (Oracle) - #68 Added logic for approvalReasonDisplayWithColorTA
+
+
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
 =======================================================================================================================
@@ -622,7 +625,8 @@ if(hasLineItemsOnQuote_quote){
 	//Grandtotals - "grandTotalSell" include fees amount and so does totalMonthlyAmount = so both should be equal
 	
 	//Updated on My 28th 2014 - GD
-	if(smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote > 0){
+	//Guard rails need to be present even for a zero total.  I left the condition in to account for negative rates (should never happen) - MPB
+        if(smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote >= 0){
 		grandTotalFloor = smallMonthlyTotalFloor_quote + largeMonthlyTotalFloor_quote + erfTotalSellFloor + frfTotalSellFloor + adminRate_quote;
 		grandTotalBase = smallMonthlyTotalBase_quote + largeMonthlyTotalBase_quote + erfTotalSellBase + frfTotalSellBase + adminRate_quote;
 		grandTotalTarget = smallMonthlyTotalTarget_quote + largeMonthlyTotalTarget_quote + erfTotalSellTarget + frfTotalSellTarget + adminRate_quote;
@@ -680,6 +684,7 @@ if(hasLineItemsOnQuote_quote){
 //=============================== START - APPROVALS ===============================//
 /* Check table Approval_Triggers to determine what level of approval are required based on the Division*/
 approvalReasonHTML  = "";
+approvalReasonDisplayWithColorTA = "";
 hasCompactor = false;
 level1ApprovalReasonArr = string[];
 level2ApprovalReasonArr = string[];
@@ -699,6 +704,8 @@ userLoginArray = string[];
 
 //if(action == "request approval" OR action == "calculate price"){
 if(_system_current_step_var == "adjustPricing"){
+
+
 	/* Check quote level Approval_Triggers */
 	approvalTriggersRecordSet = bmql("SELECT Division, ReasonText, ManagerAndSupervisor, GeneralManager,Condition FROM Approval_Triggers WHERE Level = 'Quote' AND (Division = $division_quote OR Division = '0') ORDER BY Division DESC");
 	put(attrDict, "grandTotalSell_quote",string(grandTotalSell));
@@ -712,6 +719,7 @@ if(_system_current_step_var == "adjustPricing"){
 	put(attrDict, "salesActivity_quote", salesActivity_quote);
 	put(attrDict, "eRFCharged_quote", eRFCharged_quote);
 	put(attrDict, "fRFCharged_quote", fRFCharged_quote);
+
 
 	for eachRec in approvalTriggersRecordSet{
 		if(util.evaluate(get(eachRec, "Condition"),attrDict) == "TRUE"){
@@ -800,15 +808,17 @@ if(_system_current_step_var == "adjustPricing"){
 	}
 
 	//Build HTML to display approval reasons on the quote
-	approvalReasonHTML = util.setApprovalReasonDisplay(level1ApprovalReasonArr, level2ApprovalReasonArr);
+	//approvalReasonHTML = util.setApprovalReasonDisplay(level1ApprovalReasonArr, level2ApprovalReasonArr);
+	approvalReasonHTML = util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "Black");
+	approvalReasonDisplayWithColorTA = util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red");
 	
-	//J. Felberg 20150105
-	if(grandTotalFloor > grandTotalSell){
-		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red") + "|";
-	}
-	else{
-		returnStr  = "1~approvalReasonDisplayWithColorTA_quote~" + util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "black") + "|";
-	}
+
+
+
+
+
+
+
 
 	//build an array with all 3 possible "spellings" of the current login
 	append(userLoginArray, lower(_system_user_login));
@@ -1023,6 +1033,7 @@ if(_system_current_step_var == "adjustPricing"){
 							+ "1~" + "level1ApprovalReason_quote" + "~" + join(level1ApprovalReasonArr, ",") + "|"
 							+ "1~" + "level2ApprovalReason_quote" + "~" + join(level2ApprovalReasonArr, ",") + "|"
 							+ "1~" + "approvalReasonDisplayText_quote" + "~" + approvalReasonHTML + "|"
+							+ "1~" + "approvalReasonDisplayWithColorTA_quote" + "~" + approvalReasonDisplayWithColorTA + "|"
 							+ "1~" + "level1Approver_quote" + "~" + join(level1ApproverArr, ",") + "|"
 							+ "1~" + "level2Approver_quote" + "~" + join(level2ApproverArr, ",") + "|"
 							+ "1~" + "hasCompactor_quote" + "~" + string(hasCompactor) + "|"						
