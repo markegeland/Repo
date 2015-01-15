@@ -1,11 +1,10 @@
-/* @override https://republicservices.bigmachines.com/bmfsweb/republicservices/republicservicesAlt.css */
-
 /* ==================================================================================================
     Updates:
 
     20141114 - John Palubinskas - Added styles for Customer Search Popup manipulation.
     20141209 - John Palubinskas - Updated to set all image URLs to hit prod directly.
                                   Moved all dynamic content IDs to the same section in file.
+    20150115 - John Palubinskas - #126 updates for print/email docs buttons and send me a copy checkbox
 
    ================================================================================================== */
 
@@ -42,7 +41,10 @@
     padding-right:60px;
 }
 
-div.nav-links, td.nav-left, td.nav-right, td.nav-center {
+div.nav-links, 
+td.nav-left, 
+td.nav-right, 
+td.nav-center {
     background-color:#003c69;
     padding-top: 0px !important;
     padding-bottom: 0px !important;
@@ -74,10 +76,6 @@ div.nav-links, td.nav-left, td.nav-right, td.nav-center {
 
 .main-model.clearfix {
     display: none;
-}
-
-.button-middle img {
-    left: 4x !important;
 }
 
 ul.tab-strip li {
@@ -135,7 +133,7 @@ a.header-item img {
 
 .view-text-number, 
 .form-input-number {
-    font-family: Open Sans !important;
+    font-family: "Open Sans" !important;
     font-size: 12px !important;
 }
 
@@ -203,15 +201,15 @@ select[id="containerDetailsDropdown"] {
 /* @group Body background color */
 
 body {
-    background-color:white !important;
-    font-family: Open Sans !important;  
+    background-color: #fff !important;
+    font-family: "Open Sans" !important;  
 }
 
 body.admin-home-page, 
 body.ext-webkit.ext-safari.ext-mac, 
 body.ext-gecko.ext-gecko2.ext-windows, 
 body.ext-webkit.ext-chrome.ext-windows {
-    background-color:#efefef !important;
+    background-color: #efefef !important;
 }
 
 /* @end */
@@ -222,7 +220,7 @@ body.ext-webkit.ext-chrome.ext-windows {
 #cm-manager-content table.x-grid-table-bg-color .x-grid3-header td a.view-header,
 #cm-manager-content table.x-grid-table-bg-color .x-grid3-header td span.view-header {
         background-color: #3d9bcb !important;
-        font-family:Open Sans;
+        font-family: "Open Sans";
 }
 
 td.sidebar-folder {
@@ -243,45 +241,45 @@ img.display-block,
 
 .text-wrapper-inner {
     border: 2px solid #3d9bcb !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
 }
 
 .text-field.attribute-field {
     border: 2px solid #3d9bcb !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
 }
 
 .form-input-number {
-    font-family: Open Sans !important;
+    font-family: "Open Sans" !important;
     font-size: 12px !important;
     text-align: left;
 }
 
 .menu-attr label {
-    font-family: Open Sans !important;
+    font-family: "Open Sans" !important;
     font-size: 12px !important;
 }
 
 input.form-input {
     color : #595959 !important;
-    font-family:Open Sans;
+    font-family: "Open Sans";
     font-size: 12px;
 }
 
 .form-input {
-    font-family:Open Sans !important;
+    font-family: "Open Sans" !important;
     font-size: 12px !important;
 }
 
 div.menu-attr select {
      border: 2px solid #3d9bcb !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
     overflow: hidden;
     height: 25px !important;
 }
@@ -289,7 +287,7 @@ div.menu-attr select {
 label.form-label, 
 label.form-label.cm-reqattr-label {
     color : #00324c !important;
-    font-family:Open Sans;
+    font-family: "Open Sans";
     font-size: 14px;
     font-weight: normal;
 }
@@ -308,15 +306,15 @@ label.form-label.cm-reqattr-label {
 .text-field {
     border: 2px solid #3D9BCB !important;
     border-radius: 4px 4px 4px 4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
 }
 
 select {
     border: 2px solid #3D9BCB !important;
     border-radius: 4px 4px 4px 4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    -webkit-border-radius :4px !important;
+    -mox-border-radius: 4px !important;
     overflow: hidden;
 }
 
@@ -331,9 +329,9 @@ select {
 #actionErrorMessagesBox {
     background-color: #002a4a !important;
     border-color: red !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
 }
 
 ul.error-text {
@@ -347,7 +345,7 @@ ul.error-text {
 
 li.error-text {
     color : #bb133e !important;
-    font-family:Open Sans;
+    font-family: "Open Sans";
     font-size: 14px;
     font-weight: bold;
     padding: 0px 0px 5px 20px !important;
@@ -361,10 +359,6 @@ li.error-text {
 /* @end */
 
 /* @group Buttons */
-.button-middle a img { /* Commerce buttons images  */
-    display: none;
-}
-
 .commerce-sidebar-item, 
 .commerce-sidebar-item:link, 
 .commerce-sidebar-item:visited {
@@ -396,12 +390,18 @@ li.error-text {
     margin-left: -10px !important;
 }
 
+.button-middle img,
+.button-middle a img {
+    display: none;
+}
+
+
 td.button-middle { 
     border: 0px;
     top : -4px !important;
     background-image: none !important;
     background-repeat: repeat-x;
-    background-color:#bb133e ; 
+    background-color: #bb133e !important;
     border-radius:4px !important;
     -webkit-border-radius:4px !important;
     -mox-border-radius:4px !important;
@@ -420,16 +420,16 @@ td.button-middle:hover {
 .button-middle a {
     margin: 0px 4px 0px 4px;
     padding: 0px 10px 0px 10px !important;
-    font-family:Open Sans !imporant;
+    font-family: "Open Sans" !imporant;
     font-size: 14px !important;
     font-weight: normal !important;
-    color:#fff!important;
+    color: #fff !important;
     height: 32px ;
     line-height: 32px;
 }
 
 .column-layout.clearfix  {
-    vertical-align:middle !important;
+    vertical-align: middle !important;
 }
 
 /* @end */
@@ -461,7 +461,7 @@ div.panel .panel-tr {
 
 div.panel .panel-heading, 
 span .panel-heading {
-    font-family:Open Sans;
+    font-family: "Open Sans";
     font-size: 13px;
     font-weight: bold;
     padding: 10px 30px;
@@ -480,8 +480,8 @@ span .panel-heading {
 
 .panel .tab-strip {
     background-image: none !important;
-    background-color: #ffff !important;
-    border: none important;
+    background-color: #fff !important;
+    border: none !important;
     border-bottom:0px !important;
     padding:5px 0px 5px 0px !important;
     margin:0px -1px;
@@ -507,7 +507,7 @@ ul.tab-strip li {
 
 span.tab-text {
     color: #b0e4fe !important;
-    font-family:Open Sans !important;
+    font-family: "Open Sans" !important;
     font-size: 13px !important;
     font-weight: bold !important;
 }
@@ -539,7 +539,7 @@ span.tab-text {
     color: #3d9bcb !important;
     background-color:#ebf8ff;
     border: thin solid #3d9bcb;
-    font-family:Open Sans !important;
+    font-family: "Open Sans" !important;
     font-size: 13px !important;
     font-weight: normal !important;
      width:100% !important;
@@ -748,7 +748,8 @@ div#attribute-compactorContainerLabel.attribute{
 }
 /* Vertically Center align button label */
 .button-text{
-  top: -4x !important; 
+  top: -4px !important; 
+  font-family: "Open Sans" !important; 
 }   
 #update.button-text{
     top: -2px !important; 
@@ -787,7 +788,7 @@ div#attribute-compactorContainerLabel.attribute{
     top: 1px !important; 
     color: #FFFFFF !important;
     margin-right: 25px !important;
-    margin-left: 25x !important;
+    margin-left: 25px !important;
 }   
 #view_history.button-text{
     
@@ -873,7 +874,7 @@ table#line-item-grid thead tr th{
     border-top: thin solid #3D9BCB !important;
     border-bottom: thin solid #3D9BCB !important;
     color: #3D9BCB !important;
-    font-family: Open Sans !important;
+    font-family: "Open Sans" !important;
     font-weight: normal !important;
     text-align: center !important;  
 }
@@ -905,7 +906,7 @@ a#adhoc{
     background-color: #EBF8FF !important;
     border: thin solid #3D9BCB !important;
     color: #000059 !important;
-    font-family: Open Sans !important;
+    font-family: "Open Sans" !important;
     font-weight: normal !important;
     font-size: 8px;
     border-radius:4px !important;
@@ -960,9 +961,9 @@ a.list-field[href*="crm_browse_address_dialog"]:after {
     content: " all sites";
 }
 /* Hide the Select column radio buttons and column heading */
-input[type="radio"][name="populate"], 
-input[type="radio"][name="shipping"] {
-    visibility: hidden;
+input[type='radio'][name='populate'], 
+input[type='radio'][name='shipping'] {
+    display: none;
 }
 form[name="bmForm"][action*="crm_browse_dialog"] tr.view-header td:first-child{
     background-color: #002a4a;
@@ -982,8 +983,20 @@ form[name="bmForm"][action*="crm_browse_dialog"] a#populate.button-text {
 }
 /* @end */
 
+/* For making the Email Documents action 'Send me a copy' checkbox line up */
+label[for="copyEmailSender_quote"]{
+    display: none;
+}
+div#field_wrapper_1_copyEmailSender_quote{
+    padding-left: 0px !important;
+}
 
-
+a#print_documents,
+a#print_office_documents,
+a#email_documents{
+    display: inline-block;
+    width: 150px;
+}
 
 /* Dynamic Content Styles --------------------------------------------------------------------------------
 
