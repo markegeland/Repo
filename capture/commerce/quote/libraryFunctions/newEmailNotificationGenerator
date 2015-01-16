@@ -9,6 +9,7 @@
 	Change Log
 	20141211 - Julie Felberg Implemented 4 new tables with logic.  This logic involved a new line level loop and several new variables.
 	20140115 - Julie Felberg Added Disposal site information
+	20140115 - Julie Felberg More Disposal Site Information
 */
 
 //Calculations
@@ -72,7 +73,7 @@ for line in line_process{
 					append(RatePerHaulArr, string(line.perHaulRate_line));
 					append(ContTypeArr, line._model_name);
 					//append(CompactorValArr, "Value");
-					append(TotalServiceTimeArr, "Value");
+					//append(TotalServiceTimeArr, "Value");
 					//append(DisposalSiteArr, "Value");
 					append(CostPerHaulArr, string(line.totalFloorPrice_line));
 					
@@ -92,6 +93,18 @@ for line in line_process{
 						else{
 							append(DisposalSiteArr, "Not Found");
 						}
+						if(findinarray(CAttrArr, "adjustedTotalTime_l") > -1){
+							append(TotalServiceTimeArr, CAttrArr[1 + findinarray(CAttrArr, "adjustedTotalTime_l")]);
+						}
+						else{
+							append(TotalServiceTimeArr, "Not Found");
+						}
+						
+					}
+					else{
+						append(CompactorValArr, "Not Found");
+						append(DisposalSiteArr, "Not Found");
+						append(TotalServiceTimeArr, "Not Found");
 					}
 					
 					
