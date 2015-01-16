@@ -8,6 +8,9 @@
 	==========================================================================
 	Change Log
 	20141211 - Julie Felberg Implemented 4 new tables with logic.  This logic involved a new line level loop and several new variables.
+	20140115 - Julie Felberg Added Disposal site information
+	20140115 - Julie Felberg More Disposal Site Information
+	20140116 - Julie Felberg Switched the Disposal Site config attr
 */
 
 //Calculations
@@ -60,22 +63,73 @@ for line in line_process{
 		//container
 		else{
 			if(findinarray(ContPDocNum, line._parent_doc_number) == -1){
-				append(ContPDocNum,line._parent_doc_number);
-				append(ContainerArr, line.description_line);
-				append(RatePerHaulArr, string(line.perHaulRate_line));
-				append(ContTypeArr, line._model_name);
-				append(CompactorValArr, "Value");
-				append(TotalServiceTimeArr, "Value");
-				append(DisposalSiteArr, "Value");
-				//SMALL_CONTAINER
+				print "in the else we get these descriptions:";
+				print line.description_line;
+				append(ContPDocNum,line._parent_doc_number);		
+				
 				//LARGE_CONTAINER
-				if(line._model_name == "SMALL_CONTAINER"){
+				if(line.billingType_line == "Per Haul"){
+					print "we have a large container";
+					append(ContainerArr, line.description_line);
+					append(RatePerHaulArr, string(line.perHaulRate_line));
+					append(ContTypeArr, line._model_name);
+					//append(CompactorValArr, "Value");
+					//append(TotalServiceTimeArr, "Value");
+					//append(DisposalSiteArr, "Value");
+					append(CostPerHaulArr, string(line.totalFloorPrice_line));
+					
+					//populate compactor value
+					if(containskey(ConfigAttrDict, line._parent_doc_number)){
+						CAttrStr = get(ConfigAttrDict, line._parent_doc_number);
+						CAttrArr = split(CAttrStr, "~");
+						if(findinarray(CAttrArr, "compactorValue") > -1){
+							append(CompactorValArr, CAttrArr[1 + findinarray(CAttrArr, "compactorValue")]);
+						}
+						else{
+							append(CompactorValArr, "Not Found");
+						}
+						if(findinarray(CAttrArr, "site_disposalSite") > -1){
+							append(DisposalSiteArr, CAttrArr[1 + findinarray(CAttrArr, "site_disposalSite")]);
+						}
+						else{
+							append(DisposalSiteArr, "Not Found");
+						}
+						if(findinarray(CAttrArr, "adjustedTotalTime_l") > -1){
+							append(TotalServiceTimeArr, CAttrArr[1 + findinarray(CAttrArr, "adjustedTotalTime_l")]);
+						}
+						else{
+							append(TotalServiceTimeArr, "Not Found");
+						}
+						
+					}
+					else{
+						append(CompactorValArr, "Not Found");
+						append(DisposalSiteArr, "Not Found");
+						append(TotalServiceTimeArr, "Not Found");
+					}
+					
+					
+				}
+				//SMALL_CONTAINER
+				else{
+					print "we have a small container";
+					append(ContainerArr, line.description_line);
+					append(RatePerHaulArr, string(line.perHaulRate_line));
+					append(ContTypeArr, line._model_name);
+					append(CompactorValArr, "NA");
+					append(TotalServiceTimeArr, "Value");
+					//append(DisposalSiteArr, "NA");
 					append(CostPerHaulArr, "NA");
 					append(TonsPerHaulArr, "NA");
+					
+					if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+						append(DisposalSiteArr, getconfigattrvalue(line._parent_doc_number, "disposalPolygon"));
+					}
+					else{
+						append(DisposalSiteArr, "");
+					}
 				}
-				else{
-					append(CostPerHaulArr, "Value");
-				}
+				
 				
 			}
 		}
@@ -136,7 +190,7 @@ emailBody = emailBody + "<table style=\"padding-left:35px;font: 16px Calibri;\">
 							+ "<td style=\"padding-left:35px;font: 16px Calibri;\">Submitted By: "+SubmittedByFullName +"</td></tr>"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Submitted Date: "+submittedDate_quote +"</td></tr>"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Comments: "+submittersComments +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Approvals Required: "+approvalReasonDisplayText_quote +"</td></tr>" 		
+							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Approvals Required: "+approvalReasonDisplayWithColorTA_quote +"</td></tr>" 		
 							+ "<tr><td><br/></td></tr>"
 							+ "<tr><td><br/></td></tr>"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Quote Description: "+quoteDescription_quote +"</td></tr>"
