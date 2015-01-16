@@ -27,17 +27,19 @@ Output:     String (documentNumber + "~" + attributeVariableName + "~" + value +
 
 Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to prevent RTE when doing a
                                           get on a dictionary that doesn't contain the key.  Looping fix.
-            20150112 - John Palubinsaks - completely comment out function so that we don't hit the divide by 0
-                                          error in production.
-			20150109 - Gaurav Dawar - Line 789, added this piece to hide the commission for temporary accounts
+	    20150109 - Gaurav Dawar - Line 785, added this piece to hide the commission for temporary accounts
+		20150115 - Aaron Quintanilla - Changed small container calculations starting on line 121 to include fees with delivery to more accurately calculate commision.  Moved fees to about other line calculations, added fees to delivery values, removed 'addErfFrf' variable.
+
+
+
 
 ================================================================================ */
-ret = "";
 
-/*
+
+
 //CREATE MODEL DICTIONARY WHICH STORES CHILDREN DOCUMENT NUMBERS 
 showERF = false;
-showFRF = false;
+showFRF = false; 
 if(find(feesToCharge_quote, "ERF") <> -1){
 	showERF = true;
 }
@@ -46,7 +48,8 @@ if(find(feesToCharge_quote, "FRF") <> -1){
 }
 showSmall = false;
 showLarge = false;
-//ret = "";
+ret = "";
+
 upperCreator = upper(compOwnerLogin_quote);
 lowerCreator = lower(compOwnerLogin_quote);
 creatorCode = "";
@@ -127,42 +130,63 @@ for line in line_process{
 			put(targetDelivery,line._parent_doc_number,0.0);
 			put(stretchDelivery,line._parent_doc_number,0.0);
 			put(proposedDelivery,line._parent_doc_number,0.0);
+			tempFloorFees = 0.0; //AQ 20150115
+			tempBaseFees = 0.0;
+			tempTargetFees = 0.0;
+			tempStretchFees = 0.0;
+			tempProposedFees = 0.0;
 			put(tempModelDict,line._parent_doc_number,line._document_number);
+			
+			if(showERF == true){ //AQ 20150115
+					tempFloorFees = tempFloorFees + line.erfAmountFloor_line; 
+					tempBaseFees = tempBaseFees + line.erfAmountBase_line; 
+					tempTargetFees = tempTargetFees + line.erfAmountTarget_line;  
+					tempStretchFees = tempStretchFees + line.erfAmountStretch_line;
+					tempProposedFees = tempProposedFees + line.erfAmountSell_line; 
+			}
+			if(showFRF == true){ //AQ 20150115
+					tempFloorFees = tempFloorFees + line.frfAmountFloor_line; 
+					tempBaseFees = tempBaseFees + line.frfAmountBase_line; 
+					tempTargetFees = tempTargetFees + line.frfAmountTarget_line; 
+					tempStretchFees = tempStretchFees + line.frfAmountStretch_line; 
+					tempProposedFees = tempProposedFees + line.frfAmountSell_line; 
+			}
 			if(find(line._line_item_comment,"Base")<>-1){
 				put(floorModelPrice,line._parent_doc_number,line.totalFloorPrice_line);
 				put(baseModelPrice,line._parent_doc_number,line.totalBasePrice_line);
 				put(targetModelPrice,line._parent_doc_number,line.totalTargetPrice_line);
 				put(stretchModelPrice,line._parent_doc_number,line.totalStretchPrice_line);
 				put(proposedModelPrice,line._parent_doc_number,line.sellPrice_line);
-				addFrfErf = true;
+				//addFrfErf = true;
 			}
-			if(find(line._line_item_comment,"Delivery")<>-1){
-				put(floorDelivery,line._parent_doc_number,line.totalFloorPrice_line);
-				put(baseDelivery,line._parent_doc_number,line.totalBasePrice_line);
-				put(targetDelivery,line._parent_doc_number,line.totalTargetPrice_line);
-				put(stretchDelivery,line._parent_doc_number,line.totalStretchPrice_line);
-				put(proposedDelivery,line._parent_doc_number,line.sellPrice_line);
+			if(find(line._line_item_comment,"Delivery")<>-1){ //AQ 20150115
+				put(floorDelivery,line._parent_doc_number,line.totalFloorPrice_line+tempFloorFees); 
+				put(baseDelivery,line._parent_doc_number,line.totalBasePrice_line+tempBaseFees);  
+				put(targetDelivery,line._parent_doc_number,line.totalTargetPrice_line+tempTargetFees);  
+				put(stretchDelivery,line._parent_doc_number,line.totalStretchPrice_line+tempStretchFees); 
+				put(proposedDelivery,line._parent_doc_number,line.sellPrice_line+tempProposedFees);
+
 			}
-			if(addFrfErf == true){
-				tempFloorFees = 0.0;
-				tempBaseFees = 0.0;
-				tempTargetFees = 0.0;
-				tempStretchFees = 0.0;
-				tempProposedFees = 0.0;
-				if(showERF == true){
-					tempFloorFees = tempFloorFees + line.erfAmountFloor_line;
-					tempBaseFees = tempBaseFees + line.erfAmountBase_line;
-					tempTargetFees = tempTargetFees + line.erfAmountTarget_line;
-					tempStretchFees = tempStretchFees + line.erfAmountStretch_line;
-					tempProposedFees = tempProposedFees + line.erfAmountSell_line;
-				}
-				if(showFRF == true){
-					tempFloorFees = tempFloorFees + line.frfAmountFloor_line;
-					tempBaseFees = tempBaseFees + line.frfAmountBase_line;
-					tempTargetFees = tempTargetFees + line.frfAmountTarget_line;
-					tempStretchFees = tempStretchFees + line.frfAmountStretch_line;
-					tempProposedFees = tempProposedFees + line.frfAmountSell_line;
-				}
+			//if(addFrfErf == true){} //AQ 20150115
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 				if(NOT containskey(floorFrfErf,line._parent_doc_number)){
 					put(floorFrfErf,line._parent_doc_number,tempFloorFees);
 					put(baseFrfErf,line._parent_doc_number,tempBaseFees);
@@ -177,7 +201,8 @@ for line in line_process{
 					put(stretchFrfErf,line._parent_doc_number,(tempStretchFees)+get(stretchFrfErf,line._parent_doc_number));
 					put(proposedFrfErf,line._parent_doc_number,(tempProposedFees)+get(proposedFrfErf,line._parent_doc_number));
 				}
-			}
+			
+
 		}
 		elif(modelName == "Large Containers"){
 			put(floorDelivery,line._parent_doc_number,0.0);
@@ -192,25 +217,26 @@ for line in line_process{
 			tempStretchFees = 0.0;
 			tempProposedFees = 0.0;
 			if(showERF == true){
-				tempFloorFees = tempFloorFees + line.erfAmountFloor_line;
-				tempBaseFees = tempBaseFees + line.erfAmountBase_line;
-				tempTargetFees = tempTargetFees + line.erfAmountTarget_line;
-				tempStretchFees = tempStretchFees + line.erfAmountStretch_line;
-				tempProposedFees = tempProposedFees + line.erfAmountSell_line;
+				tempFloorFees = tempFloorFees + line.erfAmountFloor_line;  
+				tempBaseFees = tempBaseFees + line.erfAmountBase_line; 
+				tempTargetFees = tempTargetFees + line.erfAmountTarget_line; 
+				tempStretchFees = tempStretchFees + line.erfAmountStretch_line; 
+				tempProposedFees = tempProposedFees + line.erfAmountSell_line; 
 			}
 			if(showFRF == true){
-				tempFloorFees = tempFloorFees + line.frfAmountFloor_line;
-				tempBaseFees = tempBaseFees + line.frfAmountBase_line;
-				tempTargetFees = tempTargetFees + line.frfAmountTarget_line;
-				tempStretchFees = tempStretchFees + line.frfAmountStretch_line;
-				tempProposedFees = tempProposedFees + line.frfAmountSell_line;
+				tempFloorFees = tempFloorFees + line.frfAmountFloor_line;  
+				tempBaseFees = tempBaseFees + line.frfAmountBase_line; 
+				tempTargetFees = tempTargetFees + line.frfAmountTarget_line; 
+				tempStretchFees = tempStretchFees + line.frfAmountStretch_line; 
+				tempProposedFees = tempProposedFees + line.frfAmountSell_line; 
 			}
 			if(find(line._line_item_comment,"Delivery")<>-1){
-				put(floorDelivery,line._parent_doc_number,line.totalFloorPrice_line+tempFloorFees);
-				put(baseDelivery,line._parent_doc_number,line.totalBasePrice_line+tempBaseFees);
-				put(targetDelivery,line._parent_doc_number,line.totalTargetPrice_line+tempTargetFees);
-				put(stretchDelivery,line._parent_doc_number,line.totalStretchPrice_line+tempStretchFees);
-				put(proposedDelivery,line._parent_doc_number,line.sellPrice_line+tempProposedFees);
+				put(floorDelivery,line._parent_doc_number,line.totalFloorPrice_line+tempFloorFees); 
+				put(baseDelivery,line._parent_doc_number,line.totalBasePrice_line+tempBaseFees);  
+				put(targetDelivery,line._parent_doc_number,line.totalTargetPrice_line+tempTargetFees);  
+				put(stretchDelivery,line._parent_doc_number,line.totalStretchPrice_line+tempStretchFees); 
+				put(proposedDelivery,line._parent_doc_number,line.sellPrice_line+tempProposedFees); 
+
 			}
 			if(find(line._line_item_comment,"Rental")<>-1){
 				put(floorRental,line._parent_doc_number,line.totalFloorPrice_line+tempFloorFees);
@@ -601,8 +627,9 @@ for tier in tierPricing{
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempBaseCom+tempAdderCom+tempWasteCom)); 			
-			}
-			tempOneTimeCom = tempOneTimeCom+(get(floorDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));
+			} 
+
+			tempOneTimeCom = tempOneTimeCom+(get(floorDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));  
 			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
 			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
@@ -628,8 +655,9 @@ for tier in tierPricing{
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempBaseCom+tempAdderCom+tempWasteCom)); 	
-			}
-			tempOneTimeCom = tempOneTimeCom+(get(baseDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));
+			} 
+
+			tempOneTimeCom = tempOneTimeCom+(get(baseDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));  
 			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
 			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
@@ -655,8 +683,9 @@ for tier in tierPricing{
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempTargetCom+tempAdderCom+tempWasteCom)); 
-			}
-			tempOneTimeCom = tempOneTimeCom+(get(targetDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));
+			} 
+
+			tempOneTimeCom = tempOneTimeCom+(get(targetDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));  
 			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
 			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
@@ -682,8 +711,9 @@ for tier in tierPricing{
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempStretchCom+tempAdderCom+tempWasteCom)); 			
-			}
-			tempOneTimeCom = tempOneTimeCom+(get(stretchDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));
+			} 
+
+			tempOneTimeCom = tempOneTimeCom+(get(stretchDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));  
 			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
 			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
@@ -710,7 +740,7 @@ for tier in tierPricing{
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempProposedCom+tempAdderCom+tempWasteCom)); 			
 			}
 			tempOneTimeCom = tempOneTimeCom+(get(proposedDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber)); 
-			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
+			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom; 
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
 			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
 		}
@@ -761,7 +791,7 @@ for tier in tierPricing{
 	detailSmallPercent = detailSmallPercent + string(smallGroupPct[i]);	
 	detailLarge = detailLarge + string(largeGroupCommission[i]);			
 	detailLargePercent = detailLargePercent + string(largeGroupPct[i]);
-	detailSmallLargeOTC = detailSmallLargeOTC + string(totalOneTimeCommission[i]);
+	detailSmallLargeOTC = detailSmallLargeOTC + string(totalOneTimeCommission[i]); 
 	detailSmallLargeTotal = detailSmallLargeTotal + string(totalGroupCommission[i]);
 	summarySmallLargeTotal = summarySmallLargeTotal + string(totalGroupCommission[i]);
 	summarySmallLargePercent = summarySmallLargePercent + string(totalGroupPct[i]);
@@ -815,5 +845,6 @@ ret = ret + "1~hTMLdetailSmall~" + detailSmall + "|"
 	+ "1~hTMLshowLarge~"+ string(shouldShowLarge) + "|"
 	+ "1~hTMLshouldShowSmall~" + string(showSmall) + "|"
 	+ "1~hTMLshouldShowLarge~" + string(showLarge) + "|"; 
-*/
+
+
 return ret;
