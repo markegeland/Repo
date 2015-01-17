@@ -36,6 +36,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150109 - Julie Felberg - Added logic to populate the direct cost attributes (search "direct cost" for the code)
 			20151201 - Gaurav Dawar - Lines: 458 - Changes made to fix delivery amount when there is a change in container code in service change.
             20150114 - Julie Felberg - Added { at line 2396 because the loop wasn't closed.  Switched how I pull the waste type for direct cost
+	    20150116 - Julie Felberg - removed { at line 2396 and added it to the Direct Cost section
 =====================================================================================================
 */
 
@@ -2231,25 +2232,26 @@ for line in line_process{
              
              //Set Direct Cost attributes
              //can't user wasteCategory_db, commenting out code until find another variable to use
-		if(container == "SMALL_CONTAINER"){
-			//small 
-			if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
-				smallSWCost = smallSWCost + floorPrice;
+			if(container == "SMALL_CONTAINER"){
+				//small 
+				if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+					smallSWCost = smallSWCost + floorPrice;
+				}
+				if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
+					smallRecCost = smallRecCost + floorPrice;
+				}
 			}
-			if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
-				smallRecCost = smallRecCost + floorPrice;
+			if(container == "LARGE_CONTAINER"){
+				if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+					largeSWCost = largeSWCost + floorPrice;
+				}
+				if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
+					largeRecCost = largeRecCost + floorPrice;
+				}
 			}
-		if(container == "LARGE_CONTAINER"){
-			if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
-				largeSWCost = largeSWCost + floorPrice;
-			}
-			if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
-				largeRecCost = largeRecCost + floorPrice;
-			}
-		}
 				
-		totalContCost = totalContCost + floorPrice;					
-		//end Direct Cost attributes                
+			totalContCost = totalContCost + floorPrice;					
+			//end Direct Cost attributes                
             //=============================== END - Assign Guardrails to Outputs ===============================//  
         }
         else{   //For Ad-Hoc parts, the floor, base, target, and stretch are all the value entered by the user
@@ -2393,7 +2395,7 @@ for line in line_process{
         returnStr = returnStr + "1~" + "includeSampleInvoice_quote" + "~" + "false" + "|";
     }
 }
-}
+
 //=============================== START - AdHoc ===============================//
 adHocDescription = "";
 adHocFeeType = "";
