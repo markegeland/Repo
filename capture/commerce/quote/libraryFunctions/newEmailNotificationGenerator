@@ -11,7 +11,8 @@
 	20140115 - Julie Felberg Added Disposal site information
 	20140115 - Julie Felberg More Disposal Site Information
 	20140116 - Julie Felberg Switched the Disposal Site config attr
-	20140117 - Julie Felberg Added NewFees and NewPrice logic
+	20140117 - Julie Felberg Added NewFees and NewPrice logic - Added Rate Restriction Section
+	
 */
 
 //Calculations
@@ -211,8 +212,36 @@ emailBody = emailBody + "<table style=\"padding-left:35px;font: 16px Calibri;\">
 //20141211 Email revamp
 emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Industry: "+industry_quote +"</td></tr>"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Segment: "+segment_quote +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Term: "+initialTerm_quote +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Restriction: "+"RR in Progress" +"</td></tr>";
+							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Term: "+initialTerm_quote +"</td></tr>";
+							
+//================== Rate Restriction ======================================//
+emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Restriction: "+"RR in Progress" +"</td></tr>";
+
+if(year1Rate_quote == "" AND year2Rate_quote == "" AND year3Rate_quote == "" AND afterYear4_quote == "" AND customerRateRestriction_quote == true){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Firm Until " + afterYear1Date_quote + "</td></tr>";
+}
+if(customerRateRestriction_quote == true AND year1Rate_quote <> ""){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">" + year1RatePrint_quote + " " + afterYear1Date_quote +"</td></tr>";
+}
+if(customerRateRestriction_quote == true AND year1Rate_quote == "" AND year2Rate_quote == "" AND year3Rate_quote == "" AND afterYear4_quote == ""){
+	if(isnumber(initialTerm_quote)){
+		if(atoi(initialTerm_quote) >= 24){
+			emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Firm for the 1st year of the agreement.</td></tr>";
+		}
+	}
+}
+if(customerRateRestriction_quote == true AND year2Rate_quote <> ""){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">" + year2RatePrint_quote + " " + afterYear2Date_quote +"</td></tr>";
+}
+if(customerRateRestriction_quote == true AND year3Rate_quote <> ""){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">" + year3RatePrint_quote + " " + afterYear3Date_quote +"</td></tr>";
+}
+if(customerRateRestriction_quote == true AND afterYear4_quote <> ""){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">" + year4RatePrint_quote + " " + afterYear4Date_quote +"</td></tr>";
+}
+//================= end Rate Restriction ====================================//
+
+
 //end Email revamp							
 							
 emailBody = emailBody + "</table>";	
