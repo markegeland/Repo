@@ -10,6 +10,7 @@ Output:     String (documentNumber + "~" + attributeVariableName + "~" + value +
 Updates:    20141106 Added logic to set the after year 1-4 dates based on the effective service date.  And, created the header. 
      	    20141112 Commented out logic from 20141106 due to emergency migration, put logic back in on	20141113
             20141212 JPalubinskas - #240 Updated afterYear#Date_quote to hold MM/YYYY format
+			20150117 Julie Felberg - #69 Added logic to set the print versions of the rate restrictions
 =====================================================================================================
 */
 
@@ -475,5 +476,13 @@ res = res + "1~afterYear1Date_quote~"                  + AfterYear1Date + "|"
           + "1~closedContainerExists_quote~"           + string(closeContainerExists) +"|"
           + "1~serviceCloseDate_quote~"                + closeDateStr + "|"
           + "1~oneTimeLinesExist_quote~"               + string(oneTimeLinesExist) + "|";
+
+//============================= Start - Set print version of rate restrictions ========================//
+res = res + "1~" + "year1RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year1Rate_quote)) + "|"
+		  + "1~" + "year2RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year2Rate_quote)) + "|"
+		  + "1~" + "year3RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year3Rate_quote)) + "|"
+		  + "1~" + "year4RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(afterYear4_quote)) + "|";
+//============================= End - Set print version  ======================================//
+
  	 
 return res;
