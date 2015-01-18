@@ -2,7 +2,7 @@
 	==========================================================================
 	| COMMERCE BML LIBRARY													 |
 	+------------------------------------------------------------------------+
-	| emailNotificationGenerator											 |
+	| NewEmailNotificationGenerator											 |
 	==========================================================================
 	| Generates HTML email											 		|
 	==========================================================================
@@ -11,6 +11,7 @@
 	20140115 - Julie Felberg Added Disposal site information
 	20140115 - Julie Felberg More Disposal Site Information
 	20140116 - Julie Felberg Switched the Disposal Site config attr
+	20140117 - Julie Felberg Added NewFees and NewPrice logic
 */
 
 //Calculations
@@ -37,6 +38,8 @@ TotalServiceTimeArr = string[];
 TonsPerHaulArr = string[];
 DisposalSiteArr = string[];
 CostPerHaulArr = string[];
+newPriceDict = dict("string");
+newFeesDict = dict("string");
 
 //start loop
 for line in line_process{
@@ -58,6 +61,11 @@ for line in line_process{
 		elif(line.activity_line == "Service level change"){
 			if(findinarray(SCDocNum, line._parent_doc_number) == -1){
 				append(SCDocNum, line._parent_doc_number);
+			}
+			//if monthly fee, then populate new price array
+			if(line.billingType_line == "Monthly"){
+				put(newPriceDict,line._parent_doc_number, string(line.sellPrice_line));
+				put(newFeesDict, line._parent_doc_number, string(line.frfAmountSell_line + line.erfAmountSell_line + adminRate_quote));
 			}
 		}
 		//container
@@ -364,8 +372,8 @@ if(NOT isempty(SCDocNum)){
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Nbr</b></td>"
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Waste Type</b></td>"
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Frequency</b></td>"
-							//+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>PRICE</b></td>"
-							//+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
+							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>PRICE</b></td>"
+							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
 						+ "</tr>";
 	
 	for eachSC in SCDocNum{
@@ -378,6 +386,8 @@ if(NOT isempty(SCDocNum)){
 			oldNbr = "";
 			oldWT = "";
 			oldFreq = "";
+			oldPrice = "";
+			oldFees = "";
 			print "find";
 			print (findinarray(configAttrArr, "containerSize_readOnly"));
 			if(findinarray(ConfigAttrArr, "containerSize_readOnly") > -1){
@@ -394,6 +404,13 @@ if(NOT isempty(SCDocNum)){
 			if(findinarray(ConfigAttrArr, "liftsPerContainer_readOnly") > -1){
 				oldFreq = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "liftsPerContainer_readOnly")];
 			}
+			if(findinarray(ConfigAttrArr, "monthlyRevenue_sc") > -1){
+				oldPrice = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "liftsPerContainer_readOnly")];
+			}
+			if(findinarray(ConfigAttrArr, "totalWithFees_sc") > -1 AND findinarray(ConfigAttrArr, "monthlyRevenue_sc") > -1){
+				oldFees = string(atof(ConfigAttrArr[1 + findinarray(ConfigAttrArr, "totalWithFees_sc")]) - atof(ConfigAttrArr[1 + findinarray(ConfigAttrArr, "monthlyRevenue_sc")]));
+			}
+			
 			
 			emailBody = emailBody + "<tr>"
 				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + "old container" + "</td>"
@@ -401,6 +418,8 @@ if(NOT isempty(SCDocNum)){
 				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldNbr + "</td>"
 				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldWT + "</td>"
 				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldFreq + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldPrice + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldFees + "</td>"
 				+ "</tr>";
 		}
 	}
@@ -412,8 +431,8 @@ if(NOT isempty(SCDocNum)){
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Nbr</b></td>"
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Waste Type</b></td>"
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Frequency</b></td>"
-							//+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>PRICE</b></td>"
-							//+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
+							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>PRICE</b></td>"
+							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
 						+ "</tr>";
 	//rows for new containers
 	for NeachSC in SCDocNum{
@@ -425,6 +444,8 @@ if(NOT isempty(SCDocNum)){
 			newNbr = "";
 			newWT = "";
 			newFreq = "";
+			newPrice = "";
+			newFees = "";
 			
 			if(findinarray(NConfigAttrArr, "containerSize_sc") > -1){
 				newSize = NConfigAttrArr[1 + findinarray(NConfigAttrArr, "containerSize_sc")];
@@ -438,6 +459,12 @@ if(NOT isempty(SCDocNum)){
 			if(findinarray(NConfigAttrArr, "liftsPerContainer_sc") > -1){
 				newFreq = NConfigAttrArr[1 + findinarray(NConfigAttrArr, "liftsPerContainer_sc")];
 			}
+			if(containskey(newPriceDict, NeachSC)){
+				newPrice = get(newPriceDict, NeachSC);
+			}
+			if(containskey(newFeesDict, NeachSC)){
+				newFees = get(newFeesDict, NeachSC);
+			}
 			
 			emailBody = emailBody + "<tr>"
 					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + "newContainer" + "</td>"
@@ -445,6 +472,8 @@ if(NOT isempty(SCDocNum)){
 					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newNbr + "</td>"
 					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newWT + "</td>"
 					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newFreq + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newPrice + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newFees + "</td>"
 				+ "</tr>";
 		}
 	}
@@ -477,4 +506,4 @@ emailBody = emailBody + "</body></ht" + "ml>";
 // Use the below statement when an output PDF needs to be attached
 //xslName = "quote_pdf_bmClone_21";return emailBody + "$,$" + xslName;
 
-return emailBody ;
+return emailBody;
