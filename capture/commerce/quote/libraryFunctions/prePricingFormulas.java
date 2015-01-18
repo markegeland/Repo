@@ -36,7 +36,8 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150109 - Julie Felberg - Added logic to populate the direct cost attributes (search "direct cost" for the code)
 			20151201 - Gaurav Dawar - Lines: 458 - Changes made to fix delivery amount when there is a change in container code in service change.
             20150114 - Julie Felberg - Added { at line 2396 because the loop wasn't closed.  Switched how I pull the waste type for direct cost
-	    20150116 - Julie Felberg - removed { at line 2396 and added it to the Direct Cost section
+			20150116 - Julie Felberg - removed { at line 2396 and added it to the Direct Cost section
+			20150117 - Julie Felberg - Added logic to set print version of rate restrictions 
 =====================================================================================================
 */
 
@@ -2477,5 +2478,13 @@ returnStr = returnStr + "1~" + "smallSolidWasteCost_quote" + "~" + string(smallS
 					  + "1~" + "largeRecyclingCost_quote" + "~" + string(largeRecCost) + "|"
 					  + "1~" + "totalContainerCost_quote" + "~" + string(totalContCost) + "|";
 //============================= End - Set direct cost attributes ======================================//
+
+//============================= Start - Set print version of rate restrictions ========================//
+returnStr = returnStr + "1~" + "year1RatePrint_quote" + "~" +  util.setPrintVersionsOfRateRestrictions(upper(year1Rate_quote)) + "|"
+					  + "1~" + "year2RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year2Rate_quote)) + "|"
+					  + "1~" + "year3RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year3Rate_quote)) + "|"
+					  + "1~" + "year4RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(afterYear4_quote)) + "|";
+//============================= End - Set print version  ======================================//
+					  
 
 return returnStr;
