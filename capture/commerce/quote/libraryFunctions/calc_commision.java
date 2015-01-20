@@ -29,6 +29,7 @@ Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to 
                                           get on a dictionary that doesn't contain the key.  Looping fix.
 	    20150109 - Gaurav Dawar - Line 785, added this piece to hide the commission for temporary accounts
 		20150115 - Aaron Quintanilla - Changed small container calculations starting on line 121 to include fees with delivery to more accurately calculate commision.  Moved fees to about other line calculations, added fees to delivery values, removed 'addErfFrf' variable.
+		20150117 - Aaron Quintanilla - Changed tier commission calculations to check for 0 in denominators. 
 
 
 
@@ -168,25 +169,6 @@ for line in line_process{
 
 			}
 			//if(addFrfErf == true){} //AQ 20150115
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 				if(NOT containskey(floorFrfErf,line._parent_doc_number)){
 					put(floorFrfErf,line._parent_doc_number,tempFloorFees);
 					put(baseFrfErf,line._parent_doc_number,tempBaseFees);
@@ -503,18 +485,39 @@ for each in modelLoop{
 		nextTier = priceTier + 1;
 		com_base_pct = 0;
 		if(priceTier == 0){
-			com_base_pct = commissionPct[0] + (smallMonthlyTotalProposed_quote*((commissionPct[1]-commissionPct[0])/smallMonthlyTotalFloor_quote));
+			if(smallMonthlyTotalFloor_quote <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				com_base_pct = commissionPct[0] + (smallMonthlyTotalProposed_quote*((commissionPct[1]-commissionPct[0])/smallMonthlyTotalFloor_quote));
+			}else{ 
+				com_base_pct = commissionPct[0] + 0.0;
+			}
 			put(proposedComBasePct,modelDocNumber,com_base_pct);
+			
 		}
 		if(priceTier >= 1 AND priceTier <= 3){
-			com_base_pct = commissionPct[priceTier] + (((smallMonthlyTotalProposed_quote-priceBreakOne)*(commissionPct[nextTier]-commissionPct[priceTier]))/(priceBreakTwo-priceBreakOne));
+			if((priceBreakTwo-priceBreakOne) <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				com_base_pct = commissionPct[priceTier] + (((smallMonthlyTotalProposed_quote-priceBreakOne)*(commissionPct[nextTier]-commissionPct[priceTier]))/(priceBreakTwo-priceBreakOne));
+			}else{
+				com_base_pct = commissionPct[priceTier] + 0.0;
+			}
 			put(proposedComBasePct,modelDocNumber,com_base_pct);
 		}
 		if(priceTier == 4){
 			pctRatio = Float[];
-			ratioOne = (commissionPct[1]-commissionPct[0])/(smallMonthlyTotalBase_quote-smallMonthlyTotalFloor_quote);
-			ratioTwo = (commissionPct[2]-commissionPct[1])/(smallMonthlyTotalTarget_quote-smallMonthlyTotalBase_quote);
-			ratioThree = (commissionPct[3]-commissionPct[2])/(smallMonthlyTotalStretch_quote-smallMonthlyTotalTarget_quote);
+			if((smallMonthlyTotalBase_quote-smallMonthlyTotalFloor_quote) <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				ratioOne = (commissionPct[1]-commissionPct[0])/(smallMonthlyTotalBase_quote-smallMonthlyTotalFloor_quote);
+			}else{
+				ratioOne = 0.0;
+			}
+			if((smallMonthlyTotalTarget_quote-smallMonthlyTotalBase_quote) <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				ratioTwo = (commissionPct[2]-commissionPct[1])/(smallMonthlyTotalTarget_quote-smallMonthlyTotalBase_quote);
+			}else{
+				ratioTwo = 0.0;
+			}
+			if((smallMonthlyTotalStretch_quote-smallMonthlyTotalTarget_quote)<> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				ratioThree = (commissionPct[3]-commissionPct[2])/(smallMonthlyTotalStretch_quote-smallMonthlyTotalTarget_quote);
+			}else{
+				ratioThree = 0.0;
+			}
 			append(pctRatio,ratioOne);
 			append(pctRatio,ratioTwo);
 			append(pctRatio,ratioThree);
@@ -560,18 +563,39 @@ for each in modelLoop{
 		nextTier = priceTier + 1;
 		com_base_pct = 0;
 		if(priceTier == 0){
-			com_base_pct = commissionPct[0] + (largeMonthlyTotalProposed_quote*((commissionPct[1]-commissionPct[0])/largeMonthlyTotalFloor_quote));
+			if(largeMonthlyTotalFloor_quote <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				com_base_pct = commissionPct[0] + (largeMonthlyTotalProposed_quote*((commissionPct[1]-commissionPct[0])/largeMonthlyTotalFloor_quote));
+			}else{ 
+				com_base_pct = commissionPct[0] + 0.0;
+			}
 			put(proposedComBasePct,modelDocNumber,com_base_pct);
+			
 		}
 		if(priceTier >= 1 AND priceTier <= 3){
-			com_base_pct = commissionPct[priceTier] + (((largeMonthlyTotalProposed_quote-priceBreakOne)*(commissionPct[nextTier]-commissionPct[priceTier]))/(priceBreakTwo-priceBreakOne));
+			if((priceBreakTwo-priceBreakOne) <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				com_base_pct = commissionPct[priceTier] + (((largeMonthlyTotalProposed_quote-priceBreakOne)*(commissionPct[nextTier]-commissionPct[priceTier]))/(priceBreakTwo-priceBreakOne));
+			}else{
+				com_base_pct = commissionPct[priceTier] + 0.0;
+			}
 			put(proposedComBasePct,modelDocNumber,com_base_pct);
 		}
 		if(priceTier == 4){
 			pctRatio = Float[];
-			ratioOne = (commissionPct[1]-commissionPct[0])/(largeMonthlyTotalBase_quote-largeMonthlyTotalFloor_quote);
-			ratioTwo = (commissionPct[2]-commissionPct[1])/(largeMonthlyTotalTarget_quote-largeMonthlyTotalBase_quote);
-			ratioThree = (commissionPct[3]-commissionPct[2])/(largeMonthlyTotalStretch_quote-largeMonthlyTotalTarget_quote);
+			if((largeMonthlyTotalBase_quote-largeMonthlyTotalFloor_quote) <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				ratioOne = (commissionPct[1]-commissionPct[0])/(largeMonthlyTotalBase_quote-largeMonthlyTotalFloor_quote);
+			}else{
+				ratioOne = 0.0;
+			}
+			if((largeMonthlyTotalTarget_quote-largeMonthlyTotalBase_quote) <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				ratioTwo = (commissionPct[2]-commissionPct[1])/(largeMonthlyTotalTarget_quote-largeMonthlyTotalBase_quote);
+			}else{
+				ratioTwo = 0.0;
+			}
+			if((largeMonthlyTotalStretch_quote-largeMonthlyTotalTarget_quote)<> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
+				ratioThree = (commissionPct[3]-commissionPct[2])/(largeMonthlyTotalStretch_quote-largeMonthlyTotalTarget_quote);
+			}else{
+				ratioThree = 0.0;
+			}
 			append(pctRatio,ratioOne);
 			append(pctRatio,ratioTwo);
 			append(pctRatio,ratioThree);

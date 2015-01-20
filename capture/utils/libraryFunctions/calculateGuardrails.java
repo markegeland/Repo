@@ -1914,8 +1914,9 @@ if(priceType == "Large Containers"){
 	peakRateArray = float[];
 	if(haulBase > 0){	
 		append(peakRateArray, (haulFloor/haulBase) - 1.0);
-		append(peakRateArray, 0.0);
+
 	}
+	append(peakRateArray, 0.0);
 	minPeakRate = min(peakRateArray);
 	peakRateArray = float[];
 	append(peakRateArray, peakRate);
