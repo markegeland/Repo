@@ -33,6 +33,7 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              01/07/15 - John (Republic) - #321 Replaced calls to the util.eval function with util.evaluate
              01/10/15 - Mike (Republic) - #247 Zero prices should not affect the guard rails.  If zero rates are present, they should go through an approver
 			 01/15/15 - Julie (Oracle) - #68 Added logic for approvalReasonDisplayWithColorTA
+             01/21/15 - John (Republic) - #233 Fix issue where ERF/FRF approval was being requested when the fees were already waived
 
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
@@ -558,23 +559,6 @@ totalOneTimePrice = totalOneTimePrice + adHocOneTimeTotalSell;
 smallMonthlyNetRevenue_SolidWaste = smallMonthlyRevenue_SolidWaste - smallSolidWasteDisposalExpense_quote;
 smallMonthlyNetRevenue_Recycling = smallMonthlyRevenue_Recycling - smallRecyclingDisposalExpense_quote;
 
-//Changed 7/8/14, commented out since the admin fee for both erf and frf are already included in earlier logic
-//Begin - Include ERF & FRF of Admin Fee to the actual ERF & FRF Totals
-/*frfTotalSellFloor = frfTotalSellFloor + fRFOnAdminFee_quote;
-frfTotalSellBase = frfTotalSellBase + fRFOnAdminFee_quote;
-frfTotalSellTarget = frfTotalSellTarget + fRFOnAdminFee_quote;
-frfTotalSellStretch = frfTotalSellStretch + fRFOnAdminFee_quote;
-frfTotalSell = frfTotalSell + fRFOnAdminFee_quote;
-*/
-/*
-erfTotalSellFloor = erfTotalSellFloor + eRFOnAdminFee_quote;
-erfTotalSellBase = erfTotalSellBase + eRFOnAdminFee_quote;
-erfTotalSellTarget = erfTotalSellTarget + eRFOnAdminFee_quote;
-erfTotalSellStretch = erfTotalSellStretch + eRFOnAdminFee_quote;
-erfTotalSell = erfTotalSell + eRFOnAdminFee_quote;
-//End - Include ERF & FRF of Admin Fee to the actual ERF & FRF Totals
-*/
-
 //Total ERF and FRF fees - frf + erf (admin NOT included) for all 4 guardrails and final price
 erfAndFrfTotalFloor = erfTotalSellFloor + frfTotalSellFloor;
 erfAndFrfTotalBase = erfTotalSellBase + frfTotalSellBase;
@@ -702,9 +686,18 @@ notificationReasonDescriptionArray = string[];
 notifiersArray = string[];
 userLoginArray = string[];
 
-//if(action == "request approval" OR action == "calculate price"){
 if(_system_current_step_var == "adjustPricing"){
 
+    // check for a change from ERF/FRF charged to not-charged for an approval to be required
+    fRFApprovalRequired = 0;
+    if((isFRFwaived_quote == 1) and (fRF_readOnly_quote == "Yes")){
+        fRFApprovalRequired = 1;
+    }
+
+    eRFApprovalRequired = 0;
+    if((isERFwaived_quote == 1) and (eRFreadOnly_quote == "Yes")){
+        eRFApprovalRequired = 1;
+    }
 
 	/* Check quote level Approval_Triggers */
 	approvalTriggersRecordSet = bmql("SELECT Division, ReasonText, ManagerAndSupervisor, GeneralManager,Condition FROM Approval_Triggers WHERE Level = 'Quote' AND (Division = $division_quote OR Division = '0') ORDER BY Division DESC");
@@ -712,10 +705,9 @@ if(_system_current_step_var == "adjustPricing"){
 	put(attrDict, "adHocFlag_quote",string(adHocFlag_quote));
 	put(attrDict, "grandTotalBase_quote",string(grandTotalBase));
 	put(attrDict, "dealValue",string(grandTotalSell));
-	put(attrDict, "isFRFwaived_quote",string(isFRFwaived_quote));
-	put(attrDict, "isERFwaived_quote",string(isERFwaived_quote));
+	put(attrDict, "isFRFwaived_quote",string(fRFApprovalRequired));
+	put(attrDict, "isERFwaived_quote",string(eRFApprovalRequired));
 	put(attrDict, "adHocTotal", string(adHocTotal_quote));
-	//ERF, FRF for existing
 	put(attrDict, "salesActivity_quote", salesActivity_quote);
 	put(attrDict, "eRFCharged_quote", eRFCharged_quote);
 	put(attrDict, "fRFCharged_quote", fRFCharged_quote);
@@ -808,24 +800,15 @@ if(_system_current_step_var == "adjustPricing"){
 	}
 
 	//Build HTML to display approval reasons on the quote
-	//approvalReasonHTML = util.setApprovalReasonDisplay(level1ApprovalReasonArr, level2ApprovalReasonArr);
 	approvalReasonHTML = util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "Black");
 	approvalReasonDisplayWithColorTA = util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red");
-	
-
-
-
-
-
-
-
 
 	//build an array with all 3 possible "spellings" of the current login
 	append(userLoginArray, lower(_system_user_login));
 	append(userLoginArray, upper(_system_user_login));
 	append(userLoginArray, _system_user_login);
 
-        print "userLoginArray";
+    print "userLoginArray";
 	print userLoginArray;
 
 	/* Get the Hierarchy_Exception approvers for the current logged in user */
@@ -940,20 +923,10 @@ put(inputDict, "range", radiusInMiles_quote);
 nearbyServicesCustomerLocations = util.getProximityValuesForTheCustomer(inputDict);
 /*==============Get closer customer locations================*/
 
-//@DS: Updated to populate fields regardless of whether or not submited has been added to a user group
-/*if(_system_user_groups <> ""){
-
-	userGroupsArr = split(_system_user_groups, "+");
-	for group in userGroupsArr{
-		if(division_quote == substring(group, 1,4)){*/
-		
 //Populate the group names for Sales reps , Managers, Executive Managers
 divisionSalesGroup = "d" + division_quote + "SalesReps";
 divisionManagerGroup = "d" + division_quote + "Managers";
 divisionExecManagerGroup = "d" + division_quote + "ExecManagers";
-		/*}
-	}
-}*/
 
 //If exchange is done with separate removal and delivery line items, add credit for full amount of removal
 for each in hasDeliveryArr{
