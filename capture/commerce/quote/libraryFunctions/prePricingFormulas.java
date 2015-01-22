@@ -38,6 +38,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150114 - Julie Felberg - Added { at line 2396 because the loop wasn't closed.  Switched how I pull the waste type for direct cost
 			20150116 - Julie Felberg - removed { at line 2396 and added it to the Direct Cost section
 			20150117 - Julie Felberg - Added logic to set print version of rate restrictions 
+			01/21/15 - Gaurav (Republic) - added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 =====================================================================================================
 */
 
@@ -1927,13 +1928,17 @@ for line in line_process{
                 //J. Felberg added the quantity logic
                 if(containskey(guardrailOutputDict, "DEL")){
                     floorPriceStr = get(guardrailOutputDict, "deliveryFloor");
-                    floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+                    //floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+					floorPriceStr = string(atof(floorPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     basePriceStr = get(guardrailOutputDict, "DEL");
-                    basePriceStr = string(atof(basePriceStr) * line._price_quantity);
+                    //basePriceStr = string(atof(basePriceStr) * line._price_quantity);
+					basePriceStr = string(atof(basePriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     targetPriceStr = get(guardrailOutputDict, "DEL");
-                    targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
+                    //targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
+					targetPriceStr = string(atof(targetPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     stretchPriceStr = get(guardrailOutputDict, "DEL");
-                    stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+                    //stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+					stretchPriceStr = string(atof(stretchPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
 					hasDelivery = true;
                 }
                 //AQ 11/07/2104
@@ -1957,13 +1962,17 @@ for line in line_process{
                 if(containskey(guardrailOutputDict, "REM")){
                     //floorPriceStr = get(guardrailOutputDict, "REM");    //Changed 11/18/14 AQ
 					floorPriceStr = "0.0";    
-                    floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+                    //floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+					floorPriceStr = string(atof(floorPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     basePriceStr = get(guardrailOutputDict, "REM");
-                    basePriceStr = string(atof(basePriceStr) * line._price_quantity);
+                    //basePriceStr = string(atof(basePriceStr) * line._price_quantity);
+					basePriceStr = string(atof(basePriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     targetPriceStr = get(guardrailOutputDict, "REM");
-                    targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
+                    //targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
+					targetPriceStr = string(atof(targetPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     stretchPriceStr = get(guardrailOutputDict, "REM");
-                    stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+                    //stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+					stretchPriceStr = string(atof(stretchPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
 					if(hasDelivery){
 						returnStr = returnStr + line._document_number + "~hasDelivery_line~true|";
 					}

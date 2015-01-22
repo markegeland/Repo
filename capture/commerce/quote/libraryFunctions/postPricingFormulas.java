@@ -34,7 +34,7 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              01/10/15 - Mike (Republic) - #247 Zero prices should not affect the guard rails.  If zero rates are present, they should go through an approver
 			 01/15/15 - Julie (Oracle) - #68 Added logic for approvalReasonDisplayWithColorTA
              01/21/15 - John (Republic) - #233 Fix issue where ERF/FRF approval was being requested when the fees were already waived
-
+			 01/21/15 - Gaurav (Republic) - added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -120,7 +120,7 @@ oneTimeERFandFRFTotal = 0.0;
 adHocMonthlyTotalSell = 0.0;
 adHocPerHaulTotalSell = 0.0;
 adHocOneTimeTotalSell = 0.0;
-
+adHocOneTimeERFandFRF = 0.0;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 
 
 //=============================== END - Variable Initialization ===============================//
@@ -338,8 +338,8 @@ for line in line_process{
 			}	
 			oneTimeDeliveryCredit = oneTimeDeliveryCredit + (line.totalTargetPrice_line - line.sellPrice_line); //Credit is Target Price Sell/Proposed Price 
 			deliveryPrice = line.sellPrice_line;
-			deliveryERFandFRFTotal = deliveryERFandFRFTotal + FRF_CONST + ERF_CONST;
-			totalOneTimePrice = totalOneTimePrice + totalPrice;
+			deliveryERFandFRFTotal = deliveryERFandFRFTotal + (FRF_CONST + ERF_CONST) * line._price_quantity;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+			totalOneTimePrice = totalOneTimePrice + totalPrice * line._price_quantity;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 		}
 		//End special calculations for Delivery line items
 		
@@ -351,13 +351,15 @@ for line in line_process{
 				exchangeChargeSubtotal = exchangeChargeSubtotal + line.sellPrice_line;
 			}	
 			oneTimeExchangeCredit = oneTimeExchangeCredit + (line.totalTargetPrice_line - line.sellPrice_line); //Credit is Sell/Proposed Price - Target Price
-			exchangeERFandFRFTotal = exchangeERFandFRFTotal + FRF_CONST + ERF_CONST;
-			totalOneTimePrice = totalOneTimePrice + totalPrice;
+			exchangeERFandFRFTotal = (exchangeERFandFRFTotal + FRF_CONST + ERF_CONST) * line._price_quantity;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+			totalOneTimePrice = totalOneTimePrice + totalPrice * line._price_quantity;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 		}
 		elif(line.rateType_line == "Delivery"){
 			append(hasDeliveryArr, line._parent_doc_number);
 		}
 		elif(line.rateType_line == "Removal"){
+			exchangeERFandFRFTotal = (exchangeERFandFRFTotal + FRF_CONST + ERF_CONST) * line._price_quantity;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+			totalOneTimePrice = totalOneTimePrice + totalPrice * line._price_quantity;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 			put(hasRemovalDict, line._parent_doc_number, line.sellPrice_line);
 		}
 		
@@ -540,7 +542,8 @@ for line in line_process{
 			    	adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line;  
 			    }
 			    if(billingMethod == "One Time") { 
-			    	adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line;
+			    	adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+					adHocOneTimeERFandFRF = FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 			    }
 			}
 			print "------------------JP";
@@ -576,7 +579,7 @@ erfFrfAdminTotalSell = erfTotalSell + frfTotalSell + adminRate_quote;
 
 
 oneTimeTotalDeliveryAmount = deliveryChargeSubtotal - oneTimeDeliveryCredit + deliveryERFandFRFTotal;
-oneTimeERFandFRFTotal = deliveryERFandFRFTotal + exchangeERFandFRFTotal + installationERFandFRFTotal;
+oneTimeERFandFRFTotal = deliveryERFandFRFTotal + exchangeERFandFRFTotal + installationERFandFRFTotal + adHocOneTimeERFandFRF;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 
 //Total of Large Containers including fees
 largeMonthlyTotalPriceInclFees = largeMonthlyHaulPriceInclFees + largeMonthlyDisposalPriceInclFees + largeMonthlyRentalPriceInclFees;

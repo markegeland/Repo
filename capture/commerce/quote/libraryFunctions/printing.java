@@ -11,6 +11,7 @@ Updates:    20141106 Added logic to set the after year 1-4 dates based on the ef
      	    20141112 Commented out logic from 20141106 due to emergency migration, put logic back in on	20141113
             20141212 JPalubinskas - #240 Updated afterYear#Date_quote to hold MM/YYYY format
 			20150117 Julie Felberg - #69 Added logic to set the print versions of the rate restrictions
+			20150122 Gaurav Dawar - #352 - correcting the calculations for Delivery for it to flow through infopro
 =====================================================================================================
 */
 
@@ -301,6 +302,9 @@ for line in line_process{
 				append(deliveryCreditArr, deliveryCredit);
 			}
 			totalDeliveryCredit = totalDeliveryCredit + deliveryCredit;
+			if(deliveryCredit < 0.0){//#352 - correcting the calculations for Delivery for it to flow through infopro
+				deliveryCredit = 0.0;
+			}
 			res = res + line._parent_doc_number + "~deliveryCredit_line~" + string(deliveryCredit) + "|";
 		}elif( line.rateType_line == "Exchange"){
 			oneTimeLinesExist = true;
