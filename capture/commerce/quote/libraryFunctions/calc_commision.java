@@ -30,7 +30,7 @@ Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to 
 	    20150109 - Gaurav Dawar - Line 785, added this piece to hide the commission for temporary accounts
 		20150115 - Aaron Quintanilla - Changed small container calculations starting on line 121 to include fees with delivery to more accurately calculate commision.  Moved fees to about other line calculations, added fees to delivery values, removed 'addErfFrf' variable.
 		20150117 - Aaron Quintanilla - Changed tier commission calculations to check for 0 in denominators. 
-
+		20150122 - #361 - Gaurav Dawar - Added Functionality to hide Comp for Change of owner and Existing Customer Quotes(Except New Site).
 
 
 
@@ -841,6 +841,14 @@ for area in areaQuery{
 	}
 } 
 if(accountType_quote == "Temporary"){ //added this piece to hide the commission for temporary accounts
+	showSmall = false;
+	showLarge = false;
+}
+if(salesActivity_quote == "Change of Owner"){//added this piece to hide the commission for Change of Owner
+	showSmall = false;
+	showLarge = false;
+}
+if(salesActivity_quote == "Existing Customer" AND existingCustomerWithNewSite_quote == false){//added this piece to hide the commission for Existing customer except new site
 	showSmall = false;
 	showLarge = false;
 }
