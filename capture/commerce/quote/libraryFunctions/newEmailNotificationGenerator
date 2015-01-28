@@ -12,6 +12,7 @@
 	20140115 - Julie Felberg More Disposal Site Information
 	20140116 - Julie Felberg Switched the Disposal Site config attr
 	20140117 - Julie Felberg Added NewFees and NewPrice logic - Added Rate Restriction Section
+	20140128 - Julie Felberg Added $ to Ad Hoc price
 	
 */
 
@@ -215,7 +216,11 @@ emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Term: "+initialTerm_quote +"</td></tr>";
 							
 //================== Rate Restriction ======================================//
-emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Restriction: "+"RR in Progress" +"</td></tr>";
+emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Restriction: " + " " +"</td></tr>";
+
+if(customerRateRestriction_quote == false){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">No Rate Restriction" + "</td></tr>";
+}
 
 if(year1Rate_quote == "" AND year2Rate_quote == "" AND year3Rate_quote == "" AND afterYear4_quote == "" AND customerRateRestriction_quote == true){
 	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Firm Until " + afterYear1Date_quote + "</td></tr>";
@@ -370,7 +375,7 @@ if(NOT isempty(AdHocDescArr)){
 		emailBody = emailBody + "<tr>"
 									+ "<td align=\"left\" bgcolor=\"FFFFFF\" nowrap style=\"color:#000000;\">" + AdHocDescArr[eachAHDIndex] + "</td>"
 									+ "<td align=\"center\" bgcolor=\"FFFFFF\" nowrap style=\"color:#000000;\">" + AdHocQtyArr[eachAHDIndex] + "</td>"
-									+ "<td align=\"right\" bgcolor=\"FFFFFF\" nowrap style=\"color:#000000;\">" + AdHocTotalPriceArr[eachAHDIndex] + "</td>"
+									+ "<td align=\"right\" bgcolor=\"FFFFFF\" nowrap style=\"color:#000000;\">" + "$" + AdHocTotalPriceArr[eachAHDIndex] + "</td>"
 									+ "<td align=\"center\" bgcolor=\"FFFFFF\" nowrap style=\"color:#000000;\">" + AdHocBillingMethodArr[eachAHDIndex] + "</td>"
 							  + "</tr>";
 		eachAHDIndex = eachAHDIndex + 1;
@@ -417,6 +422,11 @@ if(NOT isempty(SCDocNum)){
 			oldFreq = "";
 			oldPrice = "";
 			oldFees = "";
+			TotalWithFees  = "";
+			TotalWithFeesF = 0.0;
+			MonthlyRev = "";
+			MonthlyRevF = 0.0;
+			oldFees1 = 0.0;
 			print "find";
 			print (findinarray(configAttrArr, "containerSize_readOnly"));
 			if(findinarray(ConfigAttrArr, "containerSize_readOnly") > -1){
@@ -437,7 +447,15 @@ if(NOT isempty(SCDocNum)){
 				oldPrice = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "liftsPerContainer_readOnly")];
 			}
 			if(findinarray(ConfigAttrArr, "totalWithFees_sc") > -1 AND findinarray(ConfigAttrArr, "monthlyRevenue_sc") > -1){
-				oldFees = string(atof(ConfigAttrArr[1 + findinarray(ConfigAttrArr, "totalWithFees_sc")]) - atof(ConfigAttrArr[1 + findinarray(ConfigAttrArr, "monthlyRevenue_sc")]));
+				//need to substrings so I can get rid of the $ in front of the total with fees
+				TotalWithFees = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "totalWithFees_sc")];
+				TotalWithFees = substring(TotalWithFees, 1);
+				TotalWithFeesF = atof(TotalWithFees);
+				MonthlyRev = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "monthlyRevenue_sc")];
+				MonthlyRev = substring(MonthlyRev, 1);
+				MonthlyRevF = atof(MonthlyRev);
+				oldFees1 = TotalWithFeesF - MonthlyRevF;				
+				oldFees = "$" + string(oldFees1);
 			}
 			
 			
