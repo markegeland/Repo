@@ -32,7 +32,13 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			20141201 - Aaron Quintanilla - Added logic to have per unit delivery charges for use in output
             20141202 - Julie Felberg - Replaced estHaulsPerMonth_l with totalEstimatedHaulsMonth_l
             20141205 - Julie Felberg - Added code to set default when totalEstimatedHaulMonth_l has not been populated
-        
+            20150105 - John Palubinskas - #207 add logic to support ERF on FRF flag from divisionFeeRate table
+            20150109 - Julie Felberg - Added logic to populate the direct cost attributes (search "direct cost" for the code)
+			20151201 - Gaurav Dawar - Lines: 458 - Changes made to fix delivery amount when there is a change in container code in service change.
+            20150114 - Julie Felberg - Added { at line 2396 because the loop wasn't closed.  Switched how I pull the waste type for direct cost
+			20150116 - Julie Felberg - removed { at line 2396 and added it to the Direct Cost section
+			20150117 - Julie Felberg - Added logic to set print version of rate restrictions 
+			01/21/15 - Gaurav (Republic) - added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 =====================================================================================================
 */
 
@@ -87,6 +93,7 @@ frfRate = 0.0;
 erfRate = 0.0;
 adminRate = 0.0;
 eRFOnFRF = 0.0;
+isERFOnFRFChargedAtDivisionLevel = false;
 frfRateStr = "";
 erfRateStr = "";
 adminRateStr = "";
@@ -115,7 +122,14 @@ pricingDebugOutputDict = dict("string");
 guardrailDebugInputDict = dict("string");
 guardrailDebugOutputDict = dict("string");
 /*End of debugging dictionaries*/
-            
+
+//Default attributes for direct cost
+smallSWCost = 0.0;
+smallRecCost = 0.0;
+largeSWCost = 0.0;
+largeRecCost = 0.0;
+totalContCost = 0.0;
+
 //=============================== END - Variable Initialization ===============================//
 
 //=============================== START - Get FRF & ERF Rates ===============================//
@@ -129,6 +143,7 @@ for eachRecord in divisionFeeRateRecordSet{
     frfRateStr = get(eachRecord, "fRFRate");
     erfRateStr = get(eachRecord, "eRFRate");
     adminRateStr = get(eachRecord, "adminAmount");
+    erfOnFrfDivision = getint(eachRecord, "erf_on_frf");
     break;
 }
 if(isnumber(frfRateStr)){   //Convert the table result to a float for use in calculations
@@ -138,18 +153,25 @@ if(isnumber(frfRateStr)){   //Convert the table result to a float for use in cal
 if(isnumber(erfRateStr)){   //Convert the table result to a float for use in calculations
     erfRate = atof(erfRateStr) / 100.0;
 }
+
+if(erfOnFrfDivision == 1){
+    isERFOnFRFChargedAtDivisionLevel = true;
+    eRFOnFRF = 1.0;
+}
 print "frfRate: " + string(frfRate);
 print "erfRate: " + string(erfRate);
+print "adminAmount: " + adminRateStr;
+print "erfOnFrf_Division: " + string(isERFOnFRFChargedAtDivisionLevel);
 
 //=============================== END - Get FRF & ERF Rates ===============================//  
 
 //=============================== Start - Calculation for Existing Terms=====================//
 if(salesActivity_quote == "Existing Customer"){
     accountDifferentInDays = bmql("SELECT Expiration_Dt FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote"); //Add any other filters as appropriate to get more specific record
-            for eachRecord in accountDifferentInDays{
+        for eachRecord in accountDifferentInDays{
             expirationDate = get(eachRecord, "Expiration_Dt");
             break;
-            }
+        }
     
     print "......................";
     print expirationDate;
@@ -199,25 +221,23 @@ if(competitor == ""){
 }
 
 //Changed 6/30/14 by Andrew, added in logic for division = 0
-customerTypeFactorRecordSet = bmql("SELECT competitor, competitor_factor, Competitor_Cd, division FROM div_competitor_adj WHERE division = $division_quote OR division = '0' ORDER BY division DESC");
-for eachRecord in customerTypeFactorRecordSet{
-            competitor_db = get(eachRecord, "competitor");
-                    if(lower(competitor_db) == lower(competitor)){
-                        competitorFactorStr = get(eachRecord, "competitor_factor");
-                        //Added by Aaron Q on 09/01/2014 for SR 3-9423125271
-                        if (competitorCode_quote == ""){
-                            competitorCode = get(eachRecord, "Competitor_Cd");
-                        }
-                        else{
-                            competitorCode = competitorCode_quote;
-                        }
-                        break;
-                        }
+competitorFactorRecordSet = bmql("SELECT competitor, competitor_factor, Competitor_Cd, division FROM div_competitor_adj WHERE division = $division_quote OR division = '0' ORDER BY division DESC");
+for eachRecord in competitorFactorRecordSet{
+    competitor_db = get(eachRecord, "competitor");
+    if(lower(competitor_db) == lower(competitor)){
+        competitorFactorStr = get(eachRecord, "competitor_factor");
+        //Added by Aaron Q on 09/01/2014 for SR 3-9423125271
+        if (competitorCode_quote == ""){
+            competitorCode = get(eachRecord, "Competitor_Cd");
+        }
+        else{
+            competitorCode = competitorCode_quote;
+        }
+        break;
+    }
 
 }
-print "-----";
-print competitorFactorStr;
-print "-----";
+print "competitorFactorStr: " + competitorFactorStr;
 
 
 if(isnumber(competitorFactorStr)){
@@ -296,7 +316,7 @@ if(siteContainerstextStr <> ""){
 
 
 returnStr = returnStr + "1" + "~" + "competitorFactor_quote" + "~" + string(competitorFactor) + "|"
-                        + "1" + "~" + "competitorCode_quote" + "~" + competitorCode + "|";
+                      + "1" + "~" + "competitorCode_quote" + "~" + competitorCode + "|";
                         
 //=============================== END - Customer Type Factor Calculation ===============================//
 
@@ -439,7 +459,7 @@ for line in line_process{
                 containerSize_db = get(eachRecord, "Container_Size");
                 quantity_db = string(getint(eachRecord, "container_cnt"));
                 compactor_db = get(eachRecord, "has_Compactor");
-                routeTypeDerived_db = get(eachRecord, "Container_Cd");//This is route type derived
+                routeTypeDerived_db = getconfigattrvalue(docNum, "containerCodes_SC");//get(eachRecord, "Container_Cd");//This is route type derived should be what is currently selected on config page by the user in case of a service change
                 onsiteTimeInMins_db = "0";//get(eachRecord, "onsiteTimeInMins");//To be added in table
                 wasteCategory_db = get(eachRecord, "waste_type"); //Account status considers waste category as waste type
                 Is_FRF_On_db = string(getint(eachRecord, "is_frf_charged"));
@@ -476,7 +496,7 @@ for line in line_process{
                 if(Is_ERF_On_db == "1"){
                     is_ERF_Charged = "Yes";
                 }
-                if(Is_ERF_On_FRF_db == "1"){
+                if((Is_ERF_On_FRF_db == "1") AND (isERFOnFRFChargedAtDivisionLevel == true)){
                     is_ERF_On_FRF_charged = "Yes";
                 }
                 
@@ -696,20 +716,14 @@ totalDisposalNew = 0.0;
 totalRentalNew = 0.0;
 totalSmallContainerPriceNew = 0.0;*/
 
-//divistionSelected = atoi(division_quote);
-//divistionSelected = atoi(division_quote);
-
-
 if(initialTerm_quote == "Existing Terms"){
     initialTerm = diffMthRnd;
 }
 else{
-initialTerm=atoi(initialTerm_quote);
+    initialTerm=atoi(initialTerm_quote);
 }
 
-print "//////////////////";
-print initialTerm;
-print "//////////////////";
+print "initialTerm: " + string(initialTerm);
 
 //Begin looping over line items
 modelCount=0;
@@ -747,6 +761,7 @@ for line in line_process{
     if(containskey(priceTypeDict, line._document_number)){
         priceType = get(priceTypeDict, line._document_number);
     }
+
     if(line._parent_doc_number == ""){ //Model loop
         put(exchangeExistsDict, line._document_number, false);//Initialize this Dict to false for each model and if exchange exists, set it to true
         put(exchangeDict, line._document_number, string(line.divisionExchange_line));
@@ -772,6 +787,7 @@ for line in line_process{
 		
 		put(deliveryUIDict, line._document_number, string(line.divisionDelivery_ui_line));
     }
+
     if(line._parent_doc_number <> ""){  //Only apply pricing to non-model line items
 
         //Initialize variables
@@ -786,8 +802,7 @@ for line in line_process{
         lineItemComment = line._line_item_comment;
         containerSize = "";
         container = "";
-        installationChg = 0.0;
-        
+        installationChg = 0.0;        
         haulRateStr = "";
         haulRate = 0.0;
         disposalRateStr = "";
@@ -1060,7 +1075,7 @@ for line in line_process{
             //Call calculateGuardrails util function
             put(guardrailInputDict, "includeERF", includeERF_quote);
             put(guardrailInputDict, "includeFRF", includeFRF_quote);
-            put(guardrailInputDict, "erfOnFrfRate", "1");
+            put(guardrailInputDict, "erfOnFrfRate", string(eRFOnFRF));
             put(guardrailInputDict, "siteName", siteName); 
             put(guardrailInputDict, "wasteType", wasteType); 
             put(guardrailInputDict, "division", division_quote); 
@@ -1095,8 +1110,6 @@ for line in line_process{
             put(guardrailInputDict, "hasCompactor", get(outputDict, "hasCompactor")); 
             put(guardrailInputDict, "compactor_depr", get(outputDict, "compactor_depr")); 
             put(guardrailInputDict, "perHaulCosts", get(outputDict, "perHaul"));
-            //Include Rental for Guard rail calculation 
-            
             put(guardrailInputDict, "marketRate", get(outputDict, "marketRate"));
             put(guardrailInputDict, "rental", rental);
             put(guardrailInputDict, "containerType_l", containerType_l);
@@ -1108,25 +1121,23 @@ for line in line_process{
             put(guardrailInputDict, "isCompactorCustomerOwned", string(compactorCustomerOwned));
             put(guardrailInputDict, "routeType", routeTypeDervied); 
             put(guardrailInputDict, "customer_id", _quote_process_customer_id);  //J.Felberg passing additional fields for FRF and ERF calculations
-            print "put containerGroup line 1094";
             put(guardrailInputDict, "containerGroup", containerGroupForTransaction_quote);  //J.Felberg passing additional fields for FRF and ERF calculations
             put(guardrailInputDict, "siteNumber_quote", siteNumber_quote); //J.Felberg passing additional fields for FRF and ERF calculations
+            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
             
             if(DEBUG){
-            print "guardrailInputDict for large Container";
-            print guardrailInputDict;
+                print "guardrailInputDict for large Container";
+                print guardrailInputDict;
             }
             
-            //JFelberg Fees
-            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
             guardrailOutputDict = util.calculateGuardrails(guardrailInputDict);
             
             guardrailDebugInputDict = guardrailInputDict;
             guardrailDebugOutputDict = guardrailOutputDict;
 
             if(DEBUG){
-            print "guardrailOutputDict for large Container";
-            print guardrailOutputDict;
+                print "guardrailOutputDict for large Container";
+                print guardrailOutputDict;
             }
             
             if(DEBUG){
@@ -1239,7 +1250,7 @@ for line in line_process{
             //Call calculateGuardrails util function
             put(guardrailInputDict, "includeERF", includeERF_quote);
             put(guardrailInputDict, "includeFRF", includeFRF_quote);
-            put(guardrailInputDict, "erfOnFrfRate", "1");
+            put(guardrailInputDict, "erfOnFrfRate", string(eRFOnFRF));
             put(guardrailInputDict, "siteName", siteName); 
             put(guardrailInputDict, "wasteType", wasteType); 
             put(guardrailInputDict, "division", division_quote); 
@@ -1465,7 +1476,7 @@ for line in line_process{
             //Call calculateGuardrails util function for current small container configuration
             //Calculate pricing for current configuration here, these values will be used for new configuration
             guardrailCurrentInputDict = dict("string");
-            put(guardrailCurrentInputDict, "erfOnFrfRate", "1");
+            put(guardrailCurrentInputDict, "erfOnFrfRate", string(eRFOnFRF));
             put(guardrailCurrentInputDict, "siteName", siteName); 
             put(guardrailCurrentInputDict, "wasteType", wasteType_db); 
             put(guardrailCurrentInputDict, "division", division_quote); 
@@ -1663,7 +1674,7 @@ for line in line_process{
             //Call calculateGuardrails util function for modified small container configuration
             put(guardrailInputDict, "includeERF", includeERF_quote);
             put(guardrailInputDict, "includeFRF", includeFRF_quote);
-            put(guardrailInputDict, "erfOnFrfRate", "1");
+            put(guardrailInputDict, "erfOnFrfRate", string(eRFOnFRF));
             put(guardrailInputDict, "siteName", siteName); 
             put(guardrailInputDict, "wasteType", wasteType_sc); 
             put(guardrailInputDict, "division", division_quote); 
@@ -1776,8 +1787,8 @@ for line in line_process{
             //If no competitor was selected on the quote, use the default value New/New to get the default table row
             //competitor = getconfigattrvalue(line._parent_doc_number, "competitor");
             competitor = "new/new";
-            customerTypeFactorRecordSet = bmql("SELECT competitor, competitor_factor, Competitor_Cd FROM div_competitor_adj WHERE division = $division_quote");
-            for eachRecord in customerTypeFactorRecordSet{
+            competitorFactorRecordSet = bmql("SELECT competitor, competitor_factor, Competitor_Cd FROM div_competitor_adj WHERE division = $division_quote");
+            for eachRecord in competitorFactorRecordSet{
                 competitor_db = get(eachRecord, "competitor");
                 if(lower(competitor_db) == lower(competitor)){
                     competitorCode = get(eachRecord, "Competitor_Cd");
@@ -1820,21 +1831,17 @@ for line in line_process{
                 }
             }
 
-            returnStr = returnStr + "1" + "~" + "competitorCode_quote" + "~" + competitorCode + "|";
-                                    
+            returnStr = returnStr + "1" + "~" + "competitorCode_quote" + "~" + competitorCode + "|";                                    
             returnStr = returnStr + line._document_number + "~" + "activity_line" + "~" + get(existingCustDataDict, parentDoc+":salesActivity") + "|";
             returnStr = returnStr + line._document_number + "~" + "priceAdjustmentReason_line" + "~" + get(existingCustDataDict, parentDoc+":priceAdjustmentReason") + "|";
         }
         //=============================== END - Service Change Price Calculation ===============================//  
         
         //=============================== START - Ad-Hoc Part Description ===============================// 
-// 20140926 JP: comment out this description as we are doing the same thing in new function adHocConfigToCommerce
 
         elif(priceType == "Ad-Hoc Line Items"){
-            print "------JP in adhoc part description------";
             put(inputDict, "key", "Description");   //Get the value of Description entered by the user from the Config line item comment
             adHocDescription = util.parseThroughLineItemComment(inputDict);
-            print adHocDescription;
             returnStr = returnStr + line._document_number + "~" + "adHocDescription_line" + "~" + adHocDescription + "|";
         }
 
@@ -1872,8 +1879,6 @@ for line in line_process{
                 if(containskey(guardrailOutputDict, "haulStretch")){
                     stretchPriceStr = get(guardrailOutputDict, "haulStretch");
                 }
-                
-                //currentPriceStr = get(guardrailCurrentOutputDict, "monthly_rate");
                 if(containskey(existingCustDataDict, parentDoc+":monthlyRate")){
                     currentPriceStr = get(existingCustDataDict, parentDoc+":monthlyRate");  
                 }
@@ -1923,13 +1928,17 @@ for line in line_process{
                 //J. Felberg added the quantity logic
                 if(containskey(guardrailOutputDict, "DEL")){
                     floorPriceStr = get(guardrailOutputDict, "deliveryFloor");
-                    floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+                    //floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+					floorPriceStr = string(atof(floorPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     basePriceStr = get(guardrailOutputDict, "DEL");
-                    basePriceStr = string(atof(basePriceStr) * line._price_quantity);
+                    //basePriceStr = string(atof(basePriceStr) * line._price_quantity);
+					basePriceStr = string(atof(basePriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     targetPriceStr = get(guardrailOutputDict, "DEL");
-                    targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
+                    //targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
+					targetPriceStr = string(atof(targetPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     stretchPriceStr = get(guardrailOutputDict, "DEL");
-                    stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+                    //stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+					stretchPriceStr = string(atof(stretchPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
 					hasDelivery = true;
                 }
                 //AQ 11/07/2104
@@ -1953,13 +1962,17 @@ for line in line_process{
                 if(containskey(guardrailOutputDict, "REM")){
                     //floorPriceStr = get(guardrailOutputDict, "REM");    //Changed 11/18/14 AQ
 					floorPriceStr = "0.0";    
-                    floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+                    //floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
+					floorPriceStr = string(atof(floorPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     basePriceStr = get(guardrailOutputDict, "REM");
-                    basePriceStr = string(atof(basePriceStr) * line._price_quantity);
+                    //basePriceStr = string(atof(basePriceStr) * line._price_quantity);
+					basePriceStr = string(atof(basePriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     targetPriceStr = get(guardrailOutputDict, "REM");
-                    targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
+                    //targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
+					targetPriceStr = string(atof(targetPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
                     stretchPriceStr = get(guardrailOutputDict, "REM");
-                    stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+                    //stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
+					stretchPriceStr = string(atof(stretchPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
 					if(hasDelivery){
 						returnStr = returnStr + line._document_number + "~hasDelivery_line~true|";
 					}
@@ -2136,7 +2149,9 @@ for line in line_process{
                 eRFOnFRF = atof(erfOnFrfStr);
             }
             
-            //Getting FRFRate, ERFRate and FRF and ERF flags  of current existing customer line - These rates and flags will be applied on currentPrice to find the frf amount on currentPrice and ERF Amount on current price and "total fees" on current price
+            //Getting FRFRate, ERFRate and FRF and ERF flags of current existing customer line
+            //These rates and flags will be applied on currentPrice to find the frf amount on 
+            //currentPrice and ERF Amount on current price and "total fees" on current price
             
             parentDoc = line._parent_doc_number;
             
@@ -2194,38 +2209,59 @@ for line in line_process{
             }
             
             returnStr = returnStr + line._document_number + "~" + "floorPrice_line" + "~" + string(floorPrice) + "|"
-                              + line._document_number + "~" + "basePrice_line" + "~" + string(basePrice) + "|"
-                              + line._document_number + "~" + "targetPrice_line" + "~" + string(targetPrice) + "|"
-                              + line._document_number + "~" + "stretchPrice_line" + "~" + string(stretchPrice) + "|"
-                              + line._document_number + "~" + "totalFloorPrice_line" + "~" + string(floorPrice) + "|"
-                              + line._document_number + "~" + "totalBasePrice_line" + "~" + string(basePrice) + "|"
-                              + line._document_number + "~" + "totalTargetPrice_line" + "~" + string(targetPrice) + "|"
-                              + line._document_number + "~" + "totalStretchPrice_line" + "~" + string(stretchPrice) + "|"
-                              + line._document_number + "~" + "monthlyTotalDisposalSell_line" + "~" + string(monthlyTotalDisposalSell) + "|"
-                              + line._document_number + "~" + "currentPrice_line" + "~" + string(currentPrice) + "|"
-                              + line._document_number + "~" + "currentPriceFRFAmount_line" + "~" + string(existingFRFAmountOnCurrentPrice) + "|"
-                              + line._document_number + "~" + "currentPriceERFAmount_line" + "~" + string(existingERFAmountOnCurrentPrice) + "|"
-                              + line._document_number + "~" + "currentPriceIncludingFees_line" + "~" + string(currentPriceIncludingFees) + "|"
-                              + line._document_number + "~" + "existingWasteCategory_line" + "~" + existingWasteCategory + "|";
-                             // + line._document_number + "~" + "existingAdminAmount_line" + "~" + string(existingAdminAmount) + "|";
+                                  + line._document_number + "~" + "basePrice_line" + "~" + string(basePrice) + "|"
+                                  + line._document_number + "~" + "targetPrice_line" + "~" + string(targetPrice) + "|"
+                                  + line._document_number + "~" + "stretchPrice_line" + "~" + string(stretchPrice) + "|"
+                                  + line._document_number + "~" + "totalFloorPrice_line" + "~" + string(floorPrice) + "|"
+                                  + line._document_number + "~" + "totalBasePrice_line" + "~" + string(basePrice) + "|"
+                                  + line._document_number + "~" + "totalTargetPrice_line" + "~" + string(targetPrice) + "|"
+                                  + line._document_number + "~" + "totalStretchPrice_line" + "~" + string(stretchPrice) + "|"
+                                  + line._document_number + "~" + "monthlyTotalDisposalSell_line" + "~" + string(monthlyTotalDisposalSell) + "|"
+                                  + line._document_number + "~" + "currentPrice_line" + "~" + string(currentPrice) + "|"
+                                  + line._document_number + "~" + "currentPriceFRFAmount_line" + "~" + string(existingFRFAmountOnCurrentPrice) + "|"
+                                  + line._document_number + "~" + "currentPriceERFAmount_line" + "~" + string(existingERFAmountOnCurrentPrice) + "|"
+                                  + line._document_number + "~" + "currentPriceIncludingFees_line" + "~" + string(currentPriceIncludingFees) + "|"
+                                  + line._document_number + "~" + "existingWasteCategory_line" + "~" + existingWasteCategory + "|";
             
                 //Assign Supplemental charges to parent line item
-            returnStr = returnStr +  parentDoc + "~" + "divisionExchange_line" + "~" + divisionExchangeStr + "|"
-                                + parentDoc + "~" + "divisionExtLift_line" + "~" + divisionExtLiftStr + "|"
-                                + parentDoc + "~" + "divisionExtYard_line" + "~" + divisionExtYardStr + "|"
-                                + parentDoc + "~" + "divisionWAS_line" + "~" + divisionWASStr + "|"
-                                + parentDoc + "~" + "divisionRelo_line" + "~" + divisionReloStr + "|"
-                                + parentDoc + "~" + "divisionRemove_line" + "~" + divisionRemoveStr + "|"
-                                + parentDoc + "~" + "divisionDelivery_line" + "~" + divisionDeliveryStr + "|"
-                                + parentDoc + "~" + "divisionRelo_ui_line" + "~" + divisionReloStr_ui + "|"
-                                + parentDoc + "~" + "divisionExchange_ui_line" + "~" + divisionExcStr_ui + "|"
-                                + parentDoc + "~" + "divisionExtLift_ui_line" + "~" + divisionExtLiftStr_ui + "|"
-                                + parentDoc + "~" + "divisionExtYard_ui_line" + "~" + divisionExtYdStr_ui + "|"
-                                + parentDoc + "~" + "divisionRemove_ui_line" + "~" + divisionRemStr_ui + "|"
-								+ parentDoc + "~" + "divisionDelivery_ui_line" + "~" + divisionDelStr_ui + "|" //20141201 AQ
-                                + parentDoc + "~" + "divisionWAS_ui_line" + "~" + divisionWashoutStr_ui + "|"
-                                + parentDoc + "~" + "exchangeLineItemExists_line" + "~" + string(get(exchangeExistsDict, parentDoc)) + "|";
-                              
+            returnStr = returnStr + parentDoc + "~" + "divisionExchange_line" + "~" + divisionExchangeStr + "|"
+                                  + parentDoc + "~" + "divisionExtLift_line" + "~" + divisionExtLiftStr + "|"
+                                  + parentDoc + "~" + "divisionExtYard_line" + "~" + divisionExtYardStr + "|"
+                                  + parentDoc + "~" + "divisionWAS_line" + "~" + divisionWASStr + "|"
+                                  + parentDoc + "~" + "divisionRelo_line" + "~" + divisionReloStr + "|"
+                                  + parentDoc + "~" + "divisionRemove_line" + "~" + divisionRemoveStr + "|"
+                                  + parentDoc + "~" + "divisionDelivery_line" + "~" + divisionDeliveryStr + "|"
+                                  + parentDoc + "~" + "divisionRelo_ui_line" + "~" + divisionReloStr_ui + "|"
+                                  + parentDoc + "~" + "divisionExchange_ui_line" + "~" + divisionExcStr_ui + "|"
+                                  + parentDoc + "~" + "divisionExtLift_ui_line" + "~" + divisionExtLiftStr_ui + "|"
+                                  + parentDoc + "~" + "divisionExtYard_ui_line" + "~" + divisionExtYdStr_ui + "|"
+                                  + parentDoc + "~" + "divisionRemove_ui_line" + "~" + divisionRemStr_ui + "|"
+								  + parentDoc + "~" + "divisionDelivery_ui_line" + "~" + divisionDelStr_ui + "|" //20141201 AQ
+                                  + parentDoc + "~" + "divisionWAS_ui_line" + "~" + divisionWashoutStr_ui + "|"
+                                  + parentDoc + "~" + "exchangeLineItemExists_line" + "~" + string(get(exchangeExistsDict, parentDoc)) + "|";
+             
+             //Set Direct Cost attributes
+             //can't user wasteCategory_db, commenting out code until find another variable to use
+			if(container == "SMALL_CONTAINER"){
+				//small 
+				if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+					smallSWCost = smallSWCost + floorPrice;
+				}
+				if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
+					smallRecCost = smallRecCost + floorPrice;
+				}
+			}
+			if(container == "LARGE_CONTAINER"){
+				if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+					largeSWCost = largeSWCost + floorPrice;
+				}
+				if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
+					largeRecCost = largeRecCost + floorPrice;
+				}
+			}
+				
+			totalContCost = totalContCost + floorPrice;					
+			//end Direct Cost attributes                
             //=============================== END - Assign Guardrails to Outputs ===============================//  
         }
         else{   //For Ad-Hoc parts, the floor, base, target, and stretch are all the value entered by the user
@@ -2267,24 +2303,17 @@ for line in line_process{
                               + line._document_number + "~" + "operatingExpensePerMonth_line" + "~" + string(operating_expense) + "|"
                               + line._document_number + "~" + "existingCostPerMonthIncludingOverhead_line" + "~" + string(existing_cts_month_incl_oh) + "|"
                               + line._document_number + "~" + "existingDisposalExpensePerMonth_line" + "~" + string(existing_cost_disp_xfer_proc) + "|"
-                              + line._document_number + "~" + "existingOperatingExpensePerMonth_line" + "~" + string(existing_operating_expense) + "|";
-
-
-        //=============================== START - Set additional Commerce attributes ===============================//
-        //Add values of attributes from the util and from Config to return string for each line. Also create helper attributes for use in formulas
-        returnStr = returnStr   + line._document_number + "~" + "wasteType_line" + "~" + wasteType + "|"
-                                + line._document_number + "~" + "liftsPerContainer_line" + "~" + frequencyAttribute + "|"
-                                + line._document_number + "~" + "wasteCategory_line" + "~" + wasteCategory + "|"
-                                + line._document_number + "~" + "containerSize_line" + "~" + getconfigattrvalue(line._parent_doc_number, "chooseContainer") + "|"
-                                + line._document_number + "~" + "isSellPriceDefaultSetCopy_line" + "~" + line.isSellPriceDefaultSet_line + "|"
-                                + line._document_number + "~" + "sellPriceTemp_line" + "~" + string(line.sellPrice_line) + "|"
-                                + line._document_number + "~" + "rateType_line" + "~" + rateType + "|"
-                                + line._document_number + "~" + "installationCharge_line" + "~" + string(installationChg) + "|";
-                    
+                              + line._document_number + "~" + "existingOperatingExpensePerMonth_line" + "~" + string(existing_operating_expense) + "|"
+                              + line._document_number + "~" + "wasteType_line" + "~" + wasteType + "|"
+                              + line._document_number + "~" + "liftsPerContainer_line" + "~" + frequencyAttribute + "|"
+                              + line._document_number + "~" + "wasteCategory_line" + "~" + wasteCategory + "|"
+                              + line._document_number + "~" + "containerSize_line" + "~" + getconfigattrvalue(line._parent_doc_number, "chooseContainer") + "|"
+                              + line._document_number + "~" + "isSellPriceDefaultSetCopy_line" + "~" + line.isSellPriceDefaultSet_line + "|"
+                              + line._document_number + "~" + "sellPriceTemp_line" + "~" + string(line.sellPrice_line) + "|"
+                              + line._document_number + "~" + "rateType_line" + "~" + rateType + "|"
+                              + line._document_number + "~" + "installationCharge_line" + "~" + string(installationChg) + "|"
+                              + line._document_number + "~" + "containerNumberOfCurrentService_line" + "~" + getconfigattrvalue(line._parent_doc_number, "containerGroup_readOnly") + "|"; 
         partLineItem = "true";
-        //Setting container group for line items - container group number exists only on service change model, for others it will just be null
-        containerGrpNum = getconfigattrvalue(line._parent_doc_number, "containerGroup_readOnly");
-        returnStr = returnStr + line._document_number + "~" + "containerNumberOfCurrentService_line" + "~" + containerGrpNum + "|"; 
     }
     //Run pricing on model line items
     elif(line._part_number==""){
@@ -2377,8 +2406,6 @@ for line in line_process{
     }
 }
 
-// 20140926 JP: all ad-hoc pre-pricing processing moved to function
-//returnStr = returnStr + adHocConfigToCommerce();
 //=============================== START - AdHoc ===============================//
 adHocDescription = "";
 adHocFeeType = "";
@@ -2452,5 +2479,21 @@ returnStr = returnStr + "1~" + "industrialExists_quote" + "~" + string(industria
                       + "1~" + "isERFAndFRFChargedOnAdmin_quote" + "~" + isERFAndFRFChargedOnAdmin + "|"
                       + "1~" + "hiddenExisitingTerm" + "~" + string(diffMthRnd) + "|" 
                       + "1~" + "existingTermFlag_quote" + "~" + string(lessThan90Days) + "|";
+
+//============================= Start - Set direct cost attributes ======================================//
+returnStr = returnStr + "1~" + "smallSolidWasteCost_quote" + "~" + string(smallSWCost) + "|"
+					  + "1~" + "smallRecyclingCost_quote" + "~" + string(smallRecCost) + "|"
+					  + "1~" + "largeSolidWasteCost_quote" + "~" + string(largeSWCost) + "|"
+					  + "1~" + "largeRecyclingCost_quote" + "~" + string(largeRecCost) + "|"
+					  + "1~" + "totalContainerCost_quote" + "~" + string(totalContCost) + "|";
+//============================= End - Set direct cost attributes ======================================//
+
+//============================= Start - Set print version of rate restrictions ========================//
+returnStr = returnStr + "1~" + "year1RatePrint_quote" + "~" +  util.setPrintVersionsOfRateRestrictions(upper(year1Rate_quote)) + "|"
+					  + "1~" + "year2RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year2Rate_quote)) + "|"
+					  + "1~" + "year3RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year3Rate_quote)) + "|"
+					  + "1~" + "year4RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(afterYear4_quote)) + "|";
+//============================= End - Set print version  ======================================//
+					  
 
 return returnStr;

@@ -3,6 +3,7 @@ Created by: Srikar Mamillapalli
 Purpose: Parses key value paired delimited string and returns the query value
 Delimited String Format: key@value^_^
 Example: geo@SEANOR^_^
+updates : 01/21/15 - Gaurav (Republic) - added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
 */
 str = "";
 key = "";
@@ -37,5 +38,8 @@ if(str <> ""){
 			}
 		}
 	}
+}
+if(result == "One-Time"){//added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+	result = "Per Service";
 }
 return result;

@@ -2,12 +2,17 @@
 	==========================================================================
 	| COMMERCE BML LIBRARY													 |
 	+------------------------------------------------------------------------+
-	| emailNotificationGenerator											 |
+	| NewEmailNotificationGenerator											 |
 	==========================================================================
 	| Generates HTML email											 		|
 	==========================================================================
 	Change Log
 	20141211 - Julie Felberg Implemented 4 new tables with logic.  This logic involved a new line level loop and several new variables.
+	20140115 - Julie Felberg Added Disposal site information
+	20140115 - Julie Felberg More Disposal Site Information
+	20140116 - Julie Felberg Switched the Disposal Site config attr
+	20140117 - Julie Felberg Added NewFees and NewPrice logic - Added Rate Restriction Section
+	
 */
 
 //Calculations
@@ -34,6 +39,8 @@ TotalServiceTimeArr = string[];
 TonsPerHaulArr = string[];
 DisposalSiteArr = string[];
 CostPerHaulArr = string[];
+newPriceDict = dict("string");
+newFeesDict = dict("string");
 
 //start loop
 for line in line_process{
@@ -56,26 +63,82 @@ for line in line_process{
 			if(findinarray(SCDocNum, line._parent_doc_number) == -1){
 				append(SCDocNum, line._parent_doc_number);
 			}
+			//if monthly fee, then populate new price array
+			if(line.billingType_line == "Monthly"){
+				put(newPriceDict,line._parent_doc_number, string(line.sellPrice_line));
+				put(newFeesDict, line._parent_doc_number, string(line.frfAmountSell_line + line.erfAmountSell_line + adminRate_quote));
+			}
 		}
 		//container
 		else{
 			if(findinarray(ContPDocNum, line._parent_doc_number) == -1){
-				append(ContPDocNum,line._parent_doc_number);
-				append(ContainerArr, line.description_line);
-				append(RatePerHaulArr, string(line.perHaulRate_line));
-				append(ContTypeArr, line._model_name);
-				append(CompactorValArr, "Value");
-				append(TotalServiceTimeArr, "Value");
-				append(DisposalSiteArr, "Value");
-				//SMALL_CONTAINER
+				print "in the else we get these descriptions:";
+				print line.description_line;
+				append(ContPDocNum,line._parent_doc_number);		
+				
 				//LARGE_CONTAINER
-				if(line._model_name == "SMALL_CONTAINER"){
+				if(line.billingType_line == "Per Haul"){
+					print "we have a large container";
+					append(ContainerArr, line.description_line);
+					append(RatePerHaulArr, string(line.perHaulRate_line));
+					append(ContTypeArr, line._model_name);
+					//append(CompactorValArr, "Value");
+					//append(TotalServiceTimeArr, "Value");
+					//append(DisposalSiteArr, "Value");
+					append(CostPerHaulArr, string(line.totalFloorPrice_line));
+					
+					//populate compactor value
+					if(containskey(ConfigAttrDict, line._parent_doc_number)){
+						CAttrStr = get(ConfigAttrDict, line._parent_doc_number);
+						CAttrArr = split(CAttrStr, "~");
+						if(findinarray(CAttrArr, "compactorValue") > -1){
+							append(CompactorValArr, CAttrArr[1 + findinarray(CAttrArr, "compactorValue")]);
+						}
+						else{
+							append(CompactorValArr, "Not Found");
+						}
+						if(findinarray(CAttrArr, "site_disposalSite") > -1){
+							append(DisposalSiteArr, CAttrArr[1 + findinarray(CAttrArr, "site_disposalSite")]);
+						}
+						else{
+							append(DisposalSiteArr, "Not Found");
+						}
+						if(findinarray(CAttrArr, "adjustedTotalTime_l") > -1){
+							append(TotalServiceTimeArr, CAttrArr[1 + findinarray(CAttrArr, "adjustedTotalTime_l")]);
+						}
+						else{
+							append(TotalServiceTimeArr, "Not Found");
+						}
+						
+					}
+					else{
+						append(CompactorValArr, "Not Found");
+						append(DisposalSiteArr, "Not Found");
+						append(TotalServiceTimeArr, "Not Found");
+					}
+					
+					
+				}
+				//SMALL_CONTAINER
+				else{
+					print "we have a small container";
+					append(ContainerArr, line.description_line);
+					append(RatePerHaulArr, string(line.perHaulRate_line));
+					append(ContTypeArr, line._model_name);
+					append(CompactorValArr, "NA");
+					append(TotalServiceTimeArr, "Value");
+					//append(DisposalSiteArr, "NA");
 					append(CostPerHaulArr, "NA");
 					append(TonsPerHaulArr, "NA");
+					
+					if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+						append(DisposalSiteArr, getconfigattrvalue(line._parent_doc_number, "disposalPolygon"));
+					}
+					else{
+						append(DisposalSiteArr, "");
+					}
 				}
-				else{
-					append(CostPerHaulArr, "Value");
-				}
+				
 				
 			}
 		}
@@ -136,7 +199,7 @@ emailBody = emailBody + "<table style=\"padding-left:35px;font: 16px Calibri;\">
 							+ "<td style=\"padding-left:35px;font: 16px Calibri;\">Submitted By: "+SubmittedByFullName +"</td></tr>"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Submitted Date: "+submittedDate_quote +"</td></tr>"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Comments: "+submittersComments +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Approvals Required: "+approvalReasonDisplayText_quote +"</td></tr>" 		
+							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Approvals Required: "+approvalReasonDisplayWithColorTA_quote +"</td></tr>" 		
 							+ "<tr><td><br/></td></tr>"
 							+ "<tr><td><br/></td></tr>"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Quote Description: "+quoteDescription_quote +"</td></tr>"
@@ -149,8 +212,36 @@ emailBody = emailBody + "<table style=\"padding-left:35px;font: 16px Calibri;\">
 //20141211 Email revamp
 emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Industry: "+industry_quote +"</td></tr>"
 							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Segment: "+segment_quote +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Term: "+initialTerm_quote +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Restriction: "+"RR in Progress" +"</td></tr>";
+							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Term: "+initialTerm_quote +"</td></tr>";
+							
+//================== Rate Restriction ======================================//
+emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Restriction: "+"RR in Progress" +"</td></tr>";
+
+if(year1Rate_quote == "" AND year2Rate_quote == "" AND year3Rate_quote == "" AND afterYear4_quote == "" AND customerRateRestriction_quote == true){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Firm Until " + afterYear1Date_quote + "</td></tr>";
+}
+if(customerRateRestriction_quote == true AND year1Rate_quote <> ""){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">" + year1RatePrint_quote + " " + afterYear1Date_quote +"</td></tr>";
+}
+if(customerRateRestriction_quote == true AND year1Rate_quote == "" AND year2Rate_quote == "" AND year3Rate_quote == "" AND afterYear4_quote == ""){
+	if(isnumber(initialTerm_quote)){
+		if(atoi(initialTerm_quote) >= 24){
+			emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Rate Firm for the 1st year of the agreement.</td></tr>";
+		}
+	}
+}
+if(customerRateRestriction_quote == true AND year2Rate_quote <> ""){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">" + year2RatePrint_quote + " " + afterYear2Date_quote +"</td></tr>";
+}
+if(customerRateRestriction_quote == true AND year3Rate_quote <> ""){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">" + year3RatePrint_quote + " " + afterYear3Date_quote +"</td></tr>";
+}
+if(customerRateRestriction_quote == true AND afterYear4_quote <> ""){
+	emailBody = emailBody + "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">" + year4RatePrint_quote + " " + afterYear4Date_quote +"</td></tr>";
+}
+//================= end Rate Restriction ====================================//
+
+
 //end Email revamp							
 							
 emailBody = emailBody + "</table>";	
@@ -310,8 +401,8 @@ if(NOT isempty(SCDocNum)){
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Nbr</b></td>"
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Waste Type</b></td>"
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Frequency</b></td>"
-							//+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>PRICE</b></td>"
-							//+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
+							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>PRICE</b></td>"
+							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
 						+ "</tr>";
 	
 	for eachSC in SCDocNum{
@@ -324,6 +415,8 @@ if(NOT isempty(SCDocNum)){
 			oldNbr = "";
 			oldWT = "";
 			oldFreq = "";
+			oldPrice = "";
+			oldFees = "";
 			print "find";
 			print (findinarray(configAttrArr, "containerSize_readOnly"));
 			if(findinarray(ConfigAttrArr, "containerSize_readOnly") > -1){
@@ -340,6 +433,13 @@ if(NOT isempty(SCDocNum)){
 			if(findinarray(ConfigAttrArr, "liftsPerContainer_readOnly") > -1){
 				oldFreq = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "liftsPerContainer_readOnly")];
 			}
+			if(findinarray(ConfigAttrArr, "monthlyRevenue_sc") > -1){
+				oldPrice = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "liftsPerContainer_readOnly")];
+			}
+			if(findinarray(ConfigAttrArr, "totalWithFees_sc") > -1 AND findinarray(ConfigAttrArr, "monthlyRevenue_sc") > -1){
+				oldFees = string(atof(ConfigAttrArr[1 + findinarray(ConfigAttrArr, "totalWithFees_sc")]) - atof(ConfigAttrArr[1 + findinarray(ConfigAttrArr, "monthlyRevenue_sc")]));
+			}
+			
 			
 			emailBody = emailBody + "<tr>"
 				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + "old container" + "</td>"
@@ -347,6 +447,8 @@ if(NOT isempty(SCDocNum)){
 				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldNbr + "</td>"
 				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldWT + "</td>"
 				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldFreq + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldPrice + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldFees + "</td>"
 				+ "</tr>";
 		}
 	}
@@ -358,8 +460,8 @@ if(NOT isempty(SCDocNum)){
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Nbr</b></td>"
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Waste Type</b></td>"
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Frequency</b></td>"
-							//+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>PRICE</b></td>"
-							//+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
+							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>PRICE</b></td>"
+							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
 						+ "</tr>";
 	//rows for new containers
 	for NeachSC in SCDocNum{
@@ -371,6 +473,8 @@ if(NOT isempty(SCDocNum)){
 			newNbr = "";
 			newWT = "";
 			newFreq = "";
+			newPrice = "";
+			newFees = "";
 			
 			if(findinarray(NConfigAttrArr, "containerSize_sc") > -1){
 				newSize = NConfigAttrArr[1 + findinarray(NConfigAttrArr, "containerSize_sc")];
@@ -384,6 +488,12 @@ if(NOT isempty(SCDocNum)){
 			if(findinarray(NConfigAttrArr, "liftsPerContainer_sc") > -1){
 				newFreq = NConfigAttrArr[1 + findinarray(NConfigAttrArr, "liftsPerContainer_sc")];
 			}
+			if(containskey(newPriceDict, NeachSC)){
+				newPrice = get(newPriceDict, NeachSC);
+			}
+			if(containskey(newFeesDict, NeachSC)){
+				newFees = get(newFeesDict, NeachSC);
+			}
 			
 			emailBody = emailBody + "<tr>"
 					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + "newContainer" + "</td>"
@@ -391,6 +501,8 @@ if(NOT isempty(SCDocNum)){
 					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newNbr + "</td>"
 					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newWT + "</td>"
 					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newFreq + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newPrice + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newFees + "</td>"
 				+ "</tr>";
 		}
 	}
@@ -423,4 +535,4 @@ emailBody = emailBody + "</body></ht" + "ml>";
 // Use the below statement when an output PDF needs to be attached
 //xslName = "quote_pdf_bmClone_21";return emailBody + "$,$" + xslName;
 
-return emailBody ;
+return emailBody;
