@@ -30,7 +30,8 @@ Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to 
 	    20150109 - Gaurav Dawar - Line 785, added this piece to hide the commission for temporary accounts
 		20150115 - Aaron Quintanilla - Changed small container calculations starting on line 121 to include fees with delivery to more accurately calculate commision.  Moved fees to about other line calculations, added fees to delivery values, removed 'addErfFrf' variable.
 		20150117 - Aaron Quintanilla - Changed tier commission calculations to check for 0 in denominators. 
-
+		20150122 - #361 - Gaurav Dawar - Added Functionality to hide Comp for Change of owner and Existing Customer Quotes(Except New Site).
+		20150130 - Aaron Quintanilla - Fixed small container one time commission, small container display percentage, and small container displayed value, and corrected the totalling of all commission.
 
 
 
@@ -71,6 +72,7 @@ if(creatorCode == ""){
 tempModelDict = dict("string");
 modelDict = dict("string");
 modelCategory = dict("string");
+tempQtyDict = dict("integer");
 //DICTIONARIES USED FOR FINAL CALCULATIONS
 modelAdderDict = dict("float");
 modelDeliveryComm = dict("float");
@@ -124,7 +126,10 @@ proposedFrfErf = dict("float");
 modelName = "";
 for line in line_process{
 	if(line._parent_doc_number <> ""){
-		addFrfErf = false;
+		addFrfErf = false; 
+		if(NOT containskey(tempQtyDict,line._parent_doc_number)){ //AQ 01292015
+			put(tempQtyDict,line._parent_doc_number,line._price_quantity); 
+		}
 		if(modelName == "Containers"){ 
 			put(floorDelivery,line._parent_doc_number,0.0);
 			put(baseDelivery,line._parent_doc_number,0.0);
@@ -153,11 +158,11 @@ for line in line_process{
 					tempProposedFees = tempProposedFees + line.frfAmountSell_line; 
 			}
 			if(find(line._line_item_comment,"Base")<>-1){
-				put(floorModelPrice,line._parent_doc_number,line.totalFloorPrice_line);
-				put(baseModelPrice,line._parent_doc_number,line.totalBasePrice_line);
-				put(targetModelPrice,line._parent_doc_number,line.totalTargetPrice_line);
-				put(stretchModelPrice,line._parent_doc_number,line.totalStretchPrice_line);
-				put(proposedModelPrice,line._parent_doc_number,line.sellPrice_line);
+				put(floorModelPrice,line._parent_doc_number,line.totalFloorPrice_line+tempFloorFees);
+				put(baseModelPrice,line._parent_doc_number,line.totalBasePrice_line+tempBaseFees);
+				put(targetModelPrice,line._parent_doc_number,line.totalTargetPrice_line+tempTargetFees);
+				put(stretchModelPrice,line._parent_doc_number,line.totalStretchPrice_line+tempStretchFees);
+				put(proposedModelPrice,line._parent_doc_number,line.sellPrice_line+tempProposedFees);
 				//addFrfErf = true;
 			}
 			if(find(line._line_item_comment,"Delivery")<>-1){ //AQ 20150115
@@ -168,7 +173,6 @@ for line in line_process{
 				put(proposedDelivery,line._parent_doc_number,line.sellPrice_line+tempProposedFees);
 
 			}
-			//if(addFrfErf == true){} //AQ 20150115
 				if(NOT containskey(floorFrfErf,line._parent_doc_number)){
 					put(floorFrfErf,line._parent_doc_number,tempFloorFees);
 					put(baseFrfErf,line._parent_doc_number,tempBaseFees);
@@ -246,8 +250,9 @@ for line in line_process{
 	}
 	else{
 		modelName = line._model_name;
+		put(tempModelDict,line._document_number,"");
+		put(tempQtyDict,line._parent_doc_number,line._price_quantity); 
 		if(line._model_name=="Large Containers"){
-			put(tempModelDict,line._document_number,"");
 			showLarge = true;
 			put(modelCategory,line._document_number,"LARGE CONTAINER");
 			tempTons = atof(getconfigattrvalue(line._document_number,"estTonsHaul_l"));
@@ -259,7 +264,6 @@ for line in line_process{
 			put(estHaulsPerMonth,line._document_number,tempHaulsPerMonth);
 		}
 		elif(line._model_name=="Containers"){
-			put(tempModelDict,line._document_number,"");
 			showSmall = true;
 			put(modelCategory,line._document_number,"SMALL CONTAINER");
 		}
@@ -437,7 +441,7 @@ for each in modelLoop{
 	
 	//CALCULATE TOTAL DELIVERY %
 	deliveryQuery = BMQL("SELECT comp_pct FROM comp_job_code_rules WHERE job_code = $creatorCode AND variable_id = 'numberOfTotalDeliveryContainers_quote' AND lob = $modelLOB");
-	deliveryFee = 0.0;
+	deliveryFee = 0.0; 
 	for delivery in deliveryQuery{
 		deliveryFee = atof(get(delivery,"comp_pct"));
 		break;
@@ -644,19 +648,20 @@ for tier in tierPricing{
 			tempWasteCom = get(modelWasteCategory,modelDocNumber);
 			
 			if(get(modelCategory,modelDocNumber)=="SMALL CONTAINER"){
-				tempModelPrice = tempModelPrice + get(floorFrfErf,modelDocNumber);
+				//tempModelPrice = tempModelPrice + get(floorFrfErf,modelDocNumber); 
 				smallGroupCommission[i] = smallGroupCommission[i]+(tempModelPrice*(tempBaseCom+tempAdderCom+tempWasteCom)); 
 				tempSmallErfFrf = tempSmallErfFrf + get(floorFrfErf,modelDocNumber);
 				tempTotalErfFrf = tempTotalErfFrf + get(floorFrfErf,modelDocNumber);
+				smallGroupPct[i] = (tempBaseCom+tempAdderCom+tempWasteCom);
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempBaseCom+tempAdderCom+tempWasteCom)); 			
 			} 
 
-			tempOneTimeCom = tempOneTimeCom+(get(floorDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));  
-			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
+			tempOneTimeCom = (get(floorDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber)*get(tempQtyDict,modelDocNumber)); 
+			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom; 
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
-			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
+			totalGroupCommission[i] = totalGroupNoOTC[i] + totalOneTimeCommission[i];
 		}
 	}
 	elif(i == 1){
@@ -672,19 +677,20 @@ for tier in tierPricing{
 			tempWasteCom = get(modelWasteCategory,modelDocNumber);
 			
 			if(get(modelCategory,modelDocNumber)=="SMALL CONTAINER"){
-				tempModelPrice = tempModelPrice+get(baseFrfErf,modelDocNumber);
+				//tempModelPrice = tempModelPrice+get(baseFrfErf,modelDocNumber); 
 				smallGroupCommission[i] = smallGroupCommission[i]+(tempModelPrice*(tempBaseCom+tempAdderCom+tempWasteCom)); 
 				tempSmallErfFrf = tempSmallErfFrf + get(baseFrfErf,modelDocNumber);
 				tempTotalErfFrf = tempTotalErfFrf + get(baseFrfErf,modelDocNumber);
+				smallGroupPct[i] = (tempBaseCom+tempAdderCom+tempWasteCom);
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempBaseCom+tempAdderCom+tempWasteCom)); 	
 			} 
 
-			tempOneTimeCom = tempOneTimeCom+(get(baseDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));  
-			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
+			tempOneTimeCom = (get(baseDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber)*get(tempQtyDict,modelDocNumber));  
+			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom; 
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
-			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
+			totalGroupCommission[i] = totalGroupNoOTC[i] + totalOneTimeCommission[i];
 		}
 	}
 	elif(i == 2){
@@ -700,19 +706,20 @@ for tier in tierPricing{
 			tempWasteCom = get(modelWasteCategory,modelDocNumber);
 			
 			if(get(modelCategory,modelDocNumber)=="SMALL CONTAINER"){
-				tempModelPrice = tempModelPrice+get(targetFrfErf,modelDocNumber);
+				//tempModelPrice = tempModelPrice+get(targetFrfErf,modelDocNumber); print smallGroupCommission[i];
 				smallGroupCommission[i] = smallGroupCommission[i]+(tempModelPrice*(tempTargetCom+tempAdderCom+tempWasteCom)); 
 				tempSmallErfFrf = tempSmallErfFrf + get(targetFrfErf,modelDocNumber);
 				tempTotalErfFrf = tempTotalErfFrf + get(targetFrfErf,modelDocNumber);
+				smallGroupPct[i] = (tempTargetCom+tempAdderCom+tempWasteCom);
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempTargetCom+tempAdderCom+tempWasteCom)); 
 			} 
 
-			tempOneTimeCom = tempOneTimeCom+(get(targetDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));  
-			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
+			tempOneTimeCom = (get(targetDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber)*get(tempQtyDict,modelDocNumber));  
+			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom; 
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
-			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
+			totalGroupCommission[i] = totalGroupNoOTC[i] + totalOneTimeCommission[i];
 		}
 	}
 	elif(i == 3){
@@ -728,19 +735,20 @@ for tier in tierPricing{
 			tempWasteCom = get(modelWasteCategory,modelDocNumber);
 			
 			if(get(modelCategory,modelDocNumber)=="SMALL CONTAINER"){
-				tempModelPrice = tempModelPrice +get(stretchFrfErf,modelDocNumber);
+				//tempModelPrice = tempModelPrice +get(stretchFrfErf,modelDocNumber); print smallGroupCommission[i];
 				smallGroupCommission[i] = smallGroupCommission[i]+(tempModelPrice*(tempStretchCom+tempAdderCom+tempWasteCom)); 
 				tempSmallErfFrf = tempSmallErfFrf + get(stretchFrfErf,modelDocNumber);
 				tempTotalErfFrf = tempTotalErfFrf + get(stretchFrfErf,modelDocNumber);
+				smallGroupPct[i] = (tempStretchCom+tempAdderCom+tempWasteCom);
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempStretchCom+tempAdderCom+tempWasteCom)); 			
 			} 
 
-			tempOneTimeCom = tempOneTimeCom+(get(stretchDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber));  
-			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom;
+			tempOneTimeCom = (get(stretchDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber)*get(tempQtyDict,modelDocNumber));  
+			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom; 
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
-			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
+			totalGroupCommission[i] = totalGroupNoOTC[i] + totalOneTimeCommission[i];
 		}
 	}
 	elif(i == 4){
@@ -755,26 +763,27 @@ for tier in tierPricing{
 			tempAdderCom = get(modelAdderDict,modelDocNumber); 
 			tempWasteCom = get(modelWasteCategory,modelDocNumber);
 			if(get(modelCategory,modelDocNumber)=="SMALL CONTAINER"){
-				tempModelPrice = tempModelPrice+get(proposedFrfErf,modelDocNumber);
+				//tempModelPrice = tempModelPrice+get(proposedFrfErf,modelDocNumber); print smallGroupCommission[i];
 				smallGroupCommission[i] = smallGroupCommission[i]+(tempModelPrice*(tempProposedCom+tempAdderCom+tempWasteCom)); 
 				tempSmallErfFrf = tempSmallErfFrf + get(proposedFrfErf,modelDocNumber);
 				tempTotalErfFrf = tempTotalErfFrf + get(proposedFrfErf,modelDocNumber);
+				smallGroupPct[i] = (tempProposedCom+tempAdderCom+tempWasteCom);
 			}
 			if(get(modelCategory,modelDocNumber)=="LARGE CONTAINER"){
 				largeGroupCommission[i] = largeGroupCommission[i]+(tempModelPrice*(tempProposedCom+tempAdderCom+tempWasteCom)); 			
 			}
-			tempOneTimeCom = tempOneTimeCom+(get(proposedDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber)); 
+			tempOneTimeCom = (get(proposedDelivery,modelDocNumber)*get(modelDeliveryComm,modelDocNumber)*get(tempQtyDict,modelDocNumber)); 
 			totalOneTimeCommission[i] = totalOneTimeCommission[i] + tempOneTimeCom; 
 			totalGroupNoOTC[i] = smallGroupCommission[i] + largeGroupCommission[i];
-			totalGroupCommission[i] = totalGroupNoOTC[i] + tempOneTimeCom;
+			totalGroupCommission[i] = totalGroupNoOTC[i] + totalOneTimeCommission[i];
 		}
 	}
-	if(smallGroupPrices[i]<>0){
-		smallGroupPct[i] = smallGroupCommission[i]/(smallGroupPrices[i]+tempSmallErfFrf); 
+	/*if(smallGroupPrices[i]<>0){
+		smallGroupPct[i] = smallGroupCommission[i]/(smallGroupPrices[i]+tempSmallErfFrf); print "smallGroupPct: "; print smallGroupCommission[i]; print smallGroupPrices[i]; print tempSmallErfFrf;
 	}
 	else{
 		smallGroupPct[i] = 0.0;
-	}
+	} */
 	if(largeGroupPrices[i]<>0){
 		largeGroupPct[i] = largeGroupCommission[i]/(largeGroupPrices[i]);
 	}
@@ -841,6 +850,14 @@ for area in areaQuery{
 	}
 } 
 if(accountType_quote == "Temporary"){ //added this piece to hide the commission for temporary accounts
+	showSmall = false;
+	showLarge = false;
+}
+if(salesActivity_quote == "Change of Owner"){//added this piece to hide the commission for Change of Owner
+	showSmall = false;
+	showLarge = false;
+}
+if(salesActivity_quote == "Existing Customer" AND existingCustomerWithNewSite_quote == false){//added this piece to hide the commission for Existing customer except new site
 	showSmall = false;
 	showLarge = false;
 }
