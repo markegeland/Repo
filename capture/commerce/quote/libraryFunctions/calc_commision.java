@@ -31,7 +31,10 @@ Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to 
 		20150115 - Aaron Quintanilla - Changed small container calculations starting on line 121 to include fees with delivery to more accurately calculate commision.  Moved fees to about other line calculations, added fees to delivery values, removed 'addErfFrf' variable.
 		20150117 - Aaron Quintanilla - Changed tier commission calculations to check for 0 in denominators. 
 		20150122 - #361 - Gaurav Dawar - Added Functionality to hide Comp for Change of owner and Existing Customer Quotes(Except New Site).
+<<<<<<< HEAD
 		20150130 - Aaron Quintanilla - Fixed small container one time commission, small container display percentage, and small container displayed value, and corrected the totalling of all commission.
+=======
+>>>>>>> origin/develop
 
 
 
