@@ -33,6 +33,7 @@ Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to 
 		20150122 - #361 - Gaurav Dawar - Added Functionality to hide Comp for Change of owner and Existing Customer Quotes(Except New Site).
 <<<<<<< HEAD
 		20150130 - Aaron Quintanilla - Fixed small container one time commission, small container display percentage, and small container displayed value, and corrected the totalling of all commission.
+		20150202 - seperated AND and OR for correct logical iterations for correct calculation of comp on fees.
 =======
 >>>>>>> origin/develop
 
@@ -366,7 +367,7 @@ for each in modelLoop{
 		queryOne = "FRF~ERF";
 		queryTwo = queryOne;
 	}
-	elif(FRF == true OR ERF == true AND Admin_Fee == true){
+	elif((FRF == true OR ERF == true) AND Admin_Fee == true){//seperated AND and OR for correct logical iterations. (GD) - 20150202
 		queryTwo = "Admin Fee";
 		if(FRF == true){
 			queryOne = "FRF";
