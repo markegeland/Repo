@@ -13,6 +13,9 @@
 	20140116 - Julie Felberg Switched the Disposal Site config attr
 	20140117 - Julie Felberg Added NewFees and NewPrice logic - Added Rate Restriction Section
 	20140128 - Julie Felberg Added $ to Ad Hoc price
+	20140129 - Julie Felberg Redid logic for the container comparison section
+	20140202 - Julie Felberg Changed Container Codes
+	20140203 - Julie Felberg Changed lifts per container logic
 	
 */
 
@@ -434,12 +437,12 @@ if(NOT isempty(SCDocNum)){
 			wasteType_sc = getconfigattrvalue(eachSC, "wasteType_sc");
 			quantity_sc = getconfigattrvalue(eachSC, "quantity_sc");
 			containerSize_sc = getconfigattrvalue(eachSC, "containerSize_sc");
-			liftsPerContiner_sc = getconfigattrvalue(eachSC, "liftsPerContiner_sc");
+			liftsPerContainer_sc = getconfigattrvalue(eachSC, "liftsPerContainer_sc");
 			hasCompactor_readOnly = getconfigattrvalue(eachSC, "hasCompactor_readOnly");
 			containerCode_readOnly = getconfigattrvalue(eachSC, "containerCode_readOnly");
-			ContainerCode_SC = getconfigattrvalue(eachSC, "containerCode_SC");
+			containerCodes_SC = getconfigattrvalue(eachSC, "containerCodes_SC");
 			
-			bothContainers = util.getExcangeDescription(divison_config, quantity_readOnly, wasteType_readOnly, containerSize_readOnly, liftsPerContainer_readOnly, wasteType_sc, quantity_sc, containerSize_sc, liftsPerContiner_sc, hasCompactor_readOnly, containerCode_readOnly, ContainerCode_SC);
+			bothContainers = util.getExcangeDescription(divison_config, quantity_readOnly, wasteType_readOnly, containerSize_readOnly, liftsPerContainer_readOnly, wasteType_sc, quantity_sc, containerSize_sc, liftsPerContainer_sc, hasCompactor_readOnly, containerCode_readOnly, containerCodes_SC);
 			bothContainersArray = split(bothContainers, "|^|");
 			
 			append(oldContainerArray, bothContainersArray[0]);
@@ -452,7 +455,7 @@ if(NOT isempty(SCDocNum)){
 			append(oldWtArray, wasteType_readOnly);
 			append(newWtArray, wasteType_sc);
 			append(oldFreqArray, liftsPerContainer_readOnly);
-			append(newFreqArray, liftsPerContiner_sc);
+			append(newFreqArray, liftsPerContainer_sc);
 			append(oldPriceArray, getconfigattrvalue(eachSC, "monthlyRevenue_sc"));
 			append(oldFeesArray, getconfigattrvalue(eachSC, "totalWithFees_sc"));
 			if(containskey(newPriceDict, eachSC)){
