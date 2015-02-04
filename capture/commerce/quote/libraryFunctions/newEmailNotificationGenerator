@@ -14,8 +14,9 @@
 	20140117 - Julie Felberg Added NewFees and NewPrice logic - Added Rate Restriction Section
 	20140128 - Julie Felberg Added $ to Ad Hoc price
 	20140129 - Julie Felberg Redid logic for the container comparison section
-	20140202 - Julie Felberg Changed Container Codes
-	20140203 - Julie Felberg Changed lifts per container logic
+	20150202 - Julie Felberg Changed Container Codes
+	20150203 - Julie Felberg Changed lifts per container logic
+	20150203 - Julie Felberg Corrected Estimated Tons Per Haul
 	
 */
 
@@ -106,35 +107,11 @@ for line in line_process{
 					append(CostPerHaulArr, string(line.totalFloorPrice_line));
 					
 					//populate compactor value
-					if(containskey(ConfigAttrDict, line._parent_doc_number)){
-						CAttrStr = get(ConfigAttrDict, line._parent_doc_number);
-						CAttrArr = split(CAttrStr, "~");
-						if(findinarray(CAttrArr, "compactorValue") > -1){
-							append(CompactorValArr, CAttrArr[1 + findinarray(CAttrArr, "compactorValue")]);
-						}
-						else{
-							append(CompactorValArr, "Not Found");
-						}
-						if(findinarray(CAttrArr, "site_disposalSite") > -1){
-							append(DisposalSiteArr, CAttrArr[1 + findinarray(CAttrArr, "site_disposalSite")]);
-						}
-						else{
-							append(DisposalSiteArr, "Not Found");
-						}
-						if(findinarray(CAttrArr, "adjustedTotalTime_l") > -1){
-							append(TotalServiceTimeArr, CAttrArr[1 + findinarray(CAttrArr, "adjustedTotalTime_l")]);
-						}
-						else{
-							append(TotalServiceTimeArr, "Not Found");
-						}
-						
-					}
-					else{
-						append(CompactorValArr, "Not Found");
-						append(DisposalSiteArr, "Not Found");
-						append(TotalServiceTimeArr, "Not Found");
-					}
 					
+					append(CompactorValArr, getconfigattrvalue(line._parent_doc_number, "compactorValue"));
+					append(DisposalSiteArr, substring(getconfigattrvalue(line._parent_doc_number, "site_disposalSite"), 0, 49));
+					append(TotalServiceTimeArr, getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l"));
+					append(TonsPerHaulArr, getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l"));  					
 					
 				}
 				//SMALL_CONTAINER
