@@ -142,7 +142,7 @@ for line in line_process{
 		if(line.billingType_line == "Per Haul"){
 			append(ModelDescArray, line._parent_doc_number);
 			ModelDescString = substring(getconfigattrvalue(line._parent_doc_number, "site_disposalSite"), 0, 49);
-			ModelDescString = ModelDescString + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + "min";
+			ModelDescString = "Disposal Site: " + ModelDescString + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + "min";
 			put(ModelDescDict, line._parent_doc_number, ModelDescString);
 		}
 			
