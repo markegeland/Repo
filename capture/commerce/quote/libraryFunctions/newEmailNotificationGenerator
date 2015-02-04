@@ -127,10 +127,10 @@ for line in line_process{
 					append(TonsPerHaulArr, "NA");
 					
 					if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
-						append(DisposalSiteArr, getconfigattrvalue(line._parent_doc_number, "disposalPolygon"));
+						append(DisposalSiteArr, getconfigattrvalue(line._parent_doc_number, "polygonRegion"));
 					}
 					else{
-						append(DisposalSiteArr, "");
+						append(DisposalSiteArr, " ");
 					}
 				}
 				
