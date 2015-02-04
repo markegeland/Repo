@@ -1022,7 +1022,7 @@ if(_system_current_step_var == "adjustPricing"){
 
 //==============================Start - Model Description ========================================//
 for eachModelDesc in ModelDescArray{
-	returnStr = returnStr + eachModelDesc + "~" + "description_line" + "~" + get(ModelDescDict, eachModelDesc);
+	returnStr = returnStr + eachModelDesc + "~" + "description_line" + "~" + get(ModelDescDict, eachModelDesc) + "|";
 }
 //==============================End - Model Description ==========================================//
 return returnStr;
