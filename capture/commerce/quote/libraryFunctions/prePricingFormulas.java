@@ -40,6 +40,8 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150117 - Julie Felberg - Added logic to set print version of rate restrictions 
             20150121 - Gaurav Dawar - #322 - making delivery and removal "Per Service" compared to "One time"
             20150129 - John Palubinskas - #207 set default to charge erfOnFrf at the division level if we do not get a return value from divisionFeeRate
+			20150203 - Julie Felberg - Added logic for #68 to set the description_line field for large containers
+			20150203 - Julie Felberg - Removed description_line logic.  That code is now in post pricing
 =====================================================================================================
 */
 
@@ -131,6 +133,7 @@ smallRecCost = 0.0;
 largeSWCost = 0.0;
 largeRecCost = 0.0;
 totalContCost = 0.0;
+
 
 //=============================== END - Variable Initialization ===============================//
 
@@ -335,7 +338,7 @@ for line in line_process{
             if(containskey(modelNameDict, line._parent_doc_number)){
                 modelName = get(modelNameDict, line._parent_doc_number);
                 put(priceTypeDict, docNum, modelName);  
-            }
+            }			
         }
     }
     //Model loop
@@ -2496,6 +2499,8 @@ returnStr = returnStr + "1~" + "year1RatePrint_quote" + "~" +  util.setPrintVers
                       + "1~" + "year3RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year3Rate_quote)) + "|"
                       + "1~" + "year4RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(afterYear4_quote)) + "|";
 //============================= End - Set print version  ======================================//
+
+
                       
 
 return returnStr;
