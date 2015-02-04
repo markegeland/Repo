@@ -36,6 +36,7 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              01/21/15 - John (Republic) - #233 Fix issue where ERF/FRF approval was being requested when the fees were already waived
              01/21/15 - Gaurav (Republic) - #322 making delivery and removal "Per Service" compared to "One time"
              01/26/15 - John (Republic) - #316 code cleanup during analysis of monthly totals issue
+			 02/03/15 - Julie (Oracle) - #68 Set the Model Description
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -125,11 +126,26 @@ testcount = 0;
 adminRateAlreadyAppliedOnLine = false;
 docNumOfLineAdminRateApplied = "";
 
+//Default attributes for setting the model description
+ModelDescArray = string[];
+ModelDescString = "";
+ModelDescDict = dict("string");
+
 //=============================== END - Variable Initialization ===============================//
 
 
 for line in line_process{
     if(line._parent_doc_number <> ""){ //Only part line items
+	
+		modelDescString = "";
+		//Check if it is a large container
+		if(line.billingType_line == "Per Haul"){
+			append(ModelDescArray, line._parent_doc_number);
+			ModelDescString = substring(getconfigattrvalue(line._parent_doc_number, "site_disposalSite"), 0, 49);
+			ModelDescString = ModelDescString + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + "min";
+			put(ModelDescDict, line._parent_doc_number, ModelDescString);
+		}
+			
         deliveryPrice = 0.0;
         estLiftsPerMonth = 0.0;
         estTonsPerHaul = 0.0;
@@ -1003,4 +1019,10 @@ if(_system_current_step_var == "adjustPricing"){
                             + "1~" + "emailAddressNotifiers_quote" + "~" + join(notifiersArray, ";") + "|"
                             + "1~" + "reasonDescription_quote" + "~" + join(notificationReasonDescriptionArray, ",") + "|";
 }
+
+//==============================Start - Model Description ========================================//
+for eachModelDesc in ModelDescArray{
+	returnStr = returnStr + eachModelDesc + "~" + "description_line" + "~" + get(ModelDescDict, eachModelDesc);
+}
+//==============================End - Model Description ==========================================//
 return returnStr;
