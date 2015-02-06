@@ -13,6 +13,10 @@
 	20140116 - Julie Felberg Switched the Disposal Site config attr
 	20140117 - Julie Felberg Added NewFees and NewPrice logic - Added Rate Restriction Section
 	20140128 - Julie Felberg Added $ to Ad Hoc price
+	20140129 - Julie Felberg Redid logic for the container comparison section
+	20150202 - Julie Felberg Changed Container Codes
+	20150203 - Julie Felberg Changed lifts per container logic
+	20150203 - Julie Felberg Corrected Estimated Tons Per Haul
 	
 */
 
@@ -42,6 +46,20 @@ DisposalSiteArr = string[];
 CostPerHaulArr = string[];
 newPriceDict = dict("string");
 newFeesDict = dict("string");
+oldContainerArray = string[];
+NewContainerArray = string[];
+oldSizeArray = string[];
+newSizeArray = string[];
+oldNbrArray = string[];
+newNbrArray = string[];
+oldWtArray = string[];
+newWtArray = string[];
+oldFreqArray = string[];
+newFreqArray = string[];
+oldPriceArray = string[];
+oldFeesArray = string[];
+newPriceArray = string[];
+newFeesArray = string[];
 
 //start loop
 for line in line_process{
@@ -89,35 +107,11 @@ for line in line_process{
 					append(CostPerHaulArr, string(line.totalFloorPrice_line));
 					
 					//populate compactor value
-					if(containskey(ConfigAttrDict, line._parent_doc_number)){
-						CAttrStr = get(ConfigAttrDict, line._parent_doc_number);
-						CAttrArr = split(CAttrStr, "~");
-						if(findinarray(CAttrArr, "compactorValue") > -1){
-							append(CompactorValArr, CAttrArr[1 + findinarray(CAttrArr, "compactorValue")]);
-						}
-						else{
-							append(CompactorValArr, "Not Found");
-						}
-						if(findinarray(CAttrArr, "site_disposalSite") > -1){
-							append(DisposalSiteArr, CAttrArr[1 + findinarray(CAttrArr, "site_disposalSite")]);
-						}
-						else{
-							append(DisposalSiteArr, "Not Found");
-						}
-						if(findinarray(CAttrArr, "adjustedTotalTime_l") > -1){
-							append(TotalServiceTimeArr, CAttrArr[1 + findinarray(CAttrArr, "adjustedTotalTime_l")]);
-						}
-						else{
-							append(TotalServiceTimeArr, "Not Found");
-						}
-						
-					}
-					else{
-						append(CompactorValArr, "Not Found");
-						append(DisposalSiteArr, "Not Found");
-						append(TotalServiceTimeArr, "Not Found");
-					}
 					
+					append(CompactorValArr, getconfigattrvalue(line._parent_doc_number, "compactorValue"));
+					append(DisposalSiteArr, substring(getconfigattrvalue(line._parent_doc_number, "site_disposalSite"), 0, 49));
+					append(TotalServiceTimeArr, getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l"));
+					append(TonsPerHaulArr, getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l"));  					
 					
 				}
 				//SMALL_CONTAINER
@@ -133,10 +127,10 @@ for line in line_process{
 					append(TonsPerHaulArr, "NA");
 					
 					if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
-						append(DisposalSiteArr, getconfigattrvalue(line._parent_doc_number, "disposalPolygon"));
+						append(DisposalSiteArr, getconfigattrvalue(line._parent_doc_number, "polygonRegion"));
 					}
 					else{
-						append(DisposalSiteArr, "");
+						append(DisposalSiteArr, " ");
 					}
 				}
 				
@@ -412,63 +406,63 @@ if(NOT isempty(SCDocNum)){
 	
 	for eachSC in SCDocNum{
 		if(containskey(ConfigAttrDict, eachSC)){
-			ConfigAttrStr = get(ConfigAttrDict, eachSC);
-			print ConfigAttrStr;
-			ConfigAttrArr = split(ConfigAttrStr, "~");
-			print ConfigAttrArr;
-			oldSize = "";
-			oldNbr = "";
-			oldWT = "";
-			oldFreq = "";
-			oldPrice = "";
-			oldFees = "";
-			TotalWithFees  = "";
-			TotalWithFeesF = 0.0;
-			MonthlyRev = "";
-			MonthlyRevF = 0.0;
-			oldFees1 = 0.0;
-			print "find";
-			print (findinarray(configAttrArr, "containerSize_readOnly"));
-			if(findinarray(ConfigAttrArr, "containerSize_readOnly") > -1){
-				oldSize = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "containerSize_readOnly")];
-				print "oldSize " + oldSize;
+			divison_config = getconfigattrvalue(eachSC, "division_config");
+			quantity_readOnly = getconfigattrvalue(eachSC, "quantity_readOnly");
+			wasteType_readOnly = getconfigattrvalue(eachSC, "wasteType_readOnly");
+			containerSize_readOnly = getconfigattrvalue(eachSC, "containerSize_readOnly");
+			liftsPerContainer_readOnly = getconfigattrvalue(eachSC, "liftsPerContainer_readOnly");
+			wasteType_sc = getconfigattrvalue(eachSC, "wasteType_sc");
+			quantity_sc = getconfigattrvalue(eachSC, "quantity_sc");
+			containerSize_sc = getconfigattrvalue(eachSC, "containerSize_sc");
+			liftsPerContainer_sc = getconfigattrvalue(eachSC, "liftsPerContainer_sc");
+			hasCompactor_readOnly = getconfigattrvalue(eachSC, "hasCompactor_readOnly");
+			containerCode_readOnly = getconfigattrvalue(eachSC, "containerCode_readOnly");
+			containerCodes_SC = getconfigattrvalue(eachSC, "containerCodes_SC");
+			
+			bothContainers = util.getExcangeDescription(divison_config, quantity_readOnly, wasteType_readOnly, containerSize_readOnly, liftsPerContainer_readOnly, wasteType_sc, quantity_sc, containerSize_sc, liftsPerContainer_sc, hasCompactor_readOnly, containerCode_readOnly, containerCodes_SC);
+			bothContainersArray = split(bothContainers, "|^|");
+			
+			append(oldContainerArray, bothContainersArray[0]);
+			append(newContainerArray, bothContainersArray[1]);
+			
+			append(oldSizeArray, containerSize_readOnly);
+			append(newSizeArray, containerSize_sc);
+			append(oldNbrArray, quantity_readOnly);
+			append(newNbrArray, quantity_sc);
+			append(oldWtArray, wasteType_readOnly);
+			append(newWtArray, wasteType_sc);
+			append(oldFreqArray, liftsPerContainer_readOnly);
+			append(newFreqArray, liftsPerContainer_sc);
+			append(oldPriceArray, getconfigattrvalue(eachSC, "monthlyRevenue_sc"));
+			append(oldFeesArray, getconfigattrvalue(eachSC, "totalWithFees_sc"));
+			if(containskey(newPriceDict, eachSC)){
+				append(newPriceArray, get(newPriceDict, eachSC));
 			}
-			if(findinarray(ConfigAttrArr, "quantity_readOnly") > -1){
-				oldNbr = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "quantity_readOnly")];
-				print "oldNbr" + oldNbr;
+			else{
+				append(newPriceArray, "No New Price");
 			}
-			if(findinarray(ConfigAttrArr, "wasteType_readOnly") > -1){
-				oldWT = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "wasteType_readOnly")];
+			if(containskey(newFeesDict, eachSC)){
+				append(newFeesArray, get(newFeesDict, eachSC));
 			}
-			if(findinarray(ConfigAttrArr, "liftsPerContainer_readOnly") > -1){
-				oldFreq = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "liftsPerContainer_readOnly")];
-			}
-			if(findinarray(ConfigAttrArr, "monthlyRevenue_sc") > -1){
-				oldPrice = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "liftsPerContainer_readOnly")];
-			}
-			if(findinarray(ConfigAttrArr, "totalWithFees_sc") > -1 AND findinarray(ConfigAttrArr, "monthlyRevenue_sc") > -1){
-				//need to substrings so I can get rid of the $ in front of the total with fees
-				TotalWithFees = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "totalWithFees_sc")];
-				TotalWithFees = substring(TotalWithFees, 1);
-				TotalWithFeesF = atof(TotalWithFees);
-				MonthlyRev = ConfigAttrArr[1 + findinarray(ConfigAttrArr, "monthlyRevenue_sc")];
-				MonthlyRev = substring(MonthlyRev, 1);
-				MonthlyRevF = atof(MonthlyRev);
-				oldFees1 = TotalWithFeesF - MonthlyRevF;				
-				oldFees = "$" + string(oldFees1);
+			else{
+				append(newFeesArray, "No New Fee");
 			}
 			
-			
-			emailBody = emailBody + "<tr>"
-				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + "old container" + "</td>"
-				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldSize + "</td>"
-				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldNbr + "</td>"
-				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldWT + "</td>"
-				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldFreq + "</td>"
-				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldPrice + "</td>"
-				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldFees + "</td>"
-				+ "</tr>";
 		}
+	}
+	
+	indexOld = 0;
+	for eachSCOld in SCDocNum{		
+		emailBody = emailBody + "<tr>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldContainerArray[indexOld] + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldSizeArray[indexOld] + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldNbrArray[indexOld] + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldWTArray[indexOld] + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldFreqArray[indexOld] + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldPriceArray[indexOld] + "</td>"
+				+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + oldFeesArray[indexOld] + "</td>"
+				+ "</tr>"; 
+		indexOld = indexOld + 1;
 	}
 	
 	//Headers for new containers
@@ -482,47 +476,22 @@ if(NOT isempty(SCDocNum)){
 							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Fees</b></td>"
 						+ "</tr>";
 	//rows for new containers
+	
+	indexNew = 0;
 	for NeachSC in SCDocNum{
-		if(containskey(ConfigAttrDict, NeachSC)){
-			NConfigAttrStr = get(ConfigAttrDict, NeachSC);
-			NConfigAttrArr = split(NConfigAttrStr, "~");
-			
-			newSize = "";
-			newNbr = "";
-			newWT = "";
-			newFreq = "";
-			newPrice = "";
-			newFees = "";
-			
-			if(findinarray(NConfigAttrArr, "containerSize_sc") > -1){
-				newSize = NConfigAttrArr[1 + findinarray(NConfigAttrArr, "containerSize_sc")];
-			}
-			if(findinarray(NConfigAttrArr, "quantity_sc") > -1){
-				newNbr = NConfigAttrArr[1 + findinarray(NConfigAttrArr, "quantity_sc")];
-			}
-			if(findinarray(NConfigAttrArr, "wasteType_sc") > -1){
-				newWT = NConfigAttrArr[1 + findinarray(NConfigAttrArr, "wasteType_sc")];
-			}
-			if(findinarray(NConfigAttrArr, "liftsPerContainer_sc") > -1){
-				newFreq = NConfigAttrArr[1 + findinarray(NConfigAttrArr, "liftsPerContainer_sc")];
-			}
-			if(containskey(newPriceDict, NeachSC)){
-				newPrice = get(newPriceDict, NeachSC);
-			}
-			if(containskey(newFeesDict, NeachSC)){
-				newFees = get(newFeesDict, NeachSC);
-			}
 			
 			emailBody = emailBody + "<tr>"
-					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + "newContainer" + "</td>"
-					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newSize + "</td>"
-					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newNbr + "</td>"
-					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newWT + "</td>"
-					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newFreq + "</td>"
-					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newPrice + "</td>"
-					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newFees + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newContainerArray[indexNew] + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newSizeArray[indexNew] + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newNbrArray[indexNew] + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newWTArray[indexNew] + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + newFreqArray[indexNew] + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + "$" + newPriceArray[indexNew] + "</td>"
+					+ "<td align=\"right\" bgcolor=\"FFFFFF\"nowrap style=\"color:#000000;\">" + "$" + newFeesArray[indexNew] + "</td>"
 				+ "</tr>";
-		}
+			
+			indexNew = indexNew + 1;
+		
 	}
 	//end of rows for new containers
 	emailBody = emailBody + "</table>";
