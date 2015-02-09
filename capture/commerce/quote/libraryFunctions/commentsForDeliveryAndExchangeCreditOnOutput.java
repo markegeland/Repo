@@ -64,6 +64,9 @@ for line in line_process{
 			}
 		}elif(line._model_variable_name == "serviceChange"){
 			containerSize = getconfigattrvalue(docNum, "containerSize_sc");
+			if (containerSize == "No Change"){
+				containerSize = getconfigattrvalue(docNum, "containerSize_readOnly");
+			} 
 			if(getconfigattrvalue(docNum, "containerCodeDerived") <> ""){
 				put(routeTypeDict, docNum, getconfigattrvalue(docNum, "containerCodeDerived"));
 			}
@@ -93,7 +96,7 @@ for line in line_process{
 				container_count = "container";
 			}
 			numberOfTotalDeliveryContainers = line._price_quantity;
-			deliveryCredit = (line.totalTargetPrice_line -  line.sellPrice_line) *  line._price_quantity;
+			deliveryCredit = (line.totalTargetPrice_line -  line.sellPrice_line) *  line._price_quantity; print deliveryCredit;
 			parentDoc = line._parent_doc_number;
 			if(deliveryCredit > 0.0){
 				deliveryCredit2 = deliveryCredit2 + (line.totalTargetPrice_line -  line.sellPrice_line) *  line._price_quantity;
@@ -141,14 +144,14 @@ for line in line_process{
 			}
 		}
 		if(line.rateType_line == "Base" OR line.rateType_line == "Haul"){
-			print "parentDocNum"; print parentDocNum; 
+			//print "parentDocNum"; print parentDocNum; 
 			
 			if(containskey(pickupDaysDict, parentDocNum)){
 				pickupStr = pickupStr + "<p>" + "Tentative Pickup Days for " + routeType + " " + containerSize + " yard - " + get(pickupDaysDict, parentDocNum) + "</p>";
 			}
 		}
 		if(line.rateType_line == "Haul"){
-			print "parentDocNum"; print parentDocNum; 	
+			//print "parentDocNum"; print parentDocNum; 	
 			if(containskey(minTonsDict, parentDocNum)){
 				minTonStr = minTonStr + "<p>" + "Minimum Tons for " + routeType + " " + containerSize + " yard - " + get(minTonsDict, parentDocNum) + "</p>";
 			}
@@ -157,8 +160,7 @@ for line in line_process{
 }
 
 
-print minTonStr;
-retStr = retStr + "1~" + "deliveryAndExchangeCreditStringForOutput_quote" + "~" + creditStr + "|";
+retStr = retStr + "1~" + "deliveryAndExchangeCreditStringForOutput_quote" + "~" + creditStr + "|"; 
 retStr = retStr + "1~" + "installationChargeHTMLString_quote" + "~" + installStr + "|";
 retStr = retStr + "1~" + "pickUpDaysCommentHTML_quote" + "~" + pickupStr + "|";
 retStr = retStr + "1~" + "minimumTonnageHTMLStr_quote" + "~" + minTonStr + "|";
