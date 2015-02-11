@@ -12,6 +12,7 @@ Output:  	String Dictionary - Contains attribute name and value pairs for use in
 Updates:	12/4/13 - Zach Schlieder - Updated DivsionKPI_IND table call
 Updates:	12/5/13 - Srikar - Replaced disposalSiteCosts table with Disposal_Sites
 			12/28/13 - Zach Schlieder - Rewrote to match James' code
+			02/11/15 - Gaurav Dawar - #406 - Compactor and rental calculation errors (large container)
     
 =====================================================================================================
 */
@@ -497,7 +498,8 @@ bad_debt_factor_str = "";
 		if(estHaulsPerMonth <> 0.0){
 			containerROA = containerValue * containerQuantity * floorROI / 12.0 * (1 - isContainerCustomerOwned) / estHaulsPerMonth;
 			//Updated 05/11/2014
-			compactorROA = (compactorValue * containerQuantity * floorROI / 12.0 * (1 - isCompactorCustomerOwned) /12.0) / estHaulsPerMonth;
+			// Wrong calc compactorROA = (compactorValue * containerQuantity * floorROI / 12.0 * (1 - isCompactorCustomerOwned) /12.0) / estHaulsPerMonth;
+			compactorROA = (compactorValue * containerQuantity * floorROI * (1 - isCompactorCustomerOwned) /12.0) / estHaulsPerMonth;// it should be divided by 12 only once - Gaurav - 20150211
 		}
 		
 		put(returnDict, "containerROA", string(containerROA));
@@ -713,7 +715,7 @@ cost_overhead = oh_royalties + oh_supervisor + oh_insurance + oh_facility + oh_o
 
 //Final Financial Summary cost
 //cts_month_incl_oh :=(operatingCost + cost_dsp_xfer_per_haul + ROA + cost_overhead - commission) * estHaulsPerMonth
-cts_haul_incl_oh = operatingCost + cost_dsp_xfer_per_haul + ROA + cost_overhead - commission;
+cts_haul_incl_oh = operatingCost + cost_dsp_xfer_per_haul + ROA + cost_overhead + (compactorROA + compactorDepreciation)*hasCompactor - commission;//asdded compactorROA and compactorDepreciation to the cts_haul calc - Gaurav - 20150211
 cts_month_incl_oh = cts_haul_incl_oh * estHaulsPerMonth;
 
 //=============================== END - Financial Summary Cost Calculation ===============================//
