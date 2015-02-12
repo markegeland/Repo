@@ -40,8 +40,9 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150117 - Julie Felberg - Added logic to set print version of rate restrictions 
             20150121 - Gaurav Dawar - #322 - making delivery and removal "Per Service" compared to "One time"
             20150129 - John Palubinskas - #207 set default to charge erfOnFrf at the division level if we do not get a return value from divisionFeeRate
-			20150203 - Julie Felberg - Added logic for #68 to set the description_line field for large containers
-			20150203 - Julie Felberg - Removed description_line logic.  That code is now in post pricing
+            20150203 - Julie Felberg - Added logic for #68 to set the description_line field for large containers
+            20150203 - Julie Felberg - Removed description_line logic.  That code is now in post pricing
+            20150210 - John Palubinskas - #68 moved logic for setting rate restricions to postPricingFormulas
 =====================================================================================================
 */
 
@@ -2493,14 +2494,5 @@ returnStr = returnStr + "1~" + "smallSolidWasteCost_quote" + "~" + string(smallS
                       + "1~" + "totalContainerCost_quote" + "~" + string(totalContCost) + "|";
 //============================= End - Set direct cost attributes ======================================//
 
-//============================= Start - Set print version of rate restrictions ========================//
-returnStr = returnStr + "1~" + "year1RatePrint_quote" + "~" +  util.setPrintVersionsOfRateRestrictions(upper(year1Rate_quote)) + "|"
-                      + "1~" + "year2RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year2Rate_quote)) + "|"
-                      + "1~" + "year3RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(year3Rate_quote)) + "|"
-                      + "1~" + "year4RatePrint_quote" + "~" + util.setPrintVersionsOfRateRestrictions(upper(afterYear4_quote)) + "|";
-//============================= End - Set print version  ======================================//
-
-
-                      
 
 return returnStr;
