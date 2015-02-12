@@ -36,8 +36,10 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              01/21/15 - John (Republic) - #233 Fix issue where ERF/FRF approval was being requested when the fees were already waived
              01/21/15 - Gaurav (Republic) - #322 making delivery and removal "Per Service" compared to "One time"
              01/26/15 - John (Republic) - #316 code cleanup during analysis of monthly totals issue
-			 02/03/15 - Julie (Oracle) - #68 Set the Model Description
-			 02/05/15 - Julie (Oracle) - #68 truncated the Model Description
+             02/03/15 - Julie (Oracle) - #68 Set the Model Description
+             02/05/15 - Julie (Oracle) - #68 truncated the Model Description
+             02/10/15 - John (Republic) - #68 remove all references to approvalReasonDisplayWithColorTA as it is handled by approvalReasonDisplay
+                                          Moved all rate restriction logic from Printing action to postPricing formulas since it's needed for approvals.
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -678,7 +680,6 @@ if(hasLineItemsOnQuote_quote){
 //=============================== START - APPROVALS ===============================//
 /* Check table Approval_Triggers to determine what level of approval are required based on the Division*/
 approvalReasonHTML  = "";
-approvalReasonDisplayWithColorTA = "";
 hasCompactor = false;
 level1ApprovalReasonArr = string[];
 level2ApprovalReasonArr = string[];
@@ -810,8 +811,7 @@ if(_system_current_step_var == "adjustPricing"){
     }
 
     //Build HTML to display approval reasons on the quote
-    approvalReasonHTML = util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "Black");
-    approvalReasonDisplayWithColorTA = util.setApprovalReasonDisplayWithColor(level1ApprovalReasonArr, level2ApprovalReasonArr, "red");
+    approvalReasonHTML = util.setApprovalReasonDisplay(level1ApprovalReasonArr, level2ApprovalReasonArr);
 
     //build an array with all 3 possible "spellings" of the current login
     append(userLoginArray, lower(_system_user_login));
@@ -947,7 +947,8 @@ for each in hasDeliveryArr{
 }
 
 
-//Write totals to quote attributes
+// Set rate restriction attributes used by approval email and doc engine
+returnStr = returnStr + commerce.setRateRestrictions();
 
 returnStr = returnStr   + "1~" + "divisionSalesGroup_quote" + "~" + (divisionSalesGroup) + "|"
                         + "1~" + "divisionManagerGroup_quote" + "~" + (divisionManagerGroup) + "|"
@@ -1016,12 +1017,11 @@ if(_system_current_step_var == "adjustPricing"){
                             + "1~" + "level1ApprovalReason_quote" + "~" + join(level1ApprovalReasonArr, ",") + "|"
                             + "1~" + "level2ApprovalReason_quote" + "~" + join(level2ApprovalReasonArr, ",") + "|"
                             + "1~" + "approvalReasonDisplayText_quote" + "~" + approvalReasonHTML + "|"
-                            + "1~" + "approvalReasonDisplayWithColorTA_quote" + "~" + approvalReasonDisplayWithColorTA + "|"
                             + "1~" + "level1Approver_quote" + "~" + join(level1ApproverArr, ",") + "|"
                             + "1~" + "level2Approver_quote" + "~" + join(level2ApproverArr, ",") + "|"
                             + "1~" + "hasCompactor_quote" + "~" + string(hasCompactor) + "|"                        
                             + "1~" + "emailAddressNotifiers_quote" + "~" + join(notifiersArray, ";") + "|"
-                            + "1~" + "reasonDescription_quote" + "~" + join(notificationReasonDescriptionArray, ",") + "|";
+                            + "1~" + "reasonDescription_quote" + "~" + join(notificationReasonDescriptionArray, ";") + "|";
 }
 
 //==============================Start - Model Description ========================================//
