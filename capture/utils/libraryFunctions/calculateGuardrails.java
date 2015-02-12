@@ -16,6 +16,7 @@ Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formula
 		20141204 - Aaron Quintanilla - Corrected Industrial Flat Rate Disposal Price Rounding Error
 		20141210 - Aaron Quintanilla - Corrected disposal fee removal 
 		20151201 - Gaurav Dawar - Lines: 278, 2282, 2304, 2345 - Changes made to fix delivery amount when there is a change in container code in service change.
+		02/11/15 - Gaurav Dawar - #406 - Compactor and rental calculation errors (large container)
     
 =====================================================================================================
 */
@@ -1580,9 +1581,13 @@ comp_rental_floor = 0.0;
 comp_rental_rate = 0.0;
 container_rental_floor = 0.0;
 	
-if((rental_type == "Monthly" OR rental_type == "Daily") AND priceType == "Large Containers"){
+//added to rental_type == None to conditional to handle the rental part of container going to per haul line item if rental is off - Gaurav 20150211	
+if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily") AND priceType == "Large Containers"){
 	//Calculate price_rental_per_month 
 	alloc_rental = 1;
+	if(rental_type == "None"){//added to handle the rental part of container going to per haul line item if rental is off - Gaurav 20150211
+		alloc_rental = 0;
+	}
 	containerDepreciation = 0.0;
 	compactorDepreciation = 0.0;
 	containerROA = 0.0;
@@ -1654,7 +1659,9 @@ if((rental_type == "Monthly" OR rental_type == "Daily") AND priceType == "Large 
 		container_rental_floor = (containerDepreciation + containerROA) *  haulsPerMonth * alloc_rental / rental_factor; // Changed as part of SR 3-9437035701
 		// container_rental_floor formula: container_rental_floor:=(oper_cont_depr + roa_container) * hauls_per_month * alloc_rental / rental_factor
 	}
-				  
+	if(rental_type == "None"){//added to handle the rental part of container going to per haul line item if rental is off - Gaurav 20150211
+		container_rental_floor = (containerDepreciation + containerROA) *  haulsPerMonth;
+	}			  
 	put(returnDict, "comp_rental_floor", string(comp_rental_floor));
 	put(returnDict, "container_rental_floor", string(container_rental_floor));
 	put(returnDict, "comp_rental_rate", string(comp_rental_rate));
