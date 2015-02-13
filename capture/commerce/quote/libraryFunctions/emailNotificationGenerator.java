@@ -103,13 +103,17 @@ for line in line_process{
                 
                 //LARGE_CONTAINER
                 if(line.billingType_line == "Per Haul"){
+                    allSites = getconfigattrvalue(line._parent_doc_number, "site_disposalSite");
+                    siteIndex = atoi(getconfigattrvalue(line._parent_doc_number, "alternateSite_l"));
+                    disposalSites = split(allSites, "$,$");
+
                     print "we have a large container";
                     append(ContainerArr, line.description_line);
                     append(RatePerHaulArr, string(line.perHaulRate_line));
                     append(ContTypeArr, line._model_name);
                     append(CostPerHaulArr, string(line.totalFloorPrice_line));
                     append(CompactorValArr, getconfigattrvalue(line._parent_doc_number, "compactorValue"));
-                    append(DisposalSiteArr, replace(substring(getconfigattrvalue(line._parent_doc_number, "site_disposalSite"), 0, 49),"$,$"," "));
+                    append(DisposalSiteArr, substring(disposalSites[siteIndex-1], 0, 49));
                     append(TotalServiceTimeArr, getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l"));
                     append(TonsPerHaulArr, getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l"));
                     

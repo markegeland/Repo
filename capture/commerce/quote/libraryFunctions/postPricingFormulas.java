@@ -40,6 +40,7 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              02/05/15 - Julie (Oracle) - #68 truncated the Model Description
              02/10/15 - John (Republic) - #68 remove all references to approvalReasonDisplayWithColorTA as it is handled by approvalReasonDisplay
                                           Moved all rate restriction logic from Printing action to postPricing formulas since it's needed for approvals.
+                                          Fix incorrect disposal site being displayed.
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -148,7 +149,8 @@ for line in line_process{
 			append(ModelDescArray, line._parent_doc_number);
 			ModelSiteString = getconfigattrvalue(line._parent_doc_number, "site_disposalSite");
 			ModelSiteArray = split(ModelSiteString, "$,$");
-			ModelDescString = "Disposal Site: " + ModelSiteArray[0] + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + " min";
+            siteIndex = getconfigattrvalue(line._parent_doc_number, "alternateSite_l");
+			ModelDescString = "Disposal Site: " + ModelSiteArray[atoi(siteIndex) - 1] + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + " min";
 			put(ModelDescDict, line._parent_doc_number, ModelDescString);
 		}
 			
