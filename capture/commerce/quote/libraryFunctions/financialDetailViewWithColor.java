@@ -156,6 +156,23 @@ total_NetRevenue_Variance = total_NetRevenue_After - total_NetRevenue_Before;
 
 /* End of Existing Calc */
 
+// Direct Cost % Calc
+smallSolidWasteDirectCostPct = 0.0;
+smallRecyclingDirectCostPct  = 0.0;
+largeSolidWasteDirectCostPct = 0.0;
+largeRecyclingDirectCostPct  = 0.0;
+if(smallSolidWasteRevenueWithAdmin <> 0){
+    smallSolidWasteDirectCostPct = ((smallSolidWasteRevenueWithAdmin - smallSolidWasteCost_quote) / smallSolidWasteRevenueWithAdmin) * 100;
+}
+if(smallRecyclingRevenueWithAdmin <> 0){
+    smallRecyclingDirectCostPct = ((smallRecyclingRevenueWithAdmin - smallRecyclingCost_quote) / smallRecyclingRevenueWithAdmin) * 100;
+}
+if(largeSolidWasteRevenueWithAdmin <> 0){
+    largeSolidWasteDirectCostPct = ((largeSolidWasteRevenueWithAdmin - largeSolidWasteCost_quote) / largeSolidWasteRevenueWithAdmin) * 100;
+}
+if(largeRecyclingRevenueWithAdmin <> 0){
+    largeRecyclingDirectCostPct = ((largeRecyclingRevenueWithAdmin - largeRecyclingCost_quote) / largeRecyclingRevenueWithAdmin) * 100;
+}
 
 
 //Combine the HTML code into a string for storage in an attribute
@@ -190,7 +207,7 @@ if(industrialExists_quote){
 }
 returnStr = returnStr   + "</tr>"
                         + "<tr>" //Start of Revenue row
-                        + "<td>Revenue</td>";
+                        + "<td class='first-column'>Revenue</td>";
 if(commercialExists_quote){
     returnStr = returnStr + "<td>" +  formatascurrency(smallSolidWasteRevenueWithAdmin,"USD") + "</td>"
                           + "<td>" +  formatascurrency(smallRecyclingRevenueWithAdmin,"USD") + "</td>";
@@ -211,7 +228,7 @@ if(isExistingCustomer){
 }
 returnStr = returnStr   + "</tr>" //End of Revenue row
                         + "<tr>" //Start of Disposal Expense row
-                        + "<td>Disposal Expense</td>";
+                        + "<td class='first-column'>Disposal Expense</td>";
 if(commercialExists_quote){
     returnStr = returnStr + "<td>" +  formatascurrency(smallSolidWasteDisposalExpense_quote, "USD") + "</td>"
                           + "<td>" +  formatascurrency(smallRecyclingDisposalExpense_quote,"USD") + "</td>";
@@ -232,7 +249,7 @@ if(isExistingCustomer){
 }
 returnStr = returnStr   + "</tr>" //End of Disposal Expense row
                         + "<tr>" //Start of Net Revenue row
-                        + "<td>Net Revenue</td>";
+                        + "<td class='first-column'>Net Revenue</td>";
 if(commercialExists_quote){
     returnStr = returnStr + "<td>" +  formatascurrency(smallSolidWasteNetRevenueWithAdmin, "USD") + "</td>"
                           + "<td>" +  formatascurrency(smallRecyclingNetRevenueWithAdmin,"USD") + "</td>";
@@ -253,7 +270,7 @@ if(isExistingCustomer){
 }
 returnStr = returnStr   + "</tr>" //End of Net Revenue row
                         + "<tr>" //Start of Operating Expenses row
-                        + "<td>Operating Expense</td>";
+                        + "<td class='first-column'>Operating Expense</td>";
 if(commercialExists_quote){
     returnStr = returnStr + "<td>" +  formatascurrency(smallSolidWasteOperatingExpense_quote, "USD") + "</td>"
                           + "<td>" +  formatascurrency(smallRecyclingOperatingExpense_quote,"USD") + "</td>";
@@ -274,7 +291,7 @@ if(isExistingCustomer){
 }
 returnStr = returnStr   + "</tr>" //End of Operating Expenses row
                         + "<tr>" //Start of Op Income/Margin Dollars row
-                        + "<td>Op Income $</td>";
+                        + "<td class='first-column'>Op Income $</td>";
 
 if(commercialExists_quote){
     returnStr = returnStr + "<td";
@@ -311,7 +328,7 @@ if(isExistingCustomer){
 }
 returnStr = returnStr   + "</tr>" //End of Op Income/Margin Dollars row
                         + "<tr>" //Start of Margin Percent row
-                        + "<td>Margin %</td>";
+                        + "<td class='first-column'>Margin %</td>";
 if(commercialExists_quote){
     returnStr = returnStr + "<td";
     if(small_SolidWaste_Margin_Percent < 0){ returnStr = returnStr + redClass; }
@@ -351,39 +368,39 @@ returnStr = returnStr   + "</tr>"; //End of Margin Percent row
 //If Color is "Red" then we are dealing with the approval e-mail, so we add the Direct Cost row
 if(Color == "Red"){
     returnStr = returnStr + "<tr>" //Start of Direct Cost row
-                        + "<td>Direct Cost %</td>";
+                        + "<td class='first-column'>Direct Cost %</td>";
     if(commercialExists_quote){
         returnStr = returnStr + "<td";
-        if(smallSolidWasteCost_quote < 0){ returnStr = returnStr + redClass; }
-        returnStr = returnStr + ">" +  "TBD %</td>"; //string(round(smallSolidWasteCost_quote, 2)) + (proposed price - cost) / proposed price
-        
+        if(smallSolidWasteDirectCostPct < 0){ returnStr = returnStr + redClass; }
+        returnStr = returnStr + ">" + string(round(smallSolidWasteDirectCostPct, 2)) + "%</td>";
+
         returnStr = returnStr + "<td";
-        if(smallRecyclingCost_quote < 0){ returnStr = returnStr + redClass; }
-        returnStr = returnStr + ">" + "TBD %</td>";//string(round(smallRecyclingCost_quote, 2)) + 
+        if(smallRecyclingDirectCostPct < 0){ returnStr = returnStr + redClass; }
+        returnStr = returnStr + ">" + string(round(smallRecyclingDirectCostPct, 2)) + "%</td>";
     }
 
     if(industrialExists_quote){
         returnStr = returnStr + "<td";
-        if(LargeSolidWasteCost_quote < 0){ returnStr = returnStr + redClass; }
-        returnStr = returnStr + ">" + "TBD %</td>";//string(round(LargeSolidWasteCost_quote, 2)) + 
+        if(largeSolidWasteDirectCostPct < 0){ returnStr = returnStr + redClass; }
+        returnStr = returnStr + ">" + string(round(largeSolidWasteDirectCostPct, 2)) + "%</td>";
         
         returnStr = returnStr + "<td";
-        if(LargeRecyclingCost_quote < 0){ returnStr = returnStr + redClass; }
-        returnStr = returnStr + ">" + "TBD %</td>";//string(round(LargeRecyclingCost_quote, 2)) + 
+        if(largeRecyclingDirectCostPct < 0){ returnStr = returnStr + redClass; }
+        returnStr = returnStr + ">" + string(round(largeRecyclingDirectCostPct, 2)) + "%</td>";
     }    
 
     returnStr = returnStr + "<td";
     if(totalContainerCost_quote < 0){ returnStr = returnStr + redClass; }
-    returnStr = returnStr + ">" + "TBD %</td>";//string(round(totalContainerCost_quote, 2)) + 
+    returnStr = returnStr + ">" + "</td>";
 
    if(isExistingCustomer){
         returnStr = returnStr + "<td";
         if(totalContainerCost_quote < 0){ returnStr = returnStr + redClass; }
-        returnStr = returnStr + ">" + "TBD %</td>";// 
+        returnStr = returnStr + ">" + "</td>";
 
         returnStr = returnStr + "<td";
         if(totalContainerCost_quote < 0){ returnStr = returnStr + redClass; }
-        returnStr = returnStr + ">" + "TBD %</td>";//
+        returnStr = returnStr + ">" + "</td>";
     }
 }
 
