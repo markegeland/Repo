@@ -150,8 +150,13 @@ for line in line_process{
 			ModelSiteString = getconfigattrvalue(line._parent_doc_number, "site_disposalSite");
 			ModelSiteArray = split(ModelSiteString, "$,$");
             siteIndex = getconfigattrvalue(line._parent_doc_number, "alternateSite_l");
-			ModelDescString = "Disposal Site: " + ModelSiteArray[atoi(siteIndex) - 1] + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + " min";
-			put(ModelDescDict, line._parent_doc_number, ModelDescString);
+            if(isnumber(siteIndex) AND (atoi(siteIndex) > 0)){
+                ModelDescString = "Disposal Site: " + ModelSiteArray[atoi(siteIndex) - 1] + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + " min";
+                put(ModelDescDict, line._parent_doc_number, ModelDescString);
+            }
+            else{
+                put(ModelDescDict, line._parent_doc_number, "");
+            }
 		}
 			
         deliveryPrice = 0.0;
