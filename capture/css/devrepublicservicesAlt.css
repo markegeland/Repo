@@ -945,14 +945,14 @@ table.financial-details-table {
     box-shadow: 0 1px 1px #ccc;     
 }
 .financial-details-table td, .financial-details-table th {
-    border-left: 1px solid #ccc;
-    border-top: 1px solid #ccc;
+    /*border-left: 1px solid #ccc;*/
+    /*border-top: 1px solid #ccc;*/
     padding: 5px;
     text-align: left;    
 }
 .financial-details-table td {
     color: #595959;
-    text-align: right;
+    text-align: center;
 }
 .financial-details-table th {
     background-color: #ebf8ff;
