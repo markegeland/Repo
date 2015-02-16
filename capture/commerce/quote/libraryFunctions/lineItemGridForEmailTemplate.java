@@ -9,7 +9,7 @@ Description:  Formats the HTML Service Details table output in the approval emai
                     
  Output:  String containing the Service Details table HTML
 
-Updates:
+Updates:  20150215 John Palubinskas - #68 add quantity column
         
 ================================================================================
 */
@@ -19,6 +19,7 @@ htmlStr = "";
 // Header Row
 htmlStr = "<table class='service-details'>"
         + "<tr>"
+        + "<th>Qty</th>"
         + "<th>Service</th>"
         + "<th>Cost</th>"
         + "<th>Floor</th>"
@@ -37,6 +38,7 @@ htmlStr = htmlStr + "<th>Total</th></tr>";
 for line in line_process{
 	if(line._part_number <> ""){
 		htmlStr = htmlStr + "<tr>"
+		                  + "<td>" + string(line._price_quantity) + "</td> "
 		                  + "<td>" + line.description_line + "</td> "
 		                  + "<td>" + formatascurrency(line.totalFloorPrice_line, "USD") + "</td>"           // Cost
 		                  + "<td>" + formatascurrency(line.totalBasePrice_line, "USD") + "</td>"            // Floor
