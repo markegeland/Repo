@@ -20,7 +20,7 @@ my $css = $cc->getGridTableCss();
 my $q = CGI->new;
 
 my $dbh = DBI->connect(
-  "DBI:ODBC:srazphx12_devr1_DWCORE",
+  "DBI:ODBC:prodbirpt_DWCORE",
   'ReadOnly',
   'to*B3ws#d8'
 ) or die("DBI Connect Error - $DBI::errstr\n");

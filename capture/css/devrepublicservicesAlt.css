@@ -6,6 +6,7 @@
                                   Moved all dynamic content IDs to the same section in file.
     20150115 - John Palubinskas - #126 updates for print/email docs buttons and send me a copy checkbox
     20150121 - John Palubinskas - cleanup: consolidate a few repeated styles
+    20150212 - John Palubinskas - #68 add styles for financial-details-table
 
    ================================================================================================== */
 
@@ -925,6 +926,86 @@ a#email_documents{
     display: inline-block;
     width: 150px;
 }
+
+
+table.financial-details-table {
+    *border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    font-family: "Open Sans", sans-serif;
+    font-size: 8pt;
+}
+.financial-details-table{
+    border: solid #3D9BCB 1px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
+    -webkit-box-shadow: 0 1px 1px #ccc; 
+    -moz-box-shadow: 0 1px 1px #ccc; 
+    box-shadow: 0 1px 1px #ccc;     
+}
+.financial-details-table td, .financial-details-table th {
+    /*border-left: 1px solid #ccc;*/
+    /*border-top: 1px solid #ccc;*/
+    padding: 5px;
+    text-align: left;    
+}
+.financial-details-table td {
+    color: #595959;
+    text-align: center;
+}
+.financial-details-table th {
+    background-color: #ebf8ff;
+    border-top: none;    
+    text-align: center;
+    color: #000059;
+    font-family: Tahoma;
+    font-weight: normal;
+}
+.financial-details-table td:first-child, .financial-details-table th:first-child {
+    border-left: none;
+}
+
+.financial-details-table th:first-child {
+    -moz-border-radius: 6px 0 0 0;
+    -webkit-border-radius: 6px 0 0 0;
+    border-radius: 6px 0 0 0;
+}
+
+.financial-details-table th:last-child {
+    -moz-border-radius: 0 6px 0 0;
+    -webkit-border-radius: 0 6px 0 0;
+    border-radius: 0 6px 0 0;
+}
+
+.financial-details-table th:only-child{
+    -moz-border-radius: 6px 6px 0 0;
+    -webkit-border-radius: 6px 6px 0 0;
+    border-radius: 6px 6px 0 0;
+}
+
+.financial-details-table tr:last-child td:first-child {
+    -moz-border-radius: 0 0 0 6px;
+    -webkit-border-radius: 0 0 0 6px;
+    border-radius: 0 0 0 6px;
+}
+
+.financial-details-table tr:last-child td:last-child {
+    -moz-border-radius: 0 0 6px 0;
+    -webkit-border-radius: 0 0 6px 0;
+    border-radius: 0 0 6px 0;
+}
+td.red{
+    color: #FF0000;
+}
+td.first-column
+{
+    text-align: left;
+}
+
+
+
+
 
 /* Dynamic Content Styles --------------------------------------------------------------------------------
 
