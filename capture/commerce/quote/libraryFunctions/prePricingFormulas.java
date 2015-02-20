@@ -2244,17 +2244,41 @@ for line in line_process{
                 if(wasteCategory == "Recycling"){
                     smallRecCost = smallRecCost + floorPrice;
                 }
+                totalContCost = totalContCost + floorPrice;                 
             }
+
             if((priceType == LARGE_CONTAINER) OR (container == LARGE_CONTAINER)){
+                print "line.rateType_line: " + line.rateType_line;
+                haulMultiplier = 1.0;
+                tonsMultiplier = 1.0;
+                // Haul and Disposal line items need to be multiplied by # hauls
+                if ((line.rateType_line == "Haul") OR (line.rateType_line == "Disposal")) {
+                    estHaulsPerMonth = 1.0;
+                    if (isnumber(estHaulsPerMonthStr)) {
+                        estHaulsPerMonth = atof(estHaulsPerMonthStr);
+                    }
+                    haulMultiplier = estHaulsPerMonth;
+                    print "estHaulsPerMonth: " + string(estHaulsPerMonth);
+                }
+                // Disposal line items also need to be multiplied by # tons
+                if (line.rateType_line == "Disposal") {
+                    tonsPerHaul = getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l");
+                    if (isnumber(tonsPerHaul)) {
+                        tonsMultiplier = atof(tonsPerHaul);
+                    }
+                    print "tonsPerHaul: " + tonsPerHaul;
+                }
+
                 if(wasteCategory == "Solid Waste"){
-                    largeSWCost = largeSWCost + floorPrice;
+                    largeSWCost = largeSWCost + (floorPrice * haulMultiplier * tonsMultiplier);
                 }
+
                 if(wasteCategory == "Recycling"){
-                    largeRecCost = largeRecCost + floorPrice;
+                    largeRecCost = largeRecCost + (floorPrice * haulMultiplier * tonsMultiplier);
                 }
+                totalContCost = totalContCost + (floorPrice * haulMultiplier * tonsMultiplier);                 
             }
                 
-            totalContCost = totalContCost + floorPrice;                 
 
             print "floorPrice after: " + string(floorPrice);
             print "smallSWCost after: " + string(smallSWCost);
