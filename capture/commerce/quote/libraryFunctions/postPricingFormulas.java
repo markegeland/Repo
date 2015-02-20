@@ -840,15 +840,6 @@ if(_system_current_step_var == "adjustPricing"){
         append(level1ApproverArr,get(eachRec, "Level_2_Approver") );
         append(level2ApproverArr,get(eachRec, "Level_3_Approver") );
     }
-    print "level1ApproverArr";
-    print level1ApproverArr;
-
-    print "level2ApproverArr";
-    print level2ApproverArr;
-
-    print "array sizes";
-    print sizeofarray(level1ApproverArr);
-    print sizeofarray(level2ApproverArr);
 
     if((sizeofarray(level1ApproverArr) == 0) AND (sizeofarray(level2ApproverArr) == 0)){
         print "Checking User_Hierarchy as nothing was found in Hierarchy_Exceptions";
@@ -880,6 +871,18 @@ if(_system_current_step_var == "adjustPricing"){
             break;
         }
     }
+
+    print "level1ApproverArr";
+    print level1ApproverArr;
+
+    print "level2ApproverArr";
+    print level2ApproverArr;
+
+    print "level1NotifierArr";
+    print level1NotifierArr;
+
+    print "level2NotifierArr";
+    print level2NotifierArr;
 
     //Get the notifier (Non-Approver) logins from User Hierarchy table, if not already found
     /*
@@ -1021,8 +1024,8 @@ returnStr = returnStr   + "1~" + "divisionSalesGroup_quote" + "~" + (divisionSal
 if(_system_current_step_var == "adjustPricing"){                    
     returnStr = returnStr   + "1~" + "level1ApprovalRequired_quote" + "~" + string(level1ApprovalRequired) + "|"
                             + "1~" + "level2ApprovalRequired_quote" + "~" + string(level2ApprovalRequired) + "|"
-                            + "1~" + "level1ApprovalReason_quote" + "~" + join(level1ApprovalReasonArr, ",") + "|"
-                            + "1~" + "level2ApprovalReason_quote" + "~" + join(level2ApprovalReasonArr, ",") + "|"
+                            + "1~" + "level1ApprovalReason_quote" + "~" + join(level1ApprovalReasonArr, ";") + "|"
+                            + "1~" + "level2ApprovalReason_quote" + "~" + join(level2ApprovalReasonArr, ";") + "|"
                             + "1~" + "approvalReasonDisplayText_quote" + "~" + approvalReasonHTML + "|"
                             + "1~" + "level1Approver_quote" + "~" + join(level1ApproverArr, ",") + "|"
                             + "1~" + "level2Approver_quote" + "~" + join(level2ApproverArr, ",") + "|"

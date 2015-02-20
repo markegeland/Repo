@@ -23,6 +23,7 @@ Updates:
                                   Completely reworked function to get rid of styles embedded in the tags.
     20150215 - John Palubinskas - #68 Additional work for adding quantity columns.  Calculate fees correctly on conatiner
                                   comparison tables, and fix formatting issues.
+    20150216 - John Palubinskas - #68 fix issue with 
     
 ================================================================================
 */
@@ -167,15 +168,20 @@ for line in line_process{
     }
 }
 
-
-NameRecordSet = BMQL("SELECT First_Name, Last_Name, User_Login FROM User_Hierarchy WHERE User_Login LIKE $Approver OR User_Login LIKE $SubmittedBy");
+// We have approvers and submitter arrays passed in as Strings when they're really string[].
+// Remove the array brackets from SubmittedBy (there should be just a single entry)
+// and create our own string[] for approvers for the User_Hierarchy lookup.
+approvers = replace(replace(Approver,"[",""),"]","");
+approversArr = split(approvers,",");
+submitter = replace(replace(SubmittedBy,"[",""),"]","");
+NameRecordSet = BMQL("SELECT First_Name, Last_Name, User_Login FROM User_Hierarchy WHERE User_Login IN $approversArr OR User_Login = $submitter");
 
 for eachName in NameRecordSet{
     Login = get(eachName, "User_Login");
-    if(Login == Approver){
+    if(Login == approversArr[0]){ // just grabbing first name (might be bad...)
         approverFullName = get(eachName, "First_Name") + " " + get(eachName, "Last_Name");
     }
-    if(Login == SubmittedBy){
+    if(Login == submitter){
         submittedByFullName = get(eachName, "First_Name") + " " + get(eachName, "Last_Name");
     }
 }
@@ -254,7 +260,6 @@ if (grandTotalSell_quote < grandTotalFloor_quote) {
 priceBand = priceBand + "</span>";
 
 // Reformat the ReasonDescription to give some space between multiple reasons
-// TODO - this isn't working...
 reasonsArr = split(ReasonDescription,";");
 reasonsFormatted = "";
 i=0;
@@ -342,7 +347,7 @@ if(NOT isempty(ContPDocNum)){
     
     for eachCont in ContPDocNum{
         compactorValue = "N/A";
-        if(isnumber(CompactorValArr[ContIndex])){
+        if(isnumber(CompactorValArr[ContIndex]) AND (CompactorValArr[ContIndex] <> "0")){
             compactorValue = formatascurrency(atof(CompactorValArr[ContIndex]),"USD");
         }
 
@@ -373,6 +378,10 @@ emailBody = emailBody + "<table>"
                             + "<th>% of Floor</th>"
                         + "</tr>";
                         if(commercialExists_quote){
+                            pctOfFloorStyle = "";
+                            if (pctOfFloorSmall < 0) {
+                                pctOfFloorStyle = " class='red'";
+                            }
                             emailBody = emailBody +  "<tr>"
                                 + "<td>" +  "Small Containers" + "</td>"
                                 + "<td>" +  formatascurrency(smallMonthlyTotalFloor_quote,"USD") + "</td>"
@@ -380,10 +389,14 @@ emailBody = emailBody + "<table>"
                                 + "<td>" +  formatascurrency(smallMonthlyTotalTarget_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(smallMonthlyTotalStretch_quote,"USD") + "</td>"
                                 + "<td class='totals'>" +  formatascurrency(smallMonthlyTotalProposed_quote,"USD") + "</td>"
-                                + "<td>" + string(pctOfFloorSmall) + "%</td>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorSmall) + "%</td>"
                             + "</tr>";
                         }
                         if(industrialExists_quote){
+                            pctOfFloorStyle = "";
+                            if (pctOfFloorLarge < 0) {
+                                pctOfFloorStyle = " class='red'";
+                            }
                             emailBody = emailBody +  "<tr>"
                                 + "<td>" +  "Large Containers" + "</td>"
                                 + "<td>" +  formatascurrency(largeMonthlyTotalFloor_quote,"USD") + "</td>"
@@ -391,8 +404,12 @@ emailBody = emailBody + "<table>"
                                 + "<td>" +  formatascurrency(largeMonthlyTotalTarget_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(largeMonthlyTotalStretch_quote,"USD") + "</td>"
                                 + "<td class='totals'>" +  formatascurrency(largeMonthlyTotalProposed_quote,"USD") + "</td>"
-                                + "<td>" + string(pctOfFloorLarge) + "%</td>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorLarge) + "%</td>"
                             + "</tr>";
+                        }
+                        pctOfFloorStyle = "";
+                        if (pctOfFloorFees < 0) {
+                            pctOfFloorStyle = " class='red'";
                         }
                         emailBody = emailBody +  "<tr>"
                                 + "<td>" +  "Fees" + "</td>"
@@ -401,16 +418,20 @@ emailBody = emailBody + "<table>"
                                 + "<td>" +  formatascurrency(totalERFFRFAdminTargetAmount_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(totalERFFRFAdminStretchAmount_quote,"USD") + "</td>"
                                 + "<td class='totals'>" +  formatascurrency(totalERFFRFAdminSellAmount_quote,"USD") + "</td>"
-                                + "<td>" + string(pctOfFloorFees) + "%</td>"
-                            + "</tr>"
-                            + "<tr class='totals'>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorFees) + "%</td>"
+                            + "</tr>";
+                        pctOfFloorStyle = "";
+                        if (pctOfFloorTotal < 0) {
+                            pctOfFloorStyle = " class='red'";
+                        }
+                        emailBody = emailBody +   "<tr class='totals'>"
                                 + "<td>" +  "Total Estimated Amount" + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalFloor_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalBase_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalTarget_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalStretch_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalSell_quote,"USD") + "</td>"
-                                + "<td class='white-background'>" + string(pctOfFloorTotal) + "%</td>"
+                                + "<td class='white-background'><span" + pctOfFloorStyle + ">" + string(pctOfFloorTotal) + "%</span></td>"
                             + "</tr></table>";
 
 emailBody = emailBody + "<h2>Financial Values:</h2>"

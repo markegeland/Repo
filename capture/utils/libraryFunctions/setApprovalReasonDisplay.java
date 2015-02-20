@@ -11,8 +11,10 @@ Input:   level1ApprovalReason: String Array - Array of level 1 approval reasons
                     
 Output:  String of HTML
 
-Updates: 20150209 - John Palubinskas - Reworked function so we only have one place for creating the approval HTML
-                                       for use in both the quote and approval email.            
+Updates: 20150209 John Palubinskas - #68 Reworked function so we only have one place for creating the approval HTML
+                                     for use in both the quote and approval email. 
+         20150216 John Palubinskas - #68 fix issue where all approval reasons would display in red text if they were
+                                     after 'Core price set outside guardrails' reason.
         
 =====================================================================================================
 */
@@ -27,6 +29,9 @@ if(NOT isempty(level1ApprovalReasonArr)){
 	for level1ApprovalReason in level1ApprovalReasonArr{
 		if(level1ApprovalReason == "Core price set outside guardrails"){
 			reasonStyle = " class='red'";
+		}
+		else{
+			reasonStyle = "";
 		}
 		returnStr = returnStr + "<li" + reasonStyle + ">" + level1ApprovalReason + "</li>";
 	}
@@ -45,6 +50,9 @@ if(NOT isempty(level2ApprovalReasonArr)){
 	for level2ApprovalReason in level2ApprovalReasonArr{
 		if(level2ApprovalReason == "Core price set outside guardrails"){
 			reasonStyle = " class='red'";
+		}
+		else{
+			reasonStyle = "";
 		}
 		returnStr = returnStr + "<li" + reasonStyle + ">" + level2ApprovalReason + "</li>";
 	}

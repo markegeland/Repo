@@ -11,8 +11,9 @@ Output:     String - Output parsed as HTML by the attribute to display table of 
 Updates:    20140916 John (Republic) - fixed margin before % calculation
             201401   Julie (Oracle) - Added Red logic
             20140114 Julie (Oracle) - Added Direct Cost row
-            20150215 John Palubinskas - implemented direct cost calculations, and refactored
+            20150215 John Palubinskas - #68 implemented direct cost calculations, and refactored
                                         function to not set inline styles
+            20150219 John Palubinskas - #68 hide direct cost until approval email phase 2
     
 =====================================================================================================
 */
@@ -185,10 +186,32 @@ if(largeSolidWasteRevenueWithAdmin <> 0){
 if(largeRecyclingRevenueWithAdmin <> 0){
     largeRecyclingDirectCostPct = ((largeRecyclingRevenueWithAdmin - largeRecyclingCost_quote) / largeRecyclingRevenueWithAdmin) * 100;
 }
-if(total_NetRevenue_After <> 0){
-    totalDirectCostPct = ((total_NetRevenue_After - totalContainerCost_quote) / total_NetRevenue_After) * 100;
-}
 
+totalRevenueAfter = smallSolidWasteRevenueWithAdmin + smallRecyclingRevenueWithAdmin + largeSolidWasteRevenueWithAdmin + largeRecyclingRevenueWithAdmin;
+totalCostAfter = smallSolidWasteCost_quote + smallRecyclingCost_quote + largeSolidWasteCost_quote + largeRecyclingCost_quote;
+
+if(totalRevenueAfter <> 0){
+    totalDirectCostPct = ((totalRevenueAfter - totalCostAfter) / totalRevenueAfter) * 100;
+}
+if(isExistingCustomer){
+    totalCostBefore = 0.0;
+    for line in line_process{
+        totalCostBefore = totalCostBefore + line.existingCostPerMonthIncludingOverhead_line;
+    }
+    if(totalRevenueBefore_quote <> 0.0){
+        totalDirectCostBeforePct = ((totalRevenueBefore_quote - totalCostBefore) / totalRevenueBefore_quote) * 100;
+    }
+    
+    totalDirectCostVariance = totalCostAfter - totalCostBefore;
+    totalDirectCostVariancePct = 0.0;
+    if(totalCostAfter <> 0.0){
+        totalDirectCostVariancePct = (totalDirectCostVariance / totalCostAfter) * 100;    
+    }
+    
+    // print "totalRevenueBefore_quote: " + string(totalRevenueBefore_quote);
+    // print "totalCostBefore: " + string(totalCostBefore);
+    // print "totalDirectCostBeforePct: " + string(totalDirectCostBeforePct);
+}
 
 //--------------------------------------------------------
 // Create HTML output
@@ -383,7 +406,7 @@ returnStr = returnStr   + "</tr>";
                         
 
 //If Color is "Red" then we are dealing with the approval e-mail, so we add the Direct Cost row
-if(Color == "Red"){
+if(Color == "DONT DISPLAY DIRECT COST YET!!!"){
     returnStr = returnStr + "<tr>" // Direct Cost %
                         + "<td class='first-column'>Direct Cost %</td>";
     if(commercialExists_quote){
@@ -412,12 +435,12 @@ if(Color == "Red"){
 
    if(isExistingCustomer){
         returnStr = returnStr + "<td";
-        if(totalContainerCost_quote < 0){ returnStr = returnStr + redClass; }
-        returnStr = returnStr + ">" + "</td>";
+        if(totalDirectCostBeforePct < 0){ returnStr = returnStr + redClass; }
+        returnStr = returnStr + ">" + string(round(totalDirectCostBeforePct, 1)) + "%</td>";
 
         returnStr = returnStr + "<td";
-        if(totalContainerCost_quote < 0){ returnStr = returnStr + redClass; }
-        returnStr = returnStr + ">" + "</td>";
+        if(totalDirectCostVariancePct < 0){ returnStr = returnStr + redClass; }
+        returnStr = returnStr + ">" + string(round(totalDirectCostVariancePct, 1)) + "%</td>";
     }
 }
 
