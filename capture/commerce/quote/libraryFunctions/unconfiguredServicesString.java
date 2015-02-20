@@ -12,6 +12,8 @@ Output:     String ("1~unconfiguredServices_richtext_quote~" + value + "|")
 Updates:    20141013 - John Palubinskas - Removed Open/Close Date field, changed compactor and customer owned
                        to be Y/N. Set L/F Code to be disposal_site_code + land_fill_price_cd.  Added code header.
                        Fixed container size field to properly handle sizes to two decimal points; e.g. 0.45 yd.
+					  
+			20150220 - Gaurav Dawar - #372 - Changed the service frequency string to populate the correct service frequency
         
 =====================================================================================================
 */
@@ -192,11 +194,11 @@ if(salesActivity_quote == "Existing Customer" OR salesActivity_quote == "Change 
 					Pickup_Period_Length = get(thisContainerDict, "Pickup_Period_Length");
 					Pickup_Period_LengthStr = "";
 					if(Pickup_Period_Length == "2"){
-						Pickup_Period_LengthStr = "1/EOW";
+						Pickup_Period_LengthStr = "2/W"; //#372 - Changed from "1/EOW" - GD - 20150220
 					}elif(Pickup_Period_Length == "4"){
-						Pickup_Period_LengthStr = "1/Every 4 Weeks";
+						Pickup_Period_LengthStr = "4/W"; //#372 - Changed from "1/Every 4 Weeks" - GD - 20150220
 					}elif(Pickup_Period_Length == "3"){
-						Pickup_Period_LengthStr = "1/Every 3 Weeks";
+						Pickup_Period_LengthStr = "3/W"; //#372 - Changed from "1/Every 3 Weeks" - GD - 20150220
 					}elif(Pickup_Period_Length == "1"){
 						Pickup_Period_LengthStr = "1/W";
 					}
