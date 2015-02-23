@@ -1,4 +1,4 @@
-/* 
+/*
 ================================================================================
 Name:   monthlyTotalsHTML_quote line default
 Author:   
@@ -216,63 +216,7 @@ if(isExistingCustomer){
 	returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(admin_change_amount,"USD") + "</td>";
 }
 returnStr = returnStr	+ "</tr>";	//End of Admin fees	
-//Start of Commission Section
-/*
-if(parseShowSmall == true){
-	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Small Container Commission on Recurring Monthly Revenue</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[0]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[1]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[2]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[3]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[4]),"USD") + "</td>"
-							+ "</tr>"		
-							+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Small Container Commission Rate on Recurring Monthly Revenue</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[0])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[1])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[2])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[3])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[4])*100,2)) + "%" + "</td>"
-							+ "</tr>";		
-}		
-if(parseShowLarge == true){
-	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Large Container Commission on Recurring Monthly Revenue</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[0]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[1]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[2]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[3]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[4]),"USD") + "</td>"
-							+ "</tr>"		
-							+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Large Container Commission Rate on Recurring Monthly Revenue</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[0])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[1])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[2])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[3])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[4])*100,2)) + "%" + "</td>"
-							+ "</tr>";		
-}	
-if(showCommission == true){
-	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Commission on One Time Charges</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[0]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[1]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[2]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[3]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[4]),"USD") + "</td>"
-							+ "</tr>"		
-							+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Total Estimated Commission</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[0]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[1]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[2]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[3]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[4]),"USD") + "</td>"
-							+ "</tr>";		
-} */				
-//End of Commission Section				
+			
 returnStr = returnStr 	+ "<tr class=\"totalRow\">" //Start of Grand Totals row
 						+ "<td  >Total Estimated Amount</td>";
 if(NOT isSalesrep){
@@ -289,22 +233,6 @@ if(isExistingCustomer){
 	returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(total_change_amount_incl_fees,"USD") + "</td>";
 }
 returnStr = returnStr	+ "</tr>"//End of Grand Totals row
-						/*+ "<tr style='display:none;'>" //Start of Commissions - Hide this for Pilot
-						+ "<td  >Est. Commission</td>";
-if(NOT(isSalesrep)){
-	returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(totalCommissionFloor_quote,"USD") + "</td>";
-}
-returnStr = returnStr 	+ "<td  align=\"center\" >" +  formatascurrency(totalCommissionBase_quote,"USD") + "</td>"
-						+ "<td  align=\"center\" >" +  formatascurrency(totalCommissionTarget_quote,"USD") + "</td>"
-						+ "<td  align=\"center\" >" +  formatascurrency(totalCommissionStretch_quote,"USD") + "</td>";
-if(isExistingCustomer){	
-	returnStr = returnStr + "<td  align=\"center\" >" +  "Commissiom Value" + "</td>";
-}
-returnStr = returnStr   + "<td  align=\"center\" >" +  formatascurrency(totalCommissionSell_quote,"USD") + "</td>";
-if(isExistingCustomer){	
-	returnStr = returnStr + "<td  align=\"center\" >" +  "Commission Value" + "</td>";
-}
-returnStr = returnStr + "</tr>" */ //End of Commissions
 						+ "</table>";
 
 //=============================== End - Building HTML String ===============================//

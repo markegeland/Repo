@@ -5,6 +5,8 @@
     20141209 - John Palubinskas - Updated to set all image URLs to hit prod directly.
                                   Moved all dynamic content IDs to the same section in file.
     20150115 - John Palubinskas - #126 updates for print/email docs buttons and send me a copy checkbox
+    20150121 - John Palubinskas - cleanup: consolidate a few repeated styles
+    20150212 - John Palubinskas - #68 add styles for financial-details-table
 
    ================================================================================================== */
 
@@ -19,12 +21,12 @@
 
 #header-wrapper{
     height: 50px;
-    height: 100px\9;
-    background-color:#003c69;
+    height: 100px;
+    background-color: #003c69;
     background-image: url('/bmfsweb/republicservices/image/images/Capture-RMS-logo-web-reversed.png');
     background-size: auto 48px;
-    background-repeat:no-repeat;
-    background-position:15px 0px;
+    background-repeat: no-repeat;
+    background-position: 15px 0px;
 }
 .list-field {
     font-family: "Open Sans",Tahoma;
@@ -32,13 +34,13 @@
 
 #header-wrapper > span{
     height: 50px;
-    height: 100px\9;
-    background-color:#003c69;
+    height: 100px;
+    background-color: #003c69;
     background-image: url('/bmfsweb/republicservices/image/logo1.png');
     background-size: auto 48px;
-    background-repeat:no-repeat;
-    float:right;
-    padding-right:60px;
+    background-repeat: no-repeat;
+    float: right;
+    padding-right: 60px;
 }
 
 div.nav-links, 
@@ -94,8 +96,9 @@ ul.tab-strip li {
     display: none;
 }
 
-table.header-bordercolor, 
-.header-bordercolor nobr, 
+.header-bordercolor, 
+.admin-bordercolor,
+.header-bordercolor nobr, /* why do we use a deprecated tag?!!! */
 .admin-bordercolor nobr {
     border:none !important;
 }
@@ -158,40 +161,22 @@ a.header-item img {
 /* @end */
 
 /* -- Set numerical fields as right-aligned -- */
-input[id="desiredQuoteTotal_quote-display"] {
-    text-align: right !important;
-}
-span[id="readonly_1_desiredQuoteTotal_quote"] {
-    text-align: right !important;
-    width : 30%;
-}
+input[id="desiredQuoteTotal_quote-display"],
+input[id*='sellPrice'],
+input[id="divisionExchange_ui_line-display"],
+input[id="divisionExtLift_ui_line-display"],
+input[id="divisionExtYard_ui_line-display"],
+input[id="divisionRelo_ui_line-display"],
+input[id="divisionRemove_ui_line-display"],
+input[id="divisionDRY_ui_line-display"],
+input[id="divisionWAS_ui_line-display"],
+span[id="readonly_1_desiredQuoteTotal_quote"],
 span[id="readonly_1_currentQuoteTotal_quote"] {
     text-align: right !important;
+}
+span[id="readonly_1_desiredQuoteTotal_quote"],
+span[id="readonly_1_currentQuoteTotal_quote"] {
     width : 30%;
-}
-input[id*='sellPrice'] {
-    text-align:right !important;
-}
-input[id="divisionExchange_ui_line-display"] {
-    text-align: right !important;
-}
-input[id="divisionExtLift_ui_line-display"] {
-    text-align: right !important;
-}
-input[id="divisionExtYard_ui_line-display"] {
-    text-align: right !important;
-}
-input[id="divisionRelo_ui_line-display"] {
-    text-align: right !important;
-}
-input[id="divisionRemove_ui_line-display"] {
-    text-align: right !important;
-}
-input[id="divisionDRY_ui_line-display"] {
-    text-align: right !important;
-}
-input[id="divisionWAS_ui_line-display"] {
-    text-align: right !important;
 }
 select[id="containerDetailsDropdown"] {
     width : 25% !important;
@@ -219,8 +204,8 @@ body.ext-webkit.ext-chrome.ext-windows {
 #cm-manager-content table.x-grid-table-bg-color .x-grid3-header td,
 #cm-manager-content table.x-grid-table-bg-color .x-grid3-header td a.view-header,
 #cm-manager-content table.x-grid-table-bg-color .x-grid3-header td span.view-header {
-        background-color: #3d9bcb !important;
-        font-family: "Open Sans";
+    background-color: #3d9bcb !important;
+    font-family: "Open Sans";
 }
 
 td.sidebar-folder {
@@ -239,40 +224,24 @@ img.display-block,
 
 /* @group Input Forms */
 
-.text-wrapper-inner {
-    border: 2px solid #3d9bcb !important;
-    border-radius: 4px !important;
-    -webkit-border-radius: 4px !important;
-    -mox-border-radius: 4px !important;
-}
-
+.text-wrapper-inner,
 .text-field.attribute-field {
     border: 2px solid #3d9bcb !important;
     border-radius: 4px !important;
     -webkit-border-radius: 4px !important;
     -mox-border-radius: 4px !important;
 }
-
-.form-input-number {
-    font-family: "Open Sans" !important;
-    font-size: 12px !important;
-    text-align: left;
-}
-
-.menu-attr label {
-    font-family: "Open Sans" !important;
-    font-size: 12px !important;
-}
-
-input.form-input {
-    color : #595959 !important;
-    font-family: "Open Sans";
-    font-size: 12px;
-}
-
+.form-input-number,
+.menu-attr label,
 .form-input {
     font-family: "Open Sans" !important;
     font-size: 12px !important;
+}
+.form-input-number {
+    text-align: left;
+}
+input.form-input {
+    color : #595959 !important;
 }
 
 div.menu-attr select {
@@ -371,10 +340,6 @@ li.error-text {
     text-transform: capitalize;
 }
 
-.button-left, 
-.button-right { 
-    display: none !important; /* hide button sides used in original table buttons */
-} 
 
 #sticky-actions .fixed, 
 #sticky-actions .floating {    
@@ -390,6 +355,12 @@ li.error-text {
     margin-left: -10px !important;
 }
 
+
+.button-left, 
+.button-right { 
+    display: none !important; /* hide button sides used in original table buttons */
+} 
+
 .button-middle img,
 .button-middle a img {
     display: none;
@@ -398,13 +369,13 @@ li.error-text {
 
 td.button-middle { 
     border: 0px;
-    top : -4px !important;
+    /*top : -4px !important;*/
     background-image: none !important;
     background-repeat: repeat-x;
     background-color: #bb133e !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
 }
 
 td.button-middle:hover { 
@@ -412,15 +383,15 @@ td.button-middle:hover {
     background-image: none !important;
     background-repeat: repeat-x;
     background-color:#d03c55 !important; 
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
 }
 
 .button-middle a {
     margin: 0px 4px 0px 4px;
     padding: 0px 10px 0px 10px !important;
-    font-family: "Open Sans" !imporant;
+    font-family: "Open Sans" !important;
     font-size: 14px !important;
     font-weight: normal !important;
     color: #fff !important;
@@ -746,83 +717,41 @@ div#attribute-compactorContainerLabel.attribute{
 #start_over{
     display: none !important;
 }
-/* Vertically Center align button label */
-.button-text{
-  top: -4px !important; 
-  font-family: "Open Sans" !important; 
-}   
-#update.button-text{
-    top: -2px !important; 
-}
-#add_to_quote.button-text{
-    top: -2px !important; 
-}
-#save.button-text{
-    top: -2px !important; 
-}
-#cancel.button-text{
-    top: -2px !important; 
-}
-#return_to_quote.button-text{
-    top: -2px !important; 
-}
-#delete_selected.button-text{
-    
+
+.button-text, .button-text:link, .button-text:visited{
     color: #FFFFFF !important;
+    top: 0px !important;
+    font-family: sans-serif !important; 
+}   
+#delete_selected.button-text{    
     margin-right: 32px !important;
     margin-left: 32px !important;
 }
 #set_to_target.button-text{
-    top: -2px !important; 
-    color: #FFFFFF !important;
     margin-right: 30px !important;
     margin-left: 30px !important;
 }   
 #set_to_average.button-text{
-    top: -2px !important; 
-    color: #FFFFFF !important;
     margin-right: 36px !important;
     margin-left: 36px !important;
 }   
 #add_to_favorites.button-text{
-    top: 1px !important; 
-    color: #FFFFFF !important;
     margin-right: 25px !important;
     margin-left: 25px !important;
 }   
-#view_history.button-text{
-    
-    color: #FFFFFF !important;
+#view_history.button-text{    
     margin-right: 16px !important;
     margin-left: 16px !important;
 }
 #create_site.button-text{           
-    color: #FFFFFF !important;
     margin-right: 7px !important;
     margin-left: 7px !important;
 }
-#small_container.button-text{           
-    color: #FFFFFF !important;
-    margin-right: 25px !important;
-    margin-left: 25px !important;
-}
-#large_container.button-text{           
-    color: #FFFFFF !important;
-    margin-right: 25px !important;
-    margin-left: 25px !important;
-}
-#ad-hoc_items.button-text{          
-    color: #FFFFFF !important;
-    margin-right: 25px !important;
-    margin-left: 25px !important;
-}
-#additional_items.button-text{          
-    color: #FFFFFF !important;
-    margin-right: 25px !important;
-    margin-left: 25px !important;
-}
+#small_container.button-text,
+#large_container.button-text,
+#ad-hoc_items.button-text,
+#additional_items.button-text,
 #calculate_price.button-text{           
-    color: #FFFFFF !important;
     margin-right: 25px !important;
     margin-left: 25px !important;
 }
@@ -853,10 +782,10 @@ div.MicrosoftMap.MapTypeId_auto.large.dark {
 }
     
 label[for="invoiceNumberFormat_quote"]{
-    height:20px !important;
+    height: 20px !important;
 }
 .auto-update-highlight {
-    background-color:#F6F6F6 !important; /*Get rid of the yellow background for auto-update */
+    background-color: #F6F6F6 !important; /*Get rid of the yellow background for auto-update */
 }
 
 .form-item{
@@ -997,6 +926,86 @@ a#email_documents{
     display: inline-block;
     width: 150px;
 }
+
+
+table.financial-details-table {
+    *border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    font-family: "Open Sans", sans-serif;
+    font-size: 8pt;
+}
+.financial-details-table{
+    border: solid #3D9BCB 1px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-radius: 4px;
+    -webkit-box-shadow: 0 1px 1px #ccc; 
+    -moz-box-shadow: 0 1px 1px #ccc; 
+    box-shadow: 0 1px 1px #ccc;     
+}
+.financial-details-table td, .financial-details-table th {
+    /*border-left: 1px solid #ccc;*/
+    /*border-top: 1px solid #ccc;*/
+    padding: 5px;
+    text-align: left;    
+}
+.financial-details-table td {
+    color: #595959;
+    text-align: center;
+}
+.financial-details-table th {
+    background-color: #ebf8ff;
+    border-top: none;    
+    text-align: center;
+    color: #000059;
+    font-family: Tahoma;
+    font-weight: normal;
+}
+.financial-details-table td:first-child, .financial-details-table th:first-child {
+    border-left: none;
+}
+
+.financial-details-table th:first-child {
+    -moz-border-radius: 6px 0 0 0;
+    -webkit-border-radius: 6px 0 0 0;
+    border-radius: 6px 0 0 0;
+}
+
+.financial-details-table th:last-child {
+    -moz-border-radius: 0 6px 0 0;
+    -webkit-border-radius: 0 6px 0 0;
+    border-radius: 0 6px 0 0;
+}
+
+.financial-details-table th:only-child{
+    -moz-border-radius: 6px 6px 0 0;
+    -webkit-border-radius: 6px 6px 0 0;
+    border-radius: 6px 6px 0 0;
+}
+
+.financial-details-table tr:last-child td:first-child {
+    -moz-border-radius: 0 0 0 6px;
+    -webkit-border-radius: 0 0 0 6px;
+    border-radius: 0 0 0 6px;
+}
+
+.financial-details-table tr:last-child td:last-child {
+    -moz-border-radius: 0 0 6px 0;
+    -webkit-border-radius: 0 0 6px 0;
+    border-radius: 0 0 6px 0;
+}
+td.red{
+    color: #FF0000;
+}
+td.first-column
+{
+    text-align: left;
+}
+
+
+
+
 
 /* Dynamic Content Styles --------------------------------------------------------------------------------
 

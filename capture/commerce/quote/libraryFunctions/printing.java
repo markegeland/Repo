@@ -8,8 +8,11 @@ Input:      Does not take in any parameters.  Uses quote and line level attribut
 Output:     String (documentNumber + "~" + attributeVariableName + "~" + value + "|")
 
 Updates:    20141106 Added logic to set the after year 1-4 dates based on the effective service date.  And, created the header. 
-     	    20141112 Commented out logic from 20141106 due to emergency migration, put logic back in on	20141113
-            20141212 JPalubinskas - #240 Updated afterYear#Date_quote to hold MM/YYYY format
+            20141112 Commented out logic from 20141106 due to emergency migration, put logic back in on	20141113
+            20141212 John Palubinskas - #240 Updated afterYear#Date_quote to hold MM/YYYY format
+            20150117 Julie Felberg - #69 Added logic to set the print versions of the rate restrictions
+            20150122 Gaurav Dawar - #352 - correcting the calculations for Delivery for it to flow through infopro
+            20150210 John Palubinskas - #68 moved rate restriction logic to postPricingFormulas
 =====================================================================================================
 */
 
@@ -300,6 +303,9 @@ for line in line_process{
 				append(deliveryCreditArr, deliveryCredit);
 			}
 			totalDeliveryCredit = totalDeliveryCredit + deliveryCredit;
+			if(deliveryCredit < 0.0){//#352 - correcting the calculations for Delivery for it to flow through infopro
+				deliveryCredit = 0.0;
+			}
 			res = res + line._parent_doc_number + "~deliveryCredit_line~" + string(deliveryCredit) + "|";
 		}elif( line.rateType_line == "Exchange"){
 			oneTimeLinesExist = true;
@@ -452,17 +458,7 @@ if (adHocOneTimeExists_quote == true){
 }
 
 
-EffectiveYear = atoi(substring(effectiveServiceDate_quote, 0, 4));
-AfterYear1Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(EffectiveYear + 1);
-AfterYear2Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(EffectiveYear + 2);
-AfterYear3Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(EffectiveYear + 3);
-AfterYear4Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(EffectiveYear + 4);
-
-res = res + "1~afterYear1Date_quote~"                  + AfterYear1Date + "|"
-          + "1~afterYear2Date_quote~"                  + AfterYear2Date + "|"
-          + "1~afterYear3Date_quote~"                  + AfterYear3Date + "|"
-          + "1~afterYear4Date_quote~"                  + AfterYear4Date + "|"
-          + "1~dBAName_TextArea_quote~"                + finalDBAName + "|"
+res = res + "1~dBAName_TextArea_quote~"                + finalDBAName + "|"
           + "1~frontTCContent_quote~"                  + Front_TC + "|"
           + "1~rearTCContent_quote~"                   + Rear_TC + "|"
           + "1~displayDeliveryCreditsModelWise_quote~" + string(displayDeliveryCreditsModelWise) + "|"

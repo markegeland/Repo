@@ -1,142 +1,600 @@
 /* 
-	==========================================================================
-	| COMMERCE BML LIBRARY													 |
-	+------------------------------------------------------------------------+
-	| emailNotificationGenerator											 |
-	==========================================================================
-	| Generates HTML email											 		|
-	==========================================================================
+================================================================================
+       Name:  emailNotificationGenerator
+     Author:   
+Create date:  
+Description:  
+        
+  Input:     SubmittedBy       - String
+             SubmitComment     - String
+             ReasonName        - String
+             ReasonDescription - String
+             Approver          - String
+             TransactionURL    - String
+                    
+ Output:     String containing HTML used to generate approval emails
+
+Updates:
+    20141211- 
+    20150203 - Julie Felberg    - Implemented 4 new tables with logic.  This logic involved a new line
+                                  level loop and several new variables.
+    20150209 - John Palubinskas - #68 Replaced existing function with logic from newEmailNotificaitonGenerator.
+                                  That function will be deleted.  Cleaned up header and comments.
+                                  Completely reworked function to get rid of styles embedded in the tags.
+    20150215 - John Palubinskas - #68 Additional work for adding quantity columns.  Calculate fees correctly on conatiner
+                                  comparison tables, and fix formatting issues.
+    20150216 - John Palubinskas - #68 fix issue with 
+    
+================================================================================
 */
+emailBody = "";
 
 //Calculations
 monthlyTotalBase = smallMonthlyTotalBase_quote + largeMonthlyTotalBase_quote;
 monthlyTotalTarget = smallMonthlyTotalTarget_quote + largeMonthlyTotalTarget_quote;
 monthlyTotalStretch = smallMonthlyTotalStretch_quote + largeMonthlyTotalStretch_quote;
 monthlyTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote;
-//Declaration of tags
-START_B_TAG = "<b>";
-START_U_TAG = "<u";
-END_B_TAG = "</b>";
-END_U_TAG = "</u>";
-EMPTY_P_TAG = "<p></p>";
-END_P_TAG = "</p>";
 
-// Start the email body here
-emailBody = "<html><body>";
-
-emailBody =	emailBody + "<table style='padding-left:35px;font-family:tahoma;'><tbody><tr><td bgcolor='00B8FF' align='right' style='color:#FFFFFF;width:535px;height:40px;'><b>QUOTE APPROVAL REQUIRED&nbsp;&nbsp;</b></td></tr></tbody></table>";
-// Image tag for Approval email
-emailBody =	emailBody + "<img style='padding-left:200px;' src='http://" + _system_company_name + ".bigmachines.com/bmfsweb/testrepublicservices/image/RP_HorizontalLatest.jpeg'/>";
-emailBody =	emailBody + "<br>";
-emailBody =	emailBody + "<br>";
-emailBody =	emailBody + "<p style='padding-left:35px;font: 16px Calibri'></p>";
-emailBody =	emailBody + "<p style='padding-left:35px;font: 16px Calibri'>Dear " + Approver +",</p>";
-emailBody =	emailBody + "<p style='padding-left:35px;font: 16px Calibri'>Quote "+ quoteNumber_quote+ ", " + siteName_quote + " requires your approval for the following reason(s): </p>";
-// Display Reason Description - For level 1 and 2 this will be based on the approver the input attribute will differ
-emailBody =	emailBody + "<p style='padding-left:35px;font: 16px Calibri'><b> " + ReasonDescription + " </b></p>";
-
-emailBody =	emailBody + "<p style='padding-left:35px;font: 16px Calibri'><u><i>Quote Detail:</i></u></p>";
+AdHocIndex = 0;
+AdHocDescArr = string[];
+AdHocBillingMethodArr = string[];
+AdHocQtyArr = string[];
+AdHocTotalPriceArr = string[];
+ConfigAttrDict=dict("string");
+SCDocNum = string[];
+ContPDocNum = string[];
+ContQuantityArr = string[];
+ContainerArr = string[];
+RatePerHaulArr = string[];
+ContTypeArr = string[];
+CompactorValArr = string[];
+TotalServiceTimeArr = string[];
+TonsPerHaulArr = string[];
+DisposalSiteArr = string[];
+CostPerHaulArr = string[];
+newPriceDict = dict("string");
+newFeesDict = dict("string");
+oldContainerArray = string[];
+NewContainerArray = string[];
+oldSizeArray = string[];
+newSizeArray = string[];
+oldNbrArray = string[];
+newNbrArray = string[];
+oldWtArray = string[];
+newWtArray = string[];
+oldFreqArray = string[];
+newFreqArray = string[];
+oldPriceArray = string[];
+oldFeesArray = string[];
+newPriceArray = string[];
+newFeesArray = string[];
+approverFullName = "";
+submittedByFullName = "";
 submittersComments = "";
-if(NOT isnull(SubmitComment)){
-	submittersComments = SubmitComment;
+rateRestrictions = "";
+displayCompetitor = "";
+salesActivity = salesActivity_quote;
+competitor = competitor_quote;
+
+for line in line_process{
+    //models
+    if(NOT isnumber(line._parent_doc_number)){
+        put(ConfigAttrDict, line._document_number, line._config_attributes);
+    }
+    //line items
+    if(isnumber(line._parent_doc_number)){
+        //Ad Hoc Items
+        if(line._parent_line_item == "Ad-Hoc Line Items"){
+            AdHocDescArr[AdHocIndex] = line.description_line;
+            AdHocBillingMethodArr[AdHocIndex] = line.billingType_line;
+            AdHocQtyArr[AdHocIndex] = string(line._price_quantity);
+            AdHocTotalPriceArr[AdHocIndex] = string(line.sellPrice_line);
+            AdHocIndex = AdHocIndex + 1;
+        }
+        //Service Changes
+        elif(line.priceType_line == "Service Change"){
+            salesActivity = line.activity_line + " - " + line.priceAdjustmentReason_line;
+            competitor = getconfigattrvalue(line._parent_doc_number, "competitor"); //TODO: need to check adjustment reason for rollback due to comp before setting
+
+            if(line.activity_line == "Service level change"){
+                if(findinarray(SCDocNum, line._parent_doc_number) == -1){
+                    append(SCDocNum, line._parent_doc_number);
+                }
+                //if monthly fee, then populate new price array
+                if(line.billingType_line == "Monthly"){
+                    put(newPriceDict,line._parent_doc_number, formatascurrency(line.sellPrice_line,"USD"));
+                    frfCharged = 0.0;
+                    erfCharged = 0.0;
+                    adminCharged = 0.0;
+                    if (isFRFwaived_quote <> 1) {
+                        frfCharged = line.frfAmountSell_line;
+                    }
+                    if (isERFwaived_quote <> 1) {
+                        erfCharged = line.erfAmountSell_line;
+                    }
+                    if (adminFeeCharged_quote <> "No") {
+                        adminCharged = adminRate_quote;
+                    }
+
+                    put(newFeesDict, line._parent_doc_number, formatascurrency(frfCharged + erfCharged + adminCharged,"USD"));
+                }
+            }
+        }
+        //Containers
+        else{
+            if(findinarray(ContPDocNum, line._parent_doc_number) == -1){
+                append(ContPDocNum,line._parent_doc_number);        
+                
+                //LARGE_CONTAINER
+                if(line.billingType_line == "Per Haul"){
+                    allSites = getconfigattrvalue(line._parent_doc_number, "site_disposalSite");
+                    siteIndex = atoi(getconfigattrvalue(line._parent_doc_number, "alternateSite_l"));
+                    disposalSites = split(allSites, "$,$");
+
+                    print "we have a large container";
+                    append(ContQuantityArr, string(line._price_quantity));
+                    append(ContainerArr, line.description_line);
+                    append(RatePerHaulArr, string(line.perHaulRate_line));
+                    append(ContTypeArr, line._model_name);
+                    append(CostPerHaulArr, string(line.totalFloorPrice_line));
+                    append(CompactorValArr, getconfigattrvalue(line._parent_doc_number, "compactorValue"));
+                    append(DisposalSiteArr, substring(disposalSites[siteIndex-1], 0, 49));
+                    append(TotalServiceTimeArr, getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l"));
+                    append(TonsPerHaulArr, getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l"));
+                    
+                }
+                //SMALL_CONTAINER
+                else{
+                    print "we have a small container";
+                    append(ContQuantityArr, string(line._price_quantity));
+                    append(ContainerArr, line.description_line);
+                    append(RatePerHaulArr, string(line.perHaulRate_line));
+                    append(ContTypeArr, line._model_name);
+                    append(CompactorValArr, "N/A");
+                    append(TotalServiceTimeArr, "N/A");
+                    append(CostPerHaulArr, "N/A");
+                    append(TonsPerHaulArr, "N/A");
+                    
+                    polygonRegion = getconfigattrvalue(line._parent_doc_number, "polygonRegion");
+                    if((getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste") AND polygonRegion <> ""){
+                        append(DisposalSiteArr, polygonRegion);
+                    }
+                    else{
+                        append(DisposalSiteArr, "N/A");
+                    }
+                }               
+            }
+        }
+    }
 }
-// Display Basic information of quote like Submitter details, sales activity, division number, competitor etc.
-emailBody = emailBody + "<table style=\"padding-left:35px;font: 16px Calibri;\">"
-						+ "<tr>"
-							+ "<td style=\"padding-left:35px;font: 16px Calibri;\">Submitted By: "+SubmittedBy +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Submitted Date: "+submittedDate_quote +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Comments: "+submittersComments +"</td></tr>"
-							+ "<tr><td><br/></td></tr>"
-							+ "<tr><td><br/></td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Quote Description: "+quoteDescription_quote +"</td></tr>"
-							+ "<tr><td><br/></td></tr>"
-							+ "<tr><td><br/></td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Sales Activity: "+salesActivity_quote +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Division Number: "+division_quote +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Customer Name: "+_quote_process_billTo_company_name +"</td></tr>"
-							+ "<tr><td style=\"padding-left:35px;font: 16px Calibri;\">Competitor: "+competitor_quote +"</td></tr>"
-						+ "</table>";	
 
-//Applying break tags whenever necessary 
-emailBody =	emailBody + "<br>";
-emailBody =	emailBody + "<br>";
+// We have approvers and submitter arrays passed in as Strings when they're really string[].
+// Remove the array brackets from SubmittedBy (there should be just a single entry)
+// and create our own string[] for approvers for the User_Hierarchy lookup.
+approvers = replace(replace(Approver,"[",""),"]","");
+approversArr = split(approvers,",");
+submitter = replace(replace(SubmittedBy,"[",""),"]","");
+NameRecordSet = BMQL("SELECT First_Name, Last_Name, User_Login FROM User_Hierarchy WHERE User_Login IN $approversArr OR User_Login = $submitter");
 
-// Display the prices in a table format
-emailBody =	emailBody + "<p style='padding-left:35px;font: 16px Calibri'>Quote Totals:</p>";
-emailBody = emailBody + "<table border=\"1\" bordercolor=\"000000\"  cellspacing=\"0\" cellpadding=\"3\" >"
-						+ "<tr>"
-							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b></b></td>"	
-							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Cost Price</b></td>"
-							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Floor Price</b></td>"
-							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Average Price</b></td>"
-							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Target Price</b></td>"
-							+ "<td align=\"center\" bgcolor=\"003c69\" nowrap style=\"color:#FFFFFF;width:80px;\"><b>Proposed Price</b></td>"
-							/*+ "<td align=\"center\" bgcolor=\"00B8FF\" style=\"color:#FFFFFF;width:80px;\"><b>ERF</b></td>"
-							+ "<td align=\"center\" bgcolor=\"00B8FF\" style=\"color:#FFFFFF;width:80px;\"><b>FRF</b></td>"
-							+ "<td align=\"center\" bgcolor=\"00B8FF\" style=\"color:#FFFFFF;width:80px;\"><b>Total</b></td>"*/
-						+ "</tr>";
-						if(commercialExists_quote){
-							emailBody = emailBody +  "<tr>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  "Small Containers" + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(smallMonthlyTotalFloor_quote,"USD") + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(smallMonthlyTotalBase_quote,"USD") + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(smallMonthlyTotalTarget_quote,"USD") + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(smallMonthlyTotalStretch_quote,"USD") + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(smallMonthlyTotalProposed_quote,"USD") + "</td>"
-							+ "</tr>";
-						}
-						if(industrialExists_quote){
-							emailBody = emailBody +  "<tr>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  "Large Containers" + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(largeMonthlyTotalFloor_quote,"USD") + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(largeMonthlyTotalBase_quote,"USD") + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(largeMonthlyTotalTarget_quote,"USD") + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(largeMonthlyTotalStretch_quote,"USD") + "</td>"
-								+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(largeMonthlyTotalProposed_quote,"USD") + "</td>"
-							+ "</tr>";
-						}
-						emailBody = emailBody +  "<tr>"
-							+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  "Fees" + "</td>"
-							+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(totalERFFRFAdminFloorAmount_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(totalERFFRFAdminBaseAmount_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(totalERFFRFAdminTargetAmount_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"FFFFFF\" align=\"right\" nowrap style=\"color:#000000;\">" +  formatascurrency(totalERFFRFAdminStretchAmount_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"FFFFFF\" align=\"right\" snowrap  tyle=\"color:#000000;\">" +  formatascurrency(totalERFFRFAdminSellAmount_quote,"USD") + "</td>"
-							+ "</tr>"
-						+ "<tr>"
-							/*+ "<td bgcolor=\"003c69\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(monthlyTotalBase,"USD") + "</td>"
-							+ "<td bgcolor=\"003c69\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(monthlyTotalTarget,"USD") + "</td>"
-							+ "<td bgcolor=\"003c69\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(monthlyTotalStretch,"USD") + "</td>"*/
-							+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  "Total Estimated Amount" + "</td>"
-							+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(grandTotalFloor_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(grandTotalBase_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(grandTotalTarget_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(grandTotalStretch_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(grandTotalSell_quote,"USD") + "</td>"
-							/*+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(frfTotalSell_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(erfTotalSell_quote,"USD") + "</td>"
-							+ "<td bgcolor=\"00B8FF\" align=\"right\" style=\"color:#FFFFFF;\">" +  formatascurrency(erfTotalSell_quote,"USD") + "</td>"*/
-							+ "</tr></table>";
-	emailBody =	emailBody + "<p style='padding-left:35px;font: 16px Calibri'>Financial Values:</p>";
-	emailBody =	emailBody + financialSummaryForEmailTemplate_quote;
-	emailBody =	emailBody + "<br/>";
-	emailBody =	emailBody + "<p style='padding-left:35px;font: 16px Calibri'>Service Details:</p>";
-	emailBody =	emailBody + lineItemGridForEmailTemplate_quote;
-	emailBody =	emailBody + "<br/>";
-	//javascript:document.bmDocForm.document_id.value=4653823;document.bmDocForm.action_id.value=4654396;document.bmDocForm.version_id.value=5095445;document.bmDocForm.document_number.value=-1;document.bmDocForm.id.value=5581344;bmSubmitForm("/commerce/buyside/document.jsp", document.bmDocForm, null, "performAction");		
-//version_id = "4748762";
-//    action_id = "4654396";
-//	document_id ="4653823";
-//    url = "https://testrepublicservices.bigmachines.com/commerce/buyside/document.jsp?formaction=performAction&id=" + _system_buyside_id + "&version_id=" + version_id + "&action_id=" + action_id + "&document_id=" + document_id + "&document_number=-1";
-// Provide the user a transaction link to the quote so that he can click on it and approve 
-emailBody = emailBody +  "<p style='padding-left:35px;font: 14px Calibri'> Please reply to this e-mail with the word " 
-						+ "<b>Approve</b> or "
-						+ "<b>Reject</b>; or by clicking the following link to approve within the BigMachines tool:"
-						+ "<a href='"+ TransactionURL + "'>"
-						+ TransactionURL + "</a></p>";
-emailBody = emailBody + "</body></html>";
+for eachName in NameRecordSet{
+    Login = get(eachName, "User_Login");
+    if(Login == approversArr[0]){ // just grabbing first name (might be bad...)
+        approverFullName = get(eachName, "First_Name") + " " + get(eachName, "Last_Name");
+    }
+    if(Login == submitter){
+        submittedByFullName = get(eachName, "First_Name") + " " + get(eachName, "Last_Name");
+    }
+}
 
-// Use the below statement when an output PDF needs to be attached
-//xslName = "quote_pdf_bmClone_21";return emailBody + "$,$" + xslName;
+// Set default names if we do not successfully pull names from User_Hierarchy
+if(approverFullName == ""){
+    approverFullName = "Capture Approver";
+}
+if(submittedByFullName == ""){
+    submittedByFullName = SubmittedBy;
+}
+if(NOT isnull(SubmitComment)){
+    submittersComments = SubmitComment;
+}
 
-return emailBody ;
+// Set rate restriction display text
+if(customerRateRestriction_quote == false){
+    rateRestrictions =  "No Rate Restriction";
+}
+else{
+    rateRestrictions = "Rate Firm until " + afterYear1Date_quote;
+
+    if(year1Rate_quote <> ""){
+        rateRestrictions = rateRestrictions + "<br />" + year1RatePrint_quote + ", " + afterYear1Date_quote;
+    }
+    if(year2Rate_quote <> ""){
+        rateRestrictions = rateRestrictions + "<br />" + year2RatePrint_quote + ", " + afterYear2Date_quote;
+    }
+    if(year3Rate_quote <> ""){
+        rateRestrictions = rateRestrictions + "<br />" + year3RatePrint_quote + ", " + afterYear3Date_quote;
+    }
+    if(afterYear4_quote <> ""){
+        rateRestrictions = rateRestrictions + "<br />" + year4RatePrint_quote + ", " + afterYear4Date_quote;
+    }   
+}
+
+if(trim(competitor) == ""){
+    displayCompetitor = " class='hide'";
+}
+
+// % of Floor
+if(smallMonthlyTotalBase_quote == 0){
+    pctOfFloorSmall = 0.00;
+}else{
+    pctOfFloorSmall = round(((smallMonthlyTotalProposed_quote / smallMonthlyTotalBase_quote) - 1) * 100, 1);
+}
+if(largeMonthlyTotalBase_quote == 0){
+    pctOfFloorLarge = 0.00;
+}else{
+    pctOfFloorLarge = round(((largeMonthlyTotalProposed_quote / largeMonthlyTotalBase_quote) - 1) * 100, 1);
+}
+if(totalERFFRFAdminBaseAmount_quote == 0){
+    pctOfFloorFees = 0.00;
+}else{
+    pctOfFloorFees = round(((totalERFFRFAdminSellAmount_quote / totalERFFRFAdminBaseAmount_quote) - 1) * 100, 1);
+}
+if(grandTotalBase_quote == 0){
+    pctOfFloorTotal = 0.00;
+}else{
+    pctOfFloorTotal = round(((grandTotalSell_quote / grandTotalBase_quote) - 1) * 100, 1);
+}
+
+// Determine Price Band to be displayed next to Quote Totals
+priceBand = "<span class='price-band'>Price Band - ";
+if (grandTotalSell_quote < grandTotalFloor_quote) {
+    priceBand = priceBand + "Below Cost";
+}elif (grandTotalSell_quote <= grandTotalBase_quote) {
+    priceBand = priceBand + "Cost";
+}elif (grandTotalSell_quote <= grandTotalTarget_quote) {
+    priceBand = priceBand + "Floor";
+}elif (grandTotalSell_quote <= grandTotalStretch_quote) {
+    priceBand = priceBand + "Average";
+}else {
+    priceBand = priceBand + "Target";
+}
+priceBand = priceBand + "</span>";
+
+// Reformat the ReasonDescription to give some space between multiple reasons
+reasonsArr = split(ReasonDescription,";");
+reasonsFormatted = "";
+i=0;
+for reason in reasonsArr{
+    if(i == 0){
+        reasonsFormatted = reasonsArr[i];
+    }
+    else{
+        reasonsFormatted = reasonsFormatted + ",  " + reasonsArr[i];
+    }
+    i = i + 1;
+}
+
+// HTML HEADER AND STYLES
+// Note that the funky breaking of tags is needed due to mod_security filtering
+emailBody = "<ht" + "ml><head>"
+          + "<st" + "yle type=\'text" + "/css\'>"
+            + "body { margin-left: 35px; font-family: Arial, \'Open Sans\', sans-serif; }"
+            + "p { font-size: 16px; }"
+            + "h1 { text-align: right; background-color: #00ADEF; color: #fff; padding: 0 5px 3px 0; font-size: 24px;}"
+            + "h2 { }"
+            + "table { border-collapse: collapse; }"
+            + "table, th, td {  border: 1px solid #000; font-size: 14px; }"
+            + "th { background-color: #004A7C; color: #FFF; font-weight: normal; padding: 3px 5px 3px 5px;}"
+            + "td { text-align: right; padding: 3px 3px 3px 3px;}"
+            + "p.reason-description { padding-left: 20px; font-weight: bold; color: #004A7C;}"
+            + ".quote-details," 
+            + ".quote-details tr td { border: none; }"
+            + ".quote-details tr td:first-child { font-weight: bold; vertical-align: top; }"
+            + ".price-band { font-size: 18px; color: #004A7C; }"
+            + ".totals { background-color: #00ADEF; color: #fff; }"
+            + ".left { text-align: left; }"
+            + ".right { text-align: right; }"
+            + ".red { color: #ff0000; }"
+            + ".white-background { background-color: #fff; color: #000; }"
+            + ".bold { font-weight: bold; }"
+            + ".pad-bottom { margin-bottom: 10px; }"
+            + ".top { vertical-align: top; }"
+            + ".hide { display: none; }"
+            + ".approval-reason-list { margin: 0; padding: 0; list-style-type: none; }"
+            + ".approval-reason-list li{ margin: 0 0 0 10px; padding: 0; }"
+          + "</style>"
+          + "</head>"
+          + "<body>";
+
+
+
+// HEADING AND SALUTATION
+emailBody = emailBody + "<h1>QUOTE APPROVAL REQUIRED</h1>"
+                      + "<img src='https://" + _system_company_name + ".bigmachines.com/bmfsweb/testrepublicservices/image/RP_HorizontalLatest.jpeg'/>"
+                      + "<p>Dear " + approverFullName +",</p>"
+                      + "<p>Quote "+ quoteNumber_quote + ", " + siteName_quote + " requires your approval for the following reason(s): </p>"
+                      + "<p class='reason-description'>" + reasonsFormatted + "</p>";
+
+// QUOTE DETAILS
+emailBody = emailBody + "<h2>Quote Details</h2>"
+                      + "<table class='quote-details'>"
+                        + "<tr><td class='top'><b>Submitted By:</b></td><td class='left'>" + submittedByFullName +"</td></tr>"
+                        + "<tr><td class='top'><b>Submitted Date:</b></td><td class='left'>" + substring(submittedDate_quote,0,10) +"</td></tr>"
+                        + "<tr class='pad-bottom'><td class='top'><b>Comments:</b></td><td class='left'>" + submittersComments +"</td></tr>"
+                        + "<tr><td class='top'><b>Approvals Required:</b></td><td class='left'>" + approvalReasonDisplayText_quote +"</td></tr>"
+                        + "<tr><td class='top'><b>Quote Description:</b></td><td class='left'>" + quoteDescription_quote +"</td></tr>"
+                        + "<tr><td class='top'><b>Sales Activity:</b></td><td class='left'>" + salesActivity +"</td></tr>"
+                        + "<tr><td class='top'><b>Division Number:</b></td><td class='left'>" + division_quote +"</td></tr>"
+                        + "<tr><td class='top'><b>Customer Name:</b></td><td class='left'>" + _quote_process_billTo_company_name +"</td></tr>"
+                        + "<tr" + displayCompetitor + "><td class='top'><b>Competitor:</b></td><td class='left'>" + competitor +"</td></tr>"
+                        + "<tr><td class='top'><b>Industry:</b></td><td class='left'>" + industry_quote +"</td></tr>"
+                        + "<tr><td class='top'><b>Segment:</b></td><td class='left'>" + segment_quote +"</td></tr>"
+                        + "<tr><td class='top'><b>Term:</b></td><td class='left'>" + initialTerm_quote +" Months</td></tr>"
+                        + "<tr><td class='top'><b>Rate Restriction:</b></td><td class='left'>" + rateRestrictions +"</td></tr>"
+                      + "</table>"; 
+
+// CONTAINER DETAILS
+ContIndex = 0;
+if(NOT isempty(ContPDocNum)){
+    emailBody = emailBody + "<h2>Container Details:</h2>"
+                          + "<table><tr>"
+                            + "<th>Qty</th>"  
+                            + "<th>Container</th>"  
+                            + "<th>Compactor Asset Value</th>"
+                            + "<th>Total Service Time</th>"
+                            + "<th>Tons Per Haul</th>"
+                            + "<th>Disposal Site</th>"
+                          + "</tr>";
+    
+    for eachCont in ContPDocNum{
+        compactorValue = "N/A";
+        if(isnumber(CompactorValArr[ContIndex]) AND (CompactorValArr[ContIndex] <> "0")){
+            compactorValue = formatascurrency(atof(CompactorValArr[ContIndex]),"USD");
+        }
+
+        emailBody = emailBody
+                    + "<tr>" 
+                      + "<td>" + ContQuantityArr[ContIndex] + "</td>"
+                      + "<td>" + ContainerArr[ContIndex] + "</td>"
+                      + "<td>" + compactorValue + "</td>"
+                      + "<td>" + TotalServiceTimeArr[ContIndex] + "</td>"
+                      + "<td>" + TonsPerHaulArr[ContIndex] + "</td>"
+                      + "<td>" + DisposalsiteArr[ContIndex] + "</td>"
+                    + "</tr>";
+        ContIndex = ContIndex + 1;
+    }
+    emailBody = emailBody + "</table>";
+}
+
+// QUOTE TOTALS
+emailBody = emailBody + "<h2>Quote Totals: " + priceBand + "</h2>";
+emailBody = emailBody + "<table>"
+                        + "<tr>"
+                            + "<th></th>"   
+                            + "<th>Cost Price</th>"
+                            + "<th>Floor Price</th>"
+                            + "<th>Average Price</th>"
+                            + "<th>Target Price</th>"
+                            + "<th>Proposed Price</th>"
+                            + "<th>% of Floor</th>"
+                        + "</tr>";
+                        if(commercialExists_quote){
+                            pctOfFloorStyle = "";
+                            if (pctOfFloorSmall < 0) {
+                                pctOfFloorStyle = " class='red'";
+                            }
+                            emailBody = emailBody +  "<tr>"
+                                + "<td>" +  "Small Containers" + "</td>"
+                                + "<td>" +  formatascurrency(smallMonthlyTotalFloor_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(smallMonthlyTotalBase_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(smallMonthlyTotalTarget_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(smallMonthlyTotalStretch_quote,"USD") + "</td>"
+                                + "<td class='totals'>" +  formatascurrency(smallMonthlyTotalProposed_quote,"USD") + "</td>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorSmall) + "%</td>"
+                            + "</tr>";
+                        }
+                        if(industrialExists_quote){
+                            pctOfFloorStyle = "";
+                            if (pctOfFloorLarge < 0) {
+                                pctOfFloorStyle = " class='red'";
+                            }
+                            emailBody = emailBody +  "<tr>"
+                                + "<td>" +  "Large Containers" + "</td>"
+                                + "<td>" +  formatascurrency(largeMonthlyTotalFloor_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(largeMonthlyTotalBase_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(largeMonthlyTotalTarget_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(largeMonthlyTotalStretch_quote,"USD") + "</td>"
+                                + "<td class='totals'>" +  formatascurrency(largeMonthlyTotalProposed_quote,"USD") + "</td>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorLarge) + "%</td>"
+                            + "</tr>";
+                        }
+                        pctOfFloorStyle = "";
+                        if (pctOfFloorFees < 0) {
+                            pctOfFloorStyle = " class='red'";
+                        }
+                        emailBody = emailBody +  "<tr>"
+                                + "<td>" +  "Fees" + "</td>"
+                                + "<td>" +  formatascurrency(totalERFFRFAdminFloorAmount_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(totalERFFRFAdminBaseAmount_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(totalERFFRFAdminTargetAmount_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(totalERFFRFAdminStretchAmount_quote,"USD") + "</td>"
+                                + "<td class='totals'>" +  formatascurrency(totalERFFRFAdminSellAmount_quote,"USD") + "</td>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorFees) + "%</td>"
+                            + "</tr>";
+                        pctOfFloorStyle = "";
+                        if (pctOfFloorTotal < 0) {
+                            pctOfFloorStyle = " class='red'";
+                        }
+                        emailBody = emailBody +   "<tr class='totals'>"
+                                + "<td>" +  "Total Estimated Amount" + "</td>"
+                                + "<td>" +  formatascurrency(grandTotalFloor_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(grandTotalBase_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(grandTotalTarget_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(grandTotalStretch_quote,"USD") + "</td>"
+                                + "<td>" +  formatascurrency(grandTotalSell_quote,"USD") + "</td>"
+                                + "<td class='white-background'><span" + pctOfFloorStyle + ">" + string(pctOfFloorTotal) + "%</span></td>"
+                            + "</tr></table>";
+
+emailBody = emailBody + "<h2>Financial Values:</h2>"
+                      + financialSummaryForEmailTemplate_quote;
+
+emailBody = emailBody + "<h2>Service Details:</h2>"
+                      + lineItemGridForEmailTemplate_quote;
+
+
+// ADDITIONAL ITEMS
+if(NOT isempty(AdHocDescArr)){
+    emailBody = emailBody + "<h2>Additional Items:</h2>"
+                          + "<table>"
+                          + "<tr>"
+                            + "<th>Description</th>"    
+                            + "<th>Quantity</th>"
+                            + "<th>Total Price</th>"
+                            + "<th>Billing Method</th>"
+                          + "</tr>";
+    
+    eachAHDIndex = 0;
+    for eachAHD in AdHocDescArr{
+        
+        emailBody = emailBody + "<tr>"
+                                + "<td>" + AdHocDescArr[eachAHDIndex] + "</td>"
+                                + "<td>" + AdHocQtyArr[eachAHDIndex] + "</td>"
+                                + "<td>" + formatascurrency(atof(AdHocTotalPriceArr[eachAHDIndex]),"USD") + "</td>"
+                                + "<td>" + AdHocBillingMethodArr[eachAHDIndex] + "</td>"
+                              + "</tr>";
+        eachAHDIndex = eachAHDIndex + 1;
+    }                   
+                        
+    emailBody = emailBody + "</table>";
+}
+
+//Container Comparison Table
+ConfigAttrStr = "";
+ConfigAttrArr = string[];
+NConfigAttrStr = "";
+NConfigAttrArr = string[];
+if(NOT isempty(SCDocNum)){
+    emailBody = emailBody + "<h2>Container Comparison:</h2>";
+    
+    // Old Containers
+    emailBody = emailBody + "<table>"
+                        + "<tr>"
+                            + "<th>Qty</th>"
+                            + "<th>Old Container</th>"  
+                            + "<th>Size</th>"
+                            + "<th>Waste Type</th>"
+                            + "<th>Frequency</th>"
+                            + "<th>Price</th>"
+                            + "<th>Fees</th>"
+                        + "</tr>";
+    
+    for eachSC in SCDocNum{
+        if(containskey(ConfigAttrDict, eachSC)){
+            divison_config = getconfigattrvalue(eachSC, "division_config");
+            quantity_readOnly = getconfigattrvalue(eachSC, "quantity_readOnly");
+            wasteType_readOnly = getconfigattrvalue(eachSC, "wasteType_readOnly");
+            containerSize_readOnly = getconfigattrvalue(eachSC, "containerSize_readOnly");
+            liftsPerContainer_readOnly = getconfigattrvalue(eachSC, "liftsPerContainer_readOnly");
+            wasteType_sc = getconfigattrvalue(eachSC, "wasteType_sc");
+            quantity_sc = getconfigattrvalue(eachSC, "quantity_sc");
+            containerSize_sc = getconfigattrvalue(eachSC, "containerSize_sc");
+            liftsPerContainer_sc = getconfigattrvalue(eachSC, "liftsPerContainer_sc");
+            hasCompactor_readOnly = getconfigattrvalue(eachSC, "hasCompactor_readOnly");
+            containerCode_readOnly = getconfigattrvalue(eachSC, "containerCode_readOnly");
+            containerCodes_SC = getconfigattrvalue(eachSC, "containerCodes_SC");
+            
+            bothContainers = util.getExcangeDescription(divison_config, quantity_readOnly, wasteType_readOnly, containerSize_readOnly, liftsPerContainer_readOnly, wasteType_sc, quantity_sc, containerSize_sc, liftsPerContainer_sc, hasCompactor_readOnly, containerCode_readOnly, containerCodes_SC);
+            bothContainersArray = split(bothContainers, "|^|");
+            
+            append(oldContainerArray, bothContainersArray[0]);
+            append(newContainerArray, bothContainersArray[1]);
+            
+            append(oldSizeArray, containerSize_readOnly);
+            append(newSizeArray, containerSize_sc);
+            append(oldNbrArray, quantity_readOnly);
+            append(newNbrArray, quantity_sc);
+            append(oldWtArray, wasteType_readOnly);
+            append(newWtArray, wasteType_sc);
+            append(oldFreqArray, liftsPerContainer_readOnly);
+            append(newFreqArray, liftsPerContainer_sc);
+            append(oldPriceArray, getconfigattrvalue(eachSC, "monthlyRevenue_sc"));
+            // Need to calculate the Fees for the old container from totalWithFees - monthlyRevenue
+            oldMonthlyRevenueStr = replace(getconfigattrvalue(eachSC, "monthlyRevenue_sc"),"$","");
+            oldTotalWithFeesStr = replace(getconfigattrvalue(eachSC, "totalWithFees_sc"),"$","");
+
+            oldFees = 0.0;
+            oldTotalWithFees = 0.0;
+            oldMonthlyRevenue = 0.0;
+            if (isnumber(oldTotalWithFeesStr)) {
+                oldTotalWithFees = atof(oldTotalWithFeesStr);
+            }
+            if (isnumber(oldMonthlyRevenueStr)) {
+                oldMonthlyRevenue = atof(oldMonthlyRevenueStr);
+            }
+            oldFees = oldTotalWithFees - oldMonthlyRevenue;
+            append(oldFeesArray, formatascurrency(oldFees,"USD"));
+
+            if(containskey(newPriceDict, eachSC)){
+                append(newPriceArray, get(newPriceDict, eachSC));
+            }
+            else{
+                append(newPriceArray, "No New Price");
+            }
+
+            if(containskey(newFeesDict, eachSC)){
+                append(newFeesArray, get(newFeesDict, eachSC));
+            }
+            else{
+                append(newFeesArray, "No New Fee");
+            }
+            
+        }
+    }
+    
+    indexOld = 0;
+    for eachSCOld in SCDocNum{      
+        emailBody = emailBody + "<tr>"
+                + "<td>" + oldNbrArray[indexOld] + "</td>"
+                + "<td>" + oldContainerArray[indexOld] + "</td>"
+                + "<td>" + oldSizeArray[indexOld] + "</td>"
+                + "<td>" + oldWTArray[indexOld] + "</td>"
+                + "<td>" + oldFreqArray[indexOld] + "</td>"
+                + "<td>" + oldPriceArray[indexOld] + "</td>"
+                + "<td>" + oldFeesArray[indexOld] + "</td>"
+                + "</tr>"; 
+        indexOld = indexOld + 1;
+    }
+    
+    // New Containers
+    emailBody = emailBody + "<tr>"
+                            + "<th>Qty</th>"
+                            + "<th>New Container</th>"  
+                            + "<th>Size</th>"
+                            + "<th>Waste Type</th>"
+                            + "<th>Frequency</th>"
+                            + "<th>Price</th>"
+                            + "<th>Fees</th>"
+                        + "</tr>";
+    indexNew = 0;
+    for NeachSC in SCDocNum{
+            
+            emailBody = emailBody + "<tr>"
+                    + "<td>" + newNbrArray[indexNew] + "</td>"
+                    + "<td>" + newContainerArray[indexNew] + "</td>"
+                    + "<td>" + newSizeArray[indexNew] + "</td>"
+                    + "<td>" + newWTArray[indexNew] + "</td>"
+                    + "<td>" + newFreqArray[indexNew] + "</td>"
+                    + "<td>" + newPriceArray[indexNew] + "</td>"
+                    + "<td>" + newFeesArray[indexNew] + "</td>"
+                + "</tr>";
+            
+            indexNew = indexNew + 1;
+        
+    }
+    emailBody = emailBody + "</table>";
+}
+
+emailBody = emailBody + "<p>Please reply to this e-mail with the word <span class='bold'>Approve</span> or <span class='bold'>Reject</span>.<br />"
+                      + "Alternatively, you can also <a href='"+ TransactionURL + "'>click this link to approve or reject the quote</a> within Capture.</p>"
+                      + "</body></ht" + "ml>";
+
+return emailBody;
