@@ -32,6 +32,12 @@ put(accountTypeDict,"P", "Permanent");
 put(accountTypeDict,"T", "Temporary");
 put(accountTypeDict,"S", "Seasonal");
 put(accountTypeDict,"C", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"A", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"B", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"E", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"I", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"L", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"X", "Temporary");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
 
 for each in accountStatusRecordSet{
 	//05/08/2014 - Decision has been made to query erf, frf, admin status only from Account object and not from AccountStatus table that considers sitenumber as well, so, these charges are mapped in Auto fill action and hence this logic is commented out. This applies to national account flag as well
