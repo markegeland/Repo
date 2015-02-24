@@ -43,6 +43,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150203 - Julie Felberg - Added logic for #68 to set the description_line field for large containers
             20150203 - Julie Felberg - Removed description_line logic.  That code is now in post pricing
             20150210 - John Palubinskas - #68 moved logic for setting rate restricions to postPricingFormulas
+            20150215 - John Palubinskas - #68 fixed direct cost logic since it wasn't pulling the costs consistently
 =====================================================================================================
 */
 
@@ -117,8 +118,6 @@ lessThan90days = false;
 containerGroupDict = dict("string"); //container group logic
 containerGroup = "";
 containerGroupLine = "";
-
-//AQ 11/20/2014
 hasDelivery = false;
 
 /*These dictionaries are declared only for debugging purposes*/
@@ -347,15 +346,14 @@ for line in line_process{
         if(not(containskey(modelNameDict, docNum))){
             put(modelNameDict, docNum, line._model_name);
         }
-        //20141021 container group logic
-    containerGroup = "";
-    containerGroup = getconfigattrvalue(docNum, "containerGroup_config");
-    if(isnull(containerGroup)){
+
         containerGroup = "";
-    }
-        
-    put(containerGroupDict, docNum, containerGroup);
-    //end container group logic
+        containerGroup = getconfigattrvalue(docNum, "containerGroup_config");
+        if(isnull(containerGroup)){
+            containerGroup = "";
+        }
+        put(containerGroupDict, docNum, containerGroup);
+
         //Small Container
         if(line._model_name == SMALL_CONTAINER){
             liftsPerContainer = getconfigattrvalue(docNum, "liftsPerContainer_s");
@@ -376,9 +374,8 @@ for line in line_process{
             }
             append(smallContainerPickupDaysArray, wasteType+":"+frequencyStr);
             tempArray = string[];
-            //print frequencyStr;
             append(tempArray, frequencyStr);
-            //if(not(isnull(wasteType)) AND containskey(allocationDaysDict, wasteType)){                
+
             if(not(isnull(wasteType))){
                 if(containskey(allocationDaysDict, wasteType)){
                     pickupDaysArr = get(allocationDaysDict, wasteType);
@@ -620,6 +617,7 @@ for line in line_process{
                 put(existingCustDataDict, docNum+":frequency", frequencyStr_db);
             }
         }//End of Service change
+        
         if(isnumber(line._parent_doc_number)){
             returnStr = returnStr + line._parent_doc_number + "~" + "existingQuantity_line" + "~" + getconfigattrvalue(line._parent_doc_number, "quantity_readOnly") + "|"
                         + line._parent_doc_number + "~" + "existingWasteType_line" + "~" + getconfigattrvalue(line._parent_doc_number, "wasteType_readOnly") + "|"
@@ -1538,14 +1536,13 @@ for line in line_process{
             print "My Container Group for line " + line._document_number + " is: " + containerGroupLine;
             //end 20141021
             
-        put(guardrailCurrentInputDict, "newCustomerConfig", string(newCustomerConfig)); //Use this instead of Sales Activity for customer type
+            put(guardrailCurrentInputDict, "newCustomerConfig", string(newCustomerConfig)); //Use this instead of Sales Activity for customer type
             put(guardrailCurrentInputDict, "siteNumber_quote", siteNumber_quote);
             
             /*if(DEBUG){
             print "guardrailCurrentInputDict for Small Container";
             print guardrailCurrentInputDict;
             }*/
-            //Jfelberg fees
             put(guardrailCurrentInputDict, "feesToCharge", feesToCharge_quote);
             guardrailCurrentOutputDict = util.calculateGuardrails(guardrailCurrentInputDict);
             
@@ -1578,7 +1575,6 @@ for line in line_process{
             liftsPerContainer_sc = get(serviceChangeDataDict, parentDoc+":liftsPerContainer");
             quantity_sc = get(serviceChangeDataDict, parentDoc+":quantity");
             containerSize_sc = get(serviceChangeDataDict, parentDoc+":containerSize");
-            //frequency_sc = get(serviceChangeDataDict, parentDoc+":frequency");
             frequency_sc = get(serviceChangeDataDict, parentDoc+":frequency");
             wasteCategory_sc = get(serviceChangeDataDict, parentDoc+":wasteCategory");
             routeTypeDerived_sc = get(serviceChangeDataDict, parentDoc+":routeTypeDerived");
@@ -1716,15 +1712,12 @@ for line in line_process{
             put(guardrailInputDict, "competitiveBidAmount", competitiveBidAmountStr);
             put(guardrailInputDict, "customer_id", _quote_process_customer_id);
             put(guardrailInputDict, "current_wasteCategory", wasteCategory_db);
-        //20141027          
             put(guardrailInputDict, "containerGroup", containerGroupLine);
-        //20141027 end
             put(guardrailInputDict, "initialTerm_quote", string(initialTerm));
             put(guardrailInputDict, "customer_zip", _quote_process_siteAddress_quote_zip);
             put(guardrailInputDict, "segment", segment_quote);
             put(guardrailInputDict, "industry", industry_quote);
             put(guardrailInputDict, "infoProDivNumber", infoproDivision_RO_quote);
-            //put(guardrailInputDict, "serviceCode", serviceCode);
             put(guardrailInputDict, "current_containerSize", containerSize_sc);
             put(guardrailInputDict, "quantity", quantity_sc);
             put(guardrailInputDict, "containerType", container);
@@ -1742,14 +1735,13 @@ for line in line_process{
             }
             put(guardrailInputDict, "isFRFFixed", string(isFRFFixed));
             put(guardrailInputDict, "isERFFixed", string(isERFFixed));
+            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
             
             /*if(DEBUG){
                 print "guardrailInputDict for Small Container";
                 print guardrailInputDict;
             }*/
             
-            //JFelberg Fees
-            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
             //Return actual results to guardrailOutputDict - this dictionary will be used later in the script, so it should have modified/new configuration calculations
             guardrailOutputDict = util.calculateGuardrails(guardrailInputDict);
             
@@ -1776,14 +1768,14 @@ for line in line_process{
             
             //Return attributes for external calculations
             
-            returnStr = returnStr + line._document_number + "~" + "currentYardsPerMonth_line" + "~" + yardsPerMonthStr_db + "|"
-                                + line._document_number + "~" + "yardsPerMonth_line" + "~" + string(yardsPerMonth_sc) + "|"
-                                + line._document_number + "~" + "changeType_line" + "~" + changeType + "|"
-                                + line._document_number + "~" + "serviceCode_line" + "~" + serviceCode + "|"
-                                + line._document_number + "~" + "activity_line" + "~" + get(existingCustDataDict, parentDoc+":salesActivity") + "|"
-                                + line._document_number + "~" + "priceAdjustmentReason_line" + "~" + get(existingCustDataDict, parentDoc+":priceAdjustmentReason") + "|"
-                                + line._parent_doc_number + "~" + "yardsPerMonth_line" + "~" + string(yardsPerMonth_sc) + "|"
-                                + line._parent_doc_number + "~" + "currentYardsPerMonth_line" + "~" + yardsPerMonthStr_db + "|";
+            returnStr = returnStr + line._document_number   + "~currentYardsPerMonth_line" + "~" + yardsPerMonthStr_db + "|"
+                                  + line._document_number   + "~yardsPerMonth_line" + "~" + string(yardsPerMonth_sc) + "|"
+                                  + line._document_number   + "~changeType_line" + "~" + changeType + "|"
+                                  + line._document_number   + "~serviceCode_line" + "~" + serviceCode + "|"
+                                  + line._document_number   + "~activity_line" + "~" + get(existingCustDataDict, parentDoc+":salesActivity") + "|"
+                                  + line._document_number   + "~priceAdjustmentReason_line" + "~" + get(existingCustDataDict, parentDoc+":priceAdjustmentReason") + "|"
+                                  + line._parent_doc_number + "~yardsPerMonth_line" + "~" + string(yardsPerMonth_sc) + "|"
+                                  + line._parent_doc_number + "~currentYardsPerMonth_line" + "~" + yardsPerMonthStr_db + "|";
             
             //Calculate Total Monthly Yards - used to set Transaction Code
             //totalMonthlyYardsNew = totalMonthlyYardsNew + yardsPerMonth;
@@ -1931,23 +1923,17 @@ for line in line_process{
                     stretchPriceStr = get(guardrailOutputDict, "rental_stretch");
                 }
             }elif(rateTypeLower == "delivery"){
-                //J. Felberg added the quantity logic
                 if(containskey(guardrailOutputDict, "DEL")){
                     floorPriceStr = get(guardrailOutputDict, "deliveryFloor");
-                    //floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
-                    floorPriceStr = string(atof(floorPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
+                    floorPriceStr = string(atof(floorPriceStr)); 
                     basePriceStr = get(guardrailOutputDict, "DEL");
-                    //basePriceStr = string(atof(basePriceStr) * line._price_quantity);
-                    basePriceStr = string(atof(basePriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
+                    basePriceStr = string(atof(basePriceStr));
                     targetPriceStr = get(guardrailOutputDict, "DEL");
-                    //targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
-                    targetPriceStr = string(atof(targetPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
+                    targetPriceStr = string(atof(targetPriceStr));
                     stretchPriceStr = get(guardrailOutputDict, "DEL");
-                    //stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
-                    stretchPriceStr = string(atof(stretchPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
+                    stretchPriceStr = string(atof(stretchPriceStr));
                     hasDelivery = true;
                 }
-                //AQ 11/07/2104
                 if(line._part_custom_field9 == "HP"){
                     floorPriceStr = "0.0";
                     basePriceStr = "0.0";
@@ -1966,19 +1952,14 @@ for line in line_process{
                 }
             }elif(rateTypeLower == "removal"){
                 if(containskey(guardrailOutputDict, "REM")){
-                    //floorPriceStr = get(guardrailOutputDict, "REM");    //Changed 11/18/14 AQ
                     floorPriceStr = "0.0";    
-                    //floorPriceStr = string(atof(floorPriceStr) * line._price_quantity);
-                    floorPriceStr = string(atof(floorPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
+                    floorPriceStr = string(atof(floorPriceStr));
                     basePriceStr = get(guardrailOutputDict, "REM");
-                    //basePriceStr = string(atof(basePriceStr) * line._price_quantity);
-                    basePriceStr = string(atof(basePriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
+                    basePriceStr = string(atof(basePriceStr));
                     targetPriceStr = get(guardrailOutputDict, "REM");
-                    //targetPriceStr = string(atof(targetPriceStr) * line._price_quantity);
-                    targetPriceStr = string(atof(targetPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
+                    targetPriceStr = string(atof(targetPriceStr));
                     stretchPriceStr = get(guardrailOutputDict, "REM");
-                    //stretchPriceStr = string(atof(stretchPriceStr) * line._price_quantity);
-                    stretchPriceStr = string(atof(stretchPriceStr)); //Changing the "One-Time" Billing method to "Per Service" - GD 20150119 #322
+                    stretchPriceStr = string(atof(stretchPriceStr));
                     if(hasDelivery){
                         returnStr = returnStr + line._document_number + "~hasDelivery_line~true|";
                     }
@@ -2229,7 +2210,7 @@ for line in line_process{
                                   + line._document_number + "~" + "currentPriceIncludingFees_line" + "~" + string(currentPriceIncludingFees) + "|"
                                   + line._document_number + "~" + "existingWasteCategory_line" + "~" + existingWasteCategory + "|";
             
-                //Assign Supplemental charges to parent line item
+            //Assign Supplemental charges to parent line item
             returnStr = returnStr + parentDoc + "~" + "divisionExchange_line" + "~" + divisionExchangeStr + "|"
                                   + parentDoc + "~" + "divisionExtLift_line" + "~" + divisionExtLiftStr + "|"
                                   + parentDoc + "~" + "divisionExtYard_line" + "~" + divisionExtYardStr + "|"
@@ -2247,27 +2228,65 @@ for line in line_process{
                                   + parentDoc + "~" + "exchangeLineItemExists_line" + "~" + string(get(exchangeExistsDict, parentDoc)) + "|";
              
              //Set Direct Cost attributes
-             //can't user wasteCategory_db, commenting out code until find another variable to use
-            if(container == "SMALL_CONTAINER"){
-                //small 
-                if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
+            print "container: " + container;
+            print "wasteCategory: " + wasteCategory;
+            print "priceType: " + priceType;
+            print "floorPrice before: " + string(floorPrice);
+            print "smallSWCost before: " + string(smallSWCost);
+            print "smallRecCost before: " + string(smallRecCost);
+            print "largeSWCost before: " + string(largeSWCost);
+            print "largeRecCost before: " + string(largeRecCost);
+            print "totalContCost before: " + string(totalContCost);
+            if((priceType == SMALL_CONTAINER) OR (container == "Small Container")){
+                if(wasteCategory == "Solid Waste"){
                     smallSWCost = smallSWCost + floorPrice;
                 }
-                if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
+                if(wasteCategory == "Recycling"){
                     smallRecCost = smallRecCost + floorPrice;
                 }
+                totalContCost = totalContCost + floorPrice;                 
             }
-            if(container == "LARGE_CONTAINER"){
-                if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Solid Waste"){
-                    largeSWCost = largeSWCost + floorPrice;
+
+            if((priceType == LARGE_CONTAINER) OR (container == LARGE_CONTAINER)){
+                print "line.rateType_line: " + line.rateType_line;
+                haulMultiplier = 1.0;
+                tonsMultiplier = 1.0;
+                // Haul and Disposal line items need to be multiplied by # hauls
+                if ((line.rateType_line == "Haul") OR (line.rateType_line == "Disposal")) {
+                    estHaulsPerMonth = 1.0;
+                    if (isnumber(estHaulsPerMonthStr)) {
+                        estHaulsPerMonth = atof(estHaulsPerMonthStr);
+                    }
+                    haulMultiplier = estHaulsPerMonth;
+                    print "estHaulsPerMonth: " + string(estHaulsPerMonth);
                 }
-                if(getconfigattrvalue(line._parent_doc_number, "wasteCategory") == "Recycling"){
-                    largeRecCost = largeRecCost + floorPrice;
+                // Disposal line items also need to be multiplied by # tons
+                if (line.rateType_line == "Disposal") {
+                    tonsPerHaul = getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l");
+                    if (isnumber(tonsPerHaul)) {
+                        tonsMultiplier = atof(tonsPerHaul);
+                    }
+                    print "tonsPerHaul: " + tonsPerHaul;
                 }
+
+                if(wasteCategory == "Solid Waste"){
+                    largeSWCost = largeSWCost + (floorPrice * haulMultiplier * tonsMultiplier);
+                }
+
+                if(wasteCategory == "Recycling"){
+                    largeRecCost = largeRecCost + (floorPrice * haulMultiplier * tonsMultiplier);
+                }
+                totalContCost = totalContCost + (floorPrice * haulMultiplier * tonsMultiplier);                 
             }
                 
-            totalContCost = totalContCost + floorPrice;                 
-            //end Direct Cost attributes                
+
+            print "floorPrice after: " + string(floorPrice);
+            print "smallSWCost after: " + string(smallSWCost);
+            print "smallRecCost after: " + string(smallRecCost);
+            print "largeSWCost after: " + string(largeSWCost);
+            print "largeRecCost after: " + string(largeRecCost);
+            print "totalContCost after: " + string(totalContCost);
+
             //=============================== END - Assign Guardrails to Outputs ===============================//  
         }
         else{   //For Ad-Hoc parts, the floor, base, target, and stretch are all the value entered by the user

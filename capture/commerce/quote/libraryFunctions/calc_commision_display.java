@@ -77,17 +77,21 @@ returnStr = returnStr   + "</tr>";
  //Start of Commission Section
 if(parseShowSmall == true){
 	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Small Container Commission on Recurring Monthly Revenue</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[0]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[1]),"USD") + "</td>"
+							+ "<td >Small Container Commission on Recurring Monthly Revenue</td>";
+	if(NOT(isSalesrep)){
+		returnStr = returnStr	+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[0]),"USD") + "</td>";
+	}
+	returnStr = returnStr	+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[1]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[2]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[3]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailSmall[4]),"USD") + "</td>"
 							+ "</tr>"		
 							+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Small Container Commission Rate on Recurring Monthly Revenue</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[0])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[1])*100,2)) + "%" + "</td>"
+							+ "<td >Small Container Commission Rate on Recurring Monthly Revenue</td>";
+	if(NOT(isSalesrep)){
+	returnStr = returnStr	+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[0])*100,2)) + "%" + "</td>";
+	}
+	returnStr = returnStr	+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[1])*100,2)) + "%" + "</td>"
 							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[2])*100,2)) + "%" + "</td>"
 							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[3])*100,2)) + "%" + "</td>"
 							+ "<td align=\"center\" >" + string(round(atof(detailSmallPct[4])*100,2)) + "%" + "</td>"
@@ -95,17 +99,21 @@ if(parseShowSmall == true){
 }		
 if(parseShowLarge == true){
 	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Large Container Commission on Recurring Monthly Revenue</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[0]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[1]),"USD") + "</td>"
+							+ "<td >Large Container Commission on Recurring Monthly Revenue</td>";
+	if(NOT(isSalesrep)){
+	returnStr = returnStr	+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[0]),"USD") + "</td>";
+	}
+	returnStr = returnStr	+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[1]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[2]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[3]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailLarge[4]),"USD") + "</td>"
 							+ "</tr>"		
 							+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Large Container Commission Rate on Recurring Monthly Revenue</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[0])*100,2)) + "%" + "</td>"
-							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[1])*100,2)) + "%" + "</td>"
+							+ "<td >Large Container Commission Rate on Recurring Monthly Revenue</td>";
+	if(NOT(isSalesrep)){
+	returnStr = returnStr	+ "<td align=\"center\" >" + string(round(atof(detailLargePct[0])*100,2)) + "%" + "</td>";
+	}
+	returnStr = returnStr	+ "<td align=\"center\" >" + string(round(atof(detailLargePct[1])*100,2)) + "%" + "</td>"
 							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[2])*100,2)) + "%" + "</td>"
 							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[3])*100,2)) + "%" + "</td>"
 							+ "<td align=\"center\" >" + string(round(atof(detailLargePct[4])*100,2)) + "%" + "</td>"
@@ -113,17 +121,21 @@ if(parseShowLarge == true){
 }	
 if(showCommission == true){
 	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
-							+ "<td >Commission on One Time Charges</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[0]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[1]),"USD") + "</td>"
+							+ "<td >Commission on One Time Charges</td>";
+	if(NOT(isSalesrep)){
+	returnStr = returnStr	+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[0]),"USD") + "</td>";
+	}
+	returnStr = returnStr	+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[1]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[2]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[3]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotalOTC[4]),"USD") + "</td>"
 							+ "</tr>"		
 							+ "<tr class='totalRow'>" 
-							+ "<td >Total Estimated Commission</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[0]),"USD") + "</td>"
-							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[1]),"USD") + "</td>"
+							+ "<td >Total Estimated Commission</td>";
+	if(NOT(isSalesrep)){
+	returnStr = returnStr	+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[0]),"USD") + "</td>";
+	}
+	returnStr = returnStr	+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[1]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[2]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[3]),"USD") + "</td>"
 							+ "<td align=\"center\" >" + formatascurrency(atof(detailTotal[4]),"USD") + "</td>"

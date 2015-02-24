@@ -19,8 +19,11 @@ Updates:
     20150203 - Julie Felberg    - Implemented 4 new tables with logic.  This logic involved a new line
                                   level loop and several new variables.
     20150209 - John Palubinskas - #68 Replaced existing function with logic from newEmailNotificaitonGenerator.
-                                  That function will be deleted.  Clean up header and comments.
+                                  That function will be deleted.  Cleaned up header and comments.
                                   Completely reworked function to get rid of styles embedded in the tags.
+    20150215 - John Palubinskas - #68 Additional work for adding quantity columns.  Calculate fees correctly on conatiner
+                                  comparison tables, and fix formatting issues.
+    20150216 - John Palubinskas - #68 fix issue with 
     
 ================================================================================
 */
@@ -40,6 +43,7 @@ AdHocTotalPriceArr = string[];
 ConfigAttrDict=dict("string");
 SCDocNum = string[];
 ContPDocNum = string[];
+ContQuantityArr = string[];
 ContainerArr = string[];
 RatePerHaulArr = string[];
 ContTypeArr = string[];
@@ -64,7 +68,13 @@ oldPriceArray = string[];
 oldFeesArray = string[];
 newPriceArray = string[];
 newFeesArray = string[];
+approverFullName = "";
+submittedByFullName = "";
+submittersComments = "";
+rateRestrictions = "";
+displayCompetitor = "";
 salesActivity = salesActivity_quote;
+competitor = competitor_quote;
 
 for line in line_process{
     //models
@@ -84,6 +94,7 @@ for line in line_process{
         //Service Changes
         elif(line.priceType_line == "Service Change"){
             salesActivity = line.activity_line + " - " + line.priceAdjustmentReason_line;
+            competitor = getconfigattrvalue(line._parent_doc_number, "competitor"); //TODO: need to check adjustment reason for rollback due to comp before setting
 
             if(line.activity_line == "Service level change"){
                 if(findinarray(SCDocNum, line._parent_doc_number) == -1){
@@ -91,8 +102,21 @@ for line in line_process{
                 }
                 //if monthly fee, then populate new price array
                 if(line.billingType_line == "Monthly"){
-                    put(newPriceDict,line._parent_doc_number, string(line.sellPrice_line));
-                    put(newFeesDict, line._parent_doc_number, string(line.frfAmountSell_line + line.erfAmountSell_line + adminRate_quote));
+                    put(newPriceDict,line._parent_doc_number, formatascurrency(line.sellPrice_line,"USD"));
+                    frfCharged = 0.0;
+                    erfCharged = 0.0;
+                    adminCharged = 0.0;
+                    if (isFRFwaived_quote <> 1) {
+                        frfCharged = line.frfAmountSell_line;
+                    }
+                    if (isERFwaived_quote <> 1) {
+                        erfCharged = line.erfAmountSell_line;
+                    }
+                    if (adminFeeCharged_quote <> "No") {
+                        adminCharged = adminRate_quote;
+                    }
+
+                    put(newFeesDict, line._parent_doc_number, formatascurrency(frfCharged + erfCharged + adminCharged,"USD"));
                 }
             }
         }
@@ -108,6 +132,7 @@ for line in line_process{
                     disposalSites = split(allSites, "$,$");
 
                     print "we have a large container";
+                    append(ContQuantityArr, string(line._price_quantity));
                     append(ContainerArr, line.description_line);
                     append(RatePerHaulArr, string(line.perHaulRate_line));
                     append(ContTypeArr, line._model_name);
@@ -121,6 +146,7 @@ for line in line_process{
                 //SMALL_CONTAINER
                 else{
                     print "we have a small container";
+                    append(ContQuantityArr, string(line._price_quantity));
                     append(ContainerArr, line.description_line);
                     append(RatePerHaulArr, string(line.perHaulRate_line));
                     append(ContTypeArr, line._model_name);
@@ -142,20 +168,20 @@ for line in line_process{
     }
 }
 
-approverFullName = "";
-submittedByFullName = "";
-submittersComments = "";
-rateRestrictions = "";
-displayCompetitor = "";
-
-NameRecordSet = BMQL("SELECT First_Name, Last_Name, User_Login FROM User_Hierarchy WHERE User_Login LIKE $Approver OR User_Login LIKE $SubmittedBy");
+// We have approvers and submitter arrays passed in as Strings when they're really string[].
+// Remove the array brackets from SubmittedBy (there should be just a single entry)
+// and create our own string[] for approvers for the User_Hierarchy lookup.
+approvers = replace(replace(Approver,"[",""),"]","");
+approversArr = split(approvers,",");
+submitter = replace(replace(SubmittedBy,"[",""),"]","");
+NameRecordSet = BMQL("SELECT First_Name, Last_Name, User_Login FROM User_Hierarchy WHERE User_Login IN $approversArr OR User_Login = $submitter");
 
 for eachName in NameRecordSet{
     Login = get(eachName, "User_Login");
-    if(Login == Approver){
+    if(Login == approversArr[0]){ // just grabbing first name (might be bad...)
         approverFullName = get(eachName, "First_Name") + " " + get(eachName, "Last_Name");
     }
-    if(Login == SubmittedBy){
+    if(Login == submitter){
         submittedByFullName = get(eachName, "First_Name") + " " + get(eachName, "Last_Name");
     }
 }
@@ -192,7 +218,7 @@ else{
     }   
 }
 
-if(trim(competitor_quote) == ""){
+if(trim(competitor) == ""){
     displayCompetitor = " class='hide'";
 }
 
@@ -234,7 +260,6 @@ if (grandTotalSell_quote < grandTotalFloor_quote) {
 priceBand = priceBand + "</span>";
 
 // Reformat the ReasonDescription to give some space between multiple reasons
-// TODO - this isn't working...
 reasonsArr = split(ReasonDescription,";");
 reasonsFormatted = "";
 i=0;
@@ -300,7 +325,7 @@ emailBody = emailBody + "<h2>Quote Details</h2>"
                         + "<tr><td class='top'><b>Sales Activity:</b></td><td class='left'>" + salesActivity +"</td></tr>"
                         + "<tr><td class='top'><b>Division Number:</b></td><td class='left'>" + division_quote +"</td></tr>"
                         + "<tr><td class='top'><b>Customer Name:</b></td><td class='left'>" + _quote_process_billTo_company_name +"</td></tr>"
-                        + "<tr" + displayCompetitor + "><td class='top'><b>Competitor:</b></td><td class='left'>" + competitor_quote +"</td></tr>"
+                        + "<tr" + displayCompetitor + "><td class='top'><b>Competitor:</b></td><td class='left'>" + competitor +"</td></tr>"
                         + "<tr><td class='top'><b>Industry:</b></td><td class='left'>" + industry_quote +"</td></tr>"
                         + "<tr><td class='top'><b>Segment:</b></td><td class='left'>" + segment_quote +"</td></tr>"
                         + "<tr><td class='top'><b>Term:</b></td><td class='left'>" + initialTerm_quote +" Months</td></tr>"
@@ -312,28 +337,26 @@ ContIndex = 0;
 if(NOT isempty(ContPDocNum)){
     emailBody = emailBody + "<h2>Container Details:</h2>"
                           + "<table><tr>"
-                            + "<th>Container</td>"  
+                            + "<th>Qty</th>"  
+                            + "<th>Container</th>"  
                             + "<th>Compactor Asset Value</th>"
                             + "<th>Total Service Time</th>"
-                            //+ "<th>Rate Per Haul</th>"
-                            //+ "<th>Cost Per Haul</th>"
                             + "<th>Tons Per Haul</th>"
                             + "<th>Disposal Site</th>"
                           + "</tr>";
     
     for eachCont in ContPDocNum{
         compactorValue = "N/A";
-        if(isnumber(CompactorValArr[ContIndex])){
+        if(isnumber(CompactorValArr[ContIndex]) AND (CompactorValArr[ContIndex] <> "0")){
             compactorValue = formatascurrency(atof(CompactorValArr[ContIndex]),"USD");
         }
 
         emailBody = emailBody
                     + "<tr>" 
+                      + "<td>" + ContQuantityArr[ContIndex] + "</td>"
                       + "<td>" + ContainerArr[ContIndex] + "</td>"
                       + "<td>" + compactorValue + "</td>"
                       + "<td>" + TotalServiceTimeArr[ContIndex] + "</td>"
-                      //+ "<td>" + formatascurrency(atof(RatePerHaulArr[ContIndex]),"USD") + "</td>"
-                      //+ "<td>" + formatascurrency(atof(CostPerHaulArr[ContIndex]),"USD") + "</td>"
                       + "<td>" + TonsPerHaulArr[ContIndex] + "</td>"
                       + "<td>" + DisposalsiteArr[ContIndex] + "</td>"
                     + "</tr>";
@@ -355,6 +378,10 @@ emailBody = emailBody + "<table>"
                             + "<th>% of Floor</th>"
                         + "</tr>";
                         if(commercialExists_quote){
+                            pctOfFloorStyle = "";
+                            if (pctOfFloorSmall < 0) {
+                                pctOfFloorStyle = " class='red'";
+                            }
                             emailBody = emailBody +  "<tr>"
                                 + "<td>" +  "Small Containers" + "</td>"
                                 + "<td>" +  formatascurrency(smallMonthlyTotalFloor_quote,"USD") + "</td>"
@@ -362,10 +389,14 @@ emailBody = emailBody + "<table>"
                                 + "<td>" +  formatascurrency(smallMonthlyTotalTarget_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(smallMonthlyTotalStretch_quote,"USD") + "</td>"
                                 + "<td class='totals'>" +  formatascurrency(smallMonthlyTotalProposed_quote,"USD") + "</td>"
-                                + "<td>" + string(pctOfFloorSmall) + "%</td>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorSmall) + "%</td>"
                             + "</tr>";
                         }
                         if(industrialExists_quote){
+                            pctOfFloorStyle = "";
+                            if (pctOfFloorLarge < 0) {
+                                pctOfFloorStyle = " class='red'";
+                            }
                             emailBody = emailBody +  "<tr>"
                                 + "<td>" +  "Large Containers" + "</td>"
                                 + "<td>" +  formatascurrency(largeMonthlyTotalFloor_quote,"USD") + "</td>"
@@ -373,8 +404,12 @@ emailBody = emailBody + "<table>"
                                 + "<td>" +  formatascurrency(largeMonthlyTotalTarget_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(largeMonthlyTotalStretch_quote,"USD") + "</td>"
                                 + "<td class='totals'>" +  formatascurrency(largeMonthlyTotalProposed_quote,"USD") + "</td>"
-                                + "<td>" + string(pctOfFloorLarge) + "%</td>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorLarge) + "%</td>"
                             + "</tr>";
+                        }
+                        pctOfFloorStyle = "";
+                        if (pctOfFloorFees < 0) {
+                            pctOfFloorStyle = " class='red'";
                         }
                         emailBody = emailBody +  "<tr>"
                                 + "<td>" +  "Fees" + "</td>"
@@ -383,16 +418,20 @@ emailBody = emailBody + "<table>"
                                 + "<td>" +  formatascurrency(totalERFFRFAdminTargetAmount_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(totalERFFRFAdminStretchAmount_quote,"USD") + "</td>"
                                 + "<td class='totals'>" +  formatascurrency(totalERFFRFAdminSellAmount_quote,"USD") + "</td>"
-                                + "<td>" + string(pctOfFloorFees) + "%</td>"
-                            + "</tr>"
-                            + "<tr class='totals'>"
+                                + "<td" + pctOfFloorStyle + ">" + string(pctOfFloorFees) + "%</td>"
+                            + "</tr>";
+                        pctOfFloorStyle = "";
+                        if (pctOfFloorTotal < 0) {
+                            pctOfFloorStyle = " class='red'";
+                        }
+                        emailBody = emailBody +   "<tr class='totals'>"
                                 + "<td>" +  "Total Estimated Amount" + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalFloor_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalBase_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalTarget_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalStretch_quote,"USD") + "</td>"
                                 + "<td>" +  formatascurrency(grandTotalSell_quote,"USD") + "</td>"
-                                + "<td class='white-background'>" + string(pctOfFloorTotal) + "%</td>"
+                                + "<td class='white-background'><span" + pctOfFloorStyle + ">" + string(pctOfFloorTotal) + "%</span></td>"
                             + "</tr></table>";
 
 emailBody = emailBody + "<h2>Financial Values:</h2>"
@@ -439,9 +478,9 @@ if(NOT isempty(SCDocNum)){
     // Old Containers
     emailBody = emailBody + "<table>"
                         + "<tr>"
+                            + "<th>Qty</th>"
                             + "<th>Old Container</th>"  
                             + "<th>Size</th>"
-                            + "<th>Nbr</th>"
                             + "<th>Waste Type</th>"
                             + "<th>Frequency</th>"
                             + "<th>Price</th>"
@@ -478,13 +517,29 @@ if(NOT isempty(SCDocNum)){
             append(oldFreqArray, liftsPerContainer_readOnly);
             append(newFreqArray, liftsPerContainer_sc);
             append(oldPriceArray, getconfigattrvalue(eachSC, "monthlyRevenue_sc"));
-            append(oldFeesArray, getconfigattrvalue(eachSC, "totalWithFees_sc"));
+            // Need to calculate the Fees for the old container from totalWithFees - monthlyRevenue
+            oldMonthlyRevenueStr = replace(getconfigattrvalue(eachSC, "monthlyRevenue_sc"),"$","");
+            oldTotalWithFeesStr = replace(getconfigattrvalue(eachSC, "totalWithFees_sc"),"$","");
+
+            oldFees = 0.0;
+            oldTotalWithFees = 0.0;
+            oldMonthlyRevenue = 0.0;
+            if (isnumber(oldTotalWithFeesStr)) {
+                oldTotalWithFees = atof(oldTotalWithFeesStr);
+            }
+            if (isnumber(oldMonthlyRevenueStr)) {
+                oldMonthlyRevenue = atof(oldMonthlyRevenueStr);
+            }
+            oldFees = oldTotalWithFees - oldMonthlyRevenue;
+            append(oldFeesArray, formatascurrency(oldFees,"USD"));
+
             if(containskey(newPriceDict, eachSC)){
                 append(newPriceArray, get(newPriceDict, eachSC));
             }
             else{
                 append(newPriceArray, "No New Price");
             }
+
             if(containskey(newFeesDict, eachSC)){
                 append(newFeesArray, get(newFeesDict, eachSC));
             }
@@ -498,9 +553,9 @@ if(NOT isempty(SCDocNum)){
     indexOld = 0;
     for eachSCOld in SCDocNum{      
         emailBody = emailBody + "<tr>"
+                + "<td>" + oldNbrArray[indexOld] + "</td>"
                 + "<td>" + oldContainerArray[indexOld] + "</td>"
                 + "<td>" + oldSizeArray[indexOld] + "</td>"
-                + "<td>" + oldNbrArray[indexOld] + "</td>"
                 + "<td>" + oldWTArray[indexOld] + "</td>"
                 + "<td>" + oldFreqArray[indexOld] + "</td>"
                 + "<td>" + oldPriceArray[indexOld] + "</td>"
@@ -511,9 +566,9 @@ if(NOT isempty(SCDocNum)){
     
     // New Containers
     emailBody = emailBody + "<tr>"
+                            + "<th>Qty</th>"
                             + "<th>New Container</th>"  
                             + "<th>Size</th>"
-                            + "<th>Nbr</th>"
                             + "<th>Waste Type</th>"
                             + "<th>Frequency</th>"
                             + "<th>Price</th>"
@@ -523,13 +578,13 @@ if(NOT isempty(SCDocNum)){
     for NeachSC in SCDocNum{
             
             emailBody = emailBody + "<tr>"
+                    + "<td>" + newNbrArray[indexNew] + "</td>"
                     + "<td>" + newContainerArray[indexNew] + "</td>"
                     + "<td>" + newSizeArray[indexNew] + "</td>"
-                    + "<td>" + newNbrArray[indexNew] + "</td>"
                     + "<td>" + newWTArray[indexNew] + "</td>"
                     + "<td>" + newFreqArray[indexNew] + "</td>"
-                    + "<td>" + "$" + newPriceArray[indexNew] + "</td>"
-                    + "<td>" + "$" + newFeesArray[indexNew] + "</td>"
+                    + "<td>" + newPriceArray[indexNew] + "</td>"
+                    + "<td>" + newFeesArray[indexNew] + "</td>"
                 + "</tr>";
             
             indexNew = indexNew + 1;
