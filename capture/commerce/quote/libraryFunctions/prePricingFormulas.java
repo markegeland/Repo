@@ -44,6 +44,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150203 - Julie Felberg - Removed description_line logic.  That code is now in post pricing
             20150210 - John Palubinskas - #68 moved logic for setting rate restricions to postPricingFormulas
             20150215 - John Palubinskas - #68 fixed direct cost logic since it wasn't pulling the costs consistently
+			20150224 - Gaurav Dawar - #431 - Fixed Existing Terms calculation logic and its visibility criteria
 =====================================================================================================
 */
 
@@ -108,12 +109,19 @@ isERFAndFRFChargedOnAdmin = "Yes"; //Default - All new customers will be charged
 modelTypeDict = dict("string"); //Key: document number, value: service type of current model
 //initialize variables for existing term
 expirationDate = "";
+newExpirationDate = getdate();
+startDate = "";
 todayDate = getdate();
 diffDay = 0.0;
+diffDayDoc = 0.0;
+newTermDays = 0.0;
 diffMth = 0;
+diffMthDoc = 0;
 diffMthRnd = 0;
 dateString1 = "";
+startDateString1 = "";
 dateString2 = getdate();
+startDateString2 = getdate();
 lessThan90days = false;
 containerGroupDict = dict("string"); //container group logic
 containerGroup = "";
@@ -172,38 +180,60 @@ print "erfOnFrf_Division: " + string(isERFOnFRFChargedAtDivisionLevel);
 
 //=============================== Start - Calculation for Existing Terms=====================//
 if(salesActivity_quote == "Existing Customer"){
-    accountDifferentInDays = bmql("SELECT Expiration_Dt FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote"); //Add any other filters as appropriate to get more specific record
+    accountDifferentInDays = bmql("SELECT Expiration_Dt FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote"); 
+	accountDifferentInDays2 = bmql("SELECT Original_Open_Dt FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote");
+	//Add any other filters as appropriate to get more specific record
         for eachRecord in accountDifferentInDays{
             expirationDate = get(eachRecord, "Expiration_Dt");
             break;
+        }  
+		for eachRecord in accountDifferentInDays2{
+            startDate = get(eachRecord, "Original_Open_Dt");
+            break;
         }
-    
     print "......................";
     print expirationDate;
     dateString1 = substring(expirationDate, 4, 6) + "/" +
            substring(expirationDate, 6, 9) + "/" +
            substring(expirationDate, 0, 4);
+	startDateString1 = substring(startDate, 4, 6) + "/" + 
+			substring(startDate, 6, 9) + "/" + 
+			substring(startDate, 0, 4);
     if (expirationDate <> ""){
         dateString2 = strtojavadate(dateString1, "MM/dd/yyyy");
     }
-    
+	if (startDate <> ""){
+			startDateString2 = strtojavadate(startDateString1, "MM/dd/yyyy");
+	}
     print dateString1;
     print dateString2;
     print todayDate;
-    diffDay = getdiffindays(todayDate, dateString2);
-    diffMth = (diffDay * 12) / 365;
+    diffDay = getdiffindays(startDateString2, dateString2);
+	diffDayDoc = getdiffindays(todayDate, dateString2);
+    diffMth = ceil((diffDay * 12) / 365);
+	diffMthDoc = integer(ceil((diffDayDoc * 12) / 365));
+	if (todayDate > dateString2){		
+		newTermDays = getdiffindays(startDateString2, dateString2);
+		newExpirationDate = adddays(dateString2,newTermDays);
+		diffDay = getdiffindays(dateString2, newExpirationDate);
+		diffDayDoc = getdiffindays(todayDate, newExpirationDate);
+		diffMth = ceil((diffDay * 12) / 365);
+		diffMthDoc = integer(ceil((diffDayDoc * 12) / 365));
+    }
     print diffDay;
     print diffMth;
-    if((diffMth > 6) AND (diffMth <= 9)){ diffMthRnd = 6; }
-    if((diffMth >= 10) AND (diffMth <= 21)){ diffMthRnd = 12; }
+	print diffDayDoc;
+    print diffMthDoc;
+    //if((diffMth > 6) AND (diffMth <= 9)){ diffMthRnd = 6; }
+    if(/*(diffMth >= 10) AND*/ (diffMth <= 21)){ diffMthRnd = 12; }
     if((diffMth >= 22) AND (diffMth <= 33)){ diffMthRnd = 24; }
     if((diffMth > 33)){ diffMthRnd = 36; }
-    
+    print diffMthRnd;
     //Set existingTermFlag_quote to true is diffDays is less than 90
-    if ((diffDay < 90) OR (todayDate > dateString2) ){
+    /*if ((diffDay < 90)){
         lessThan90Days = true;
         print "Less Than 90 Days";
-    }
+    }*/
 }
 
 //=============================== End - Calculation for Existing Terms=====================//
@@ -2502,7 +2532,7 @@ returnStr = returnStr + "1~" + "industrialExists_quote" + "~" + string(industria
                       + "1~" + "errors_quote" + "~" + errors + "|"
                       + "1~" + "eRFOnFRF_quote" + "~" + string(eRFOnFRF) + "|"
                       + "1~" + "isERFAndFRFChargedOnAdmin_quote" + "~" + isERFAndFRFChargedOnAdmin + "|"
-                      + "1~" + "hiddenExisitingTerm" + "~" + string(diffMthRnd) + "|" 
+                      + "1~" + "hiddenExisitingTerm" + "~" + string(diffMthDoc) + "|" 
                       + "1~" + "existingTermFlag_quote" + "~" + string(lessThan90Days) + "|";
 
 //============================= Start - Set direct cost attributes ======================================//
