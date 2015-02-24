@@ -1,1 +1,12 @@
-Capture version 1.1.1
+Capture Version 1.2.1
+
+Major: 1
+Minor: 2
+Patch: 1
+
+When the code is ready in develop for each release, we create a new branch off of develop named release-YYYY-MM-DD (the expected implementation date).
+After implementation we:
+- git checkout master
+- git merge --no-ff release-YYYY-MM-DD
+- git tag -a #.#.#
+- git push capture master
