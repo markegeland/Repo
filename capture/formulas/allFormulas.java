@@ -92,7 +92,7 @@
  	
 47	largeMonthlyTotalHaulFloor_quote	sum(largeMonthlyHaulFloorPrice_line) 
  	
-48	renewalTerm_quote	if( ( initialTerm_quote = "1" ), "1", renewalTerm_quote) 
+48	renewalTerm_quote	if( ( ( initialTerm_quote = "1" ) OR ( ( initialTerm_quote = "Existing Terms" ) AND ( hiddenExisitingTerm = 1 ) ) ), "1", renewalTerm_quote)
  	
 49	maxPossibleDiscountAmt_quote	sumIf( ( ( NOT optional_line ) AND ( _model_name = "" ) ), totalPossibleDiscount_line) 
  	
