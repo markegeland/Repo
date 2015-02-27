@@ -1653,10 +1653,8 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 						+ (compactor_cost * 0.065 / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);
 		//comp_rental_rate = compactorCustomerOwned * (compactor_depr + (compactor_cost * comp_maint_factor/12.0) + 
 						//(compactor_cost * rsg_compactor_base_roa /12.0))/rental_factor/(1 + feePct);
-		//comp_rental_rate = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
-						//+ (compactor_cost * rsg_compactor_base_roa / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);				
 		comp_rental_rate = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
-						+ (compactor_cost * 0.065 / 12.0)) / rental_factor;
+						+ (compactor_cost * rsg_compactor_base_roa / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);				
 		//Changed as per SR 3-9428639511 removed  ( containerMntPerHaul * (1 - isContainerCustomerOwned))
 		container_rental_floor = (containerDepreciation + containerROA) *  haulsPerMonth / rental_factor; // Changed as part of SR 3-9437035701
 		// container_rental_floor formula: container_rental_floor:=(oper_cont_depr + roa_container) * hauls_per_month * alloc_rental / rental_factor
@@ -1696,14 +1694,14 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		//Updated 05/08/2014 - per new formula
 		//rental_base  = container_rental_floor + comp_rental_rate;
 		rentalBaseArr = float[];
-		append(rentalBaseArr, price_rental_per_month); // Changed as a part of SR 3-9437035701
+		append(rentalBaseArr, price_rental_per_month * compactorCustomerOwned); // Changed as a part of SR 3-9437035701
 		append(rentalBaseArr, container_rental_floor * rental_factor * alloc_rental);
 		
 		//rental_base  = (max(rentalBaseArr) / rental_factor) + comp_rental_rate;
 		rental_base  = (max(rentalBaseArr) / rental_factor) + (comp_rental_floor/(1-rsg_compactor_base_roa));
 		//Add compactor differential between base and target
 		rentalTargetArray = float[];
-		append(rentalTargetArray, price_rental_per_month); // Changed as a part of SR 3-9437035701 
+		append(rentalTargetArray, price_rental_per_month * compactorCustomerOwned); // Changed as a part of SR 3-9437035701 
 		append(rentalTargetArray, container_rental_floor * rental_factor * alloc_rental);
 		//rental_target  = (max(rentalTargetArray)/rental_factor) + (comp_rental_rate + (comp_rental_rate * 
 						 //(rsg_compactor_target_roa - rsg_compactor_base_roa)));
@@ -1711,7 +1709,7 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		
 		//Add compactor diffenetial between target and stretch
 		rentalStretchArray = float[];
-		append(rentalStretchArray, price_rental_per_month); // Changed as a part of SR 3-9437035701
+		append(rentalStretchArray, price_rental_per_month * compactorCustomerOwned); // Changed as a part of SR 3-9437035701
 		append(rentalStretchArray, container_rental_floor * rental_factor * alloc_rental);
 		//rental_stretch = (max(rentalStretchArray) /rental_factor) + (comp_rental_rate + (comp_rental_rate * 
 		//				(rsg_compactor_stretch_roa - rsg_compactor_base_roa)));
