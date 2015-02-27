@@ -431,9 +431,9 @@ if(CSAName <> ""){
 initialTermForDocOutput = "";
 renewalTermForDocOutput =  "";
 
-if(salesActivity_quote == "Existing Customer" AND initialTerm_quote == "Existing Terms"){
+if(salesActivity_quote == "Existing Customer" AND initialTerm_quote == "Existing Terms" AND contractLength_quote <> 1){
 	initialTermForDocOutput = string(hiddenExisitingTerm) + " MONTHS";
-}elif(salesActivity_quote == "Existing Customer" AND initialTerm_quote == "Existing Terms" AND hiddenExisitingTerm == 1){
+}elif(salesActivity_quote == "Existing Customer" AND initialTerm_quote == "Existing Terms" AND contractLength_quote == 1){
 	initialTermForDocOutput = "MONTH TO MONTH";
 }elif(initialTerm_quote == "1"){
 	initialTermForDocOutput = "MONTH TO MONTH";
@@ -441,9 +441,9 @@ if(salesActivity_quote == "Existing Customer" AND initialTerm_quote == "Existing
 	initialTermForDocOutput = initialTerm_quote + " MONTHS";
 }
 
-if(salesActivity_quote == "Existing Customer" AND renewalTerm_quote == "Existing Terms"){
+if(salesActivity_quote == "Existing Customer" AND renewalTerm_quote == "Existing Terms" AND contractLength_quote <> 1){
 	renewalTermForDocOutput = string(hiddenExisitingTerm)  + " MONTHS";
-}elif(salesActivity_quote == "Existing Customer" AND renewalTerm_quote == "Existing Terms" AND hiddenExisitingTerm == 1){
+}elif(salesActivity_quote == "Existing Customer" AND renewalTerm_quote == "Existing Terms" AND contractLength_quote == 1){
 	initialTermForDocOutput = "MONTH TO MONTH";
 }elif(renewalTerm_quote == "1"){
 	renewalTermForDocOutput = "MONTH TO MONTH";

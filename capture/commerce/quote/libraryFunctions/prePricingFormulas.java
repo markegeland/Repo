@@ -212,20 +212,33 @@ if(salesActivity_quote == "Existing Customer"){
 	diffDayDoc = getdiffindays(todayDate, dateString2);
     diffMth = ceil((diffDay * 12) / 365);
 	diffMthDoc = integer(ceil((diffDayDoc * 12) / 365));
-	if (todayDate > dateString2){		
+	if (todayDate >= dateString2){		
 		newTermDays = getdiffindays(startDateString2, dateString2);
 		newExpirationDate = adddays(dateString2,newTermDays);
+		dateValidarr = integer[100];
+		for dateValidarrElement in dateValidarr {
+			if (todayDate >= newExpirationDate) {
+				dateString2 = newExpirationDate;
+				newExpirationDate = adddays(dateString2,newTermDays);
+			}
+			else {
+				break;
+			}
+		}
 		diffDay = getdiffindays(dateString2, newExpirationDate);
 		diffDayDoc = getdiffindays(todayDate, newExpirationDate);
 		diffMth = ceil((diffDay * 12) / 365);
 		diffMthDoc = integer(ceil((diffDayDoc * 12) / 365));
+		if(diffMthDoc == 0) {
+			diffMthDoc = 1;
+		}
     }
     print diffDay;
     print diffMth;
 	print diffDayDoc;
     print diffMthDoc;
-    //if((diffMth > 6) AND (diffMth <= 9)){ diffMthRnd = 6; }
-    if(/*(diffMth >= 10) AND*/ (diffMth <= 21)){ diffMthRnd = 12; }
+    if((diffMth >= 0) AND (diffMth <= 2)){ diffMthRnd = 1; }
+    if((diffMth >= 3) AND (diffMth <= 21)){ diffMthRnd = 12; }
     if((diffMth >= 22) AND (diffMth <= 33)){ diffMthRnd = 24; }
     if((diffMth > 33)){ diffMthRnd = 36; }
     print diffMthRnd;
@@ -2533,6 +2546,7 @@ returnStr = returnStr + "1~" + "industrialExists_quote" + "~" + string(industria
                       + "1~" + "eRFOnFRF_quote" + "~" + string(eRFOnFRF) + "|"
                       + "1~" + "isERFAndFRFChargedOnAdmin_quote" + "~" + isERFAndFRFChargedOnAdmin + "|"
                       + "1~" + "hiddenExisitingTerm" + "~" + string(diffMthDoc) + "|" 
+					  + "1~" + "contractLength_quote" + "~" + string(diffMthRnd) + "|" 
                       + "1~" + "existingTermFlag_quote" + "~" + string(lessThan90Days) + "|";
 
 //============================= Start - Set direct cost attributes ======================================//
