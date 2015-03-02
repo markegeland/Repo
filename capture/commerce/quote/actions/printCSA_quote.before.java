@@ -1,9 +1,9 @@
 /* 
 ================================================================================
-       Name: emailCSA_quote before function - Email Documents Action
+       Name: printCSA_quote before function - Print Documents Action
      Author:   
 Create date:  
-Description: Runs before the Email Documents action in order to clear the checkboxes if the
+Description: Runs before the Print Documents action in order to clear the checkboxes if the
              proposal or csa checkbox is deselected.
         
 Input:      
@@ -16,6 +16,7 @@ Updates:    20150225 - JPalubinskas - #25 branding: consolidated marketing colla
 */
 
 ret = "";
+
 if(NOT(chooseProposal_quote)){
 	ret = ret + "1~includeCoverLetter_quote~false|";
 }

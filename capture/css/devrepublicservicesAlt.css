@@ -7,6 +7,7 @@
     20150115 - John Palubinskas - #126 updates for print/email docs buttons and send me a copy checkbox
     20150121 - John Palubinskas - cleanup: consolidate a few repeated styles
     20150212 - John Palubinskas - #68 add styles for financial-details-table
+    20150224 - John Palubinskas - #25 branding updates
 
    ================================================================================================== */
 
@@ -20,34 +21,32 @@
 }
 
 #header-wrapper{
-    height: 50px;
-    height: 100px;
-    background-color: #003c69;
+    height: 80px;
+    background-color: #004A7C;
     background-image: url('/bmfsweb/republicservices/image/images/Capture-RMS-logo-web-reversed.png');
     background-size: auto 48px;
     background-repeat: no-repeat;
-    background-position: 15px 0px;
+    background-position: 10px 10px;
 }
 .list-field {
     font-family: "Open Sans",Tahoma;
 }
 
 #header-wrapper > span{
-    height: 50px;
-    height: 100px;
-    background-color: #003c69;
+    height: 80px;
+    background-color: #004A7C;
     background-image: url('/bmfsweb/republicservices/image/logo1.png');
-    background-size: auto 48px;
     background-repeat: no-repeat;
     float: right;
-    padding-right: 60px;
+    padding: 0px 180px 0px 0px;
+    background-position: 0px 10px;
 }
 
 div.nav-links, 
 td.nav-left, 
 td.nav-right, 
 td.nav-center {
-    background-color:#003c69;
+    background-color:#004A7C;
     padding-top: 0px !important;
     padding-bottom: 0px !important;
 }
@@ -105,7 +104,7 @@ ul.tab-strip li {
 
 a.header-item {
     font-size: 12px !important;
-    color: #3d9bcb !important;
+    color: #00ADEF !important;
     font-family: "Open Sans" !important;
     font-weight: bold !important;
 }
@@ -118,7 +117,7 @@ a.header-item:hover {
 }
 
 a.admin-sidebar-item {
-    color: #3d9bcb !important;
+    color: #00ADEF !important;
     font-family: "Open Sans" !important;
 }
 
@@ -144,9 +143,9 @@ a.header-item img {
 .admin-bordercolor nobr:hover,
 .header-bordercolor nobr:hover { 
     background-color: #002a4a !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
 }
 
 .commerce-bordercolor {
@@ -204,7 +203,7 @@ body.ext-webkit.ext-chrome.ext-windows {
 #cm-manager-content table.x-grid-table-bg-color .x-grid3-header td,
 #cm-manager-content table.x-grid-table-bg-color .x-grid3-header td a.view-header,
 #cm-manager-content table.x-grid-table-bg-color .x-grid3-header td span.view-header {
-    background-color: #3d9bcb !important;
+    background-color: #00ADEF !important;
     font-family: "Open Sans";
 }
 
@@ -226,7 +225,7 @@ img.display-block,
 
 .text-wrapper-inner,
 .text-field.attribute-field {
-    border: 2px solid #3d9bcb !important;
+    border: 1px solid #00ADEF !important;
     border-radius: 4px !important;
     -webkit-border-radius: 4px !important;
     -mox-border-radius: 4px !important;
@@ -245,7 +244,7 @@ input.form-input {
 }
 
 div.menu-attr select {
-     border: 2px solid #3d9bcb !important;
+    border: 1px solid #00ADEF !important;
     border-radius: 4px !important;
     -webkit-border-radius: 4px !important;
     -mox-border-radius: 4px !important;
@@ -273,14 +272,14 @@ label.form-label.cm-reqattr-label {
 
 /*Config ----- */
 .text-field {
-    border: 2px solid #3D9BCB !important;
+    border: 1px solid #00ADEF !important;
     border-radius: 4px 4px 4px 4px !important;
     -webkit-border-radius: 4px !important;
     -mox-border-radius: 4px !important;
 }
 
 select {
-    border: 2px solid #3D9BCB !important;
+    border: 1px solid #00ADEF !important;
     border-radius: 4px 4px 4px 4px !important;
     -webkit-border-radius :4px !important;
     -mox-border-radius: 4px !important;
@@ -305,7 +304,7 @@ select {
 
 ul.error-text {
     background-color: #F6F6F6 !important;
-    border: 2px solid #BB133E !important;
+    border: 1px solid #BB133E !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
     width: 100% !important;
@@ -343,7 +342,7 @@ li.error-text {
 
 #sticky-actions .fixed, 
 #sticky-actions .floating {    
-    background-color: #3D9BCB !important;
+    background-color: #00ADEF !important;
     margin: 0 0 0px -10px !important;
     padding: 3px !important;
     text-align: right;
@@ -369,10 +368,9 @@ li.error-text {
 
 td.button-middle { 
     border: 0px;
-    /*top : -4px !important;*/
     background-image: none !important;
     background-repeat: repeat-x;
-    background-color: #bb133e !important;
+    background-color: #004A7C !important;
     border-radius: 4px !important;
     -webkit-border-radius: 4px !important;
     -mox-border-radius: 4px !important;
@@ -382,7 +380,7 @@ td.button-middle:hover {
     border: 0px;
     background-image: none !important;
     background-repeat: repeat-x;
-    background-color:#d03c55 !important; 
+    background-color: #00243C !important; 
     border-radius: 4px !important;
     -webkit-border-radius: 4px !important;
     -mox-border-radius: 4px !important;
@@ -425,7 +423,7 @@ div.panel .panel-tl,
 div.panel .panel-tc, 
 div.panel .panel-tr {
     background-color:white !important;
-    border:0px !important;
+    border: 0px !important;
     background-image: none !important;
     
 }
@@ -438,9 +436,9 @@ span .panel-heading {
     padding: 10px 30px;
     color: #ffffff !important;
     background-color: #002a4a !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -moz-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -moz-border-radius: 4px !important;
     height: 40px !important;
     line-height:40px !important;
 }
@@ -453,16 +451,16 @@ span .panel-heading {
     background-image: none !important;
     background-color: #fff !important;
     border: none !important;
-    border-bottom:0px !important;
-    padding:5px 0px 5px 0px !important;
-    margin:0px -1px;
+    border-bottom: 0px !important;
+    padding: 5px 0px 5px 0px !important;
+    margin: 0px -1px;
 }
 
 .panel .panel-body {
     padding: 0px !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -moz-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -moz-border-radius: 4px !important;
 }
 
 ul.tab-strip li {
@@ -493,9 +491,9 @@ span.tab-text {
 .tab-active .tab-inner{
     color: #ffffff !important;
     background-color: #002a4a !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -moz-border-radius:4px !important;  
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -moz-border-radius: 4px !important;  
 }
 
 /* @end */
@@ -507,18 +505,18 @@ span.tab-text {
 }
 
 .qs_header label{
-    color: #3d9bcb !important;
+    color: #00ADEF !important;
     background-color:#ebf8ff;
-    border: thin solid #3d9bcb;
+    border: 1px solid #00ADEF;
     font-family: "Open Sans" !important;
     font-size: 13px !important;
     font-weight: normal !important;
      width:100% !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -moz-border-radius:4px !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -moz-border-radius: 4px !important;
     text-align:center !important;
-    padding:5px 0px 5px 0px;
+    padding: 5px 0px 5px 0px;
 }
 
 .infobar label {
@@ -544,10 +542,10 @@ span.tab-text {
 }
 
 .tab-content {
-    border: 1px solid #3d9bcb !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;
+    border: 1px solid #00ADEF !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;
     background-color: #f6f6f6 !important;
 }
 
@@ -580,26 +578,26 @@ div.panel-bl {
 }
 
 .MicrosoftMap.MapTypeId_auto.medium.dark {
-     border: 2px solid #3d9bcb !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;  
+     border: 1px solid #00ADEF !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;  
     width: 100% !important;
 }
 
 .MicrosoftMap.MapTypeId_auto.medium {
-    border: 2px solid #3d9bcb !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;  
+    border: 1px solid #00ADEF !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;  
     width: 100% !important;
 }
 
 .MicrosoftMap.MapTypeId_auto.medium {
-    border: 2px solid #3d9bcb !important;
-    border-radius:4px !important;
-    -webkit-border-radius:4px !important;
-    -mox-border-radius:4px !important;  
+    border: 1px solid #00ADEF !important;
+    border-radius: 4px !important;
+    -webkit-border-radius: 4px !important;
+    -mox-border-radius: 4px !important;  
     width: 100% !important;
 }
 
@@ -708,7 +706,7 @@ div#attribute-compactorContainerLabel.attribute{
     position: relative !important;
     text-align: center !important;
     top: -27px !important;
-    color: #3D9BCB;
+    color: #00ADEF;
     font-weight: normal !important;
     font-size: 13px !important;
 }
@@ -800,9 +798,9 @@ div#readonly_1_addAdHocConfigurator_quote a img{
 
 table#line-item-grid thead tr th{
     background-color: #EBF8FF !important;
-    border-top: thin solid #3D9BCB !important;
-    border-bottom: thin solid #3D9BCB !important;
-    color: #3D9BCB !important;
+    border-top: thin solid #00ADEF !important;
+    border-bottom: thin solid #00ADEF !important;
+    color: #00ADEF !important;
     font-family: "Open Sans" !important;
     font-weight: normal !important;
     text-align: center !important;  
@@ -814,31 +812,31 @@ div.form-item.infobar{
 
 a#small{
     text-decoration:none;
-    border:0;
+    border: 0;
     outline:none;
 }
 
 a#large{
     text-decoration:none;
-    border:0;
+    border: 0;
     outline:none;
 }
 
 a#adhoc{
     text-decoration:none;
-    border:0;
+    border: 0;
     outline:none;
     padding-right: 20px;
 }
 
 .rs_table_style {
     background-color: #EBF8FF !important;
-    border: thin solid #3D9BCB !important;
+    border: thin solid #00ADEF !important;
     color: #000059 !important;
     font-family: "Open Sans" !important;
     font-weight: normal !important;
     font-size: 8px;
-    border-radius:4px !important;
+    border-radius: 4px !important;
 }
 
 .rs_tr_td_style > td{
@@ -860,9 +858,9 @@ a#adhoc{
 
 /*Nearby customer locations balloon styling*/
 .nearbyCustomerBalloon{
-    overflow:auto;
-    height:100px;
-    font-size:7pt;
+    overflow: auto;
+    height: 100px;
+    font-size: 7pt;
 }
 
 /*Config header style*/
@@ -916,9 +914,6 @@ form[name="bmForm"][action*="crm_browse_dialog"] a#populate.button-text {
 label[for="copyEmailSender_quote"]{
     display: none;
 }
-div#field_wrapper_1_copyEmailSender_quote{
-    padding-left: 0px !important;
-}
 
 a#print_documents,
 a#print_office_documents,
@@ -936,17 +931,15 @@ table.financial-details-table {
     font-size: 8pt;
 }
 .financial-details-table{
-    border: solid #3D9BCB 1px;
+    border: solid #00ADEF 1px;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
     border-radius: 4px;
     -webkit-box-shadow: 0 1px 1px #ccc; 
-    -moz-box-shadow: 0 1px 1px #ccc; 
+    -moz-box-shadow: 0 1px 1px #ccc;    
     box-shadow: 0 1px 1px #ccc;     
 }
 .financial-details-table td, .financial-details-table th {
-    /*border-left: 1px solid #ccc;*/
-    /*border-top: 1px solid #ccc;*/
     padding: 5px;
     text-align: left;    
 }
@@ -995,11 +988,10 @@ table.financial-details-table {
     -webkit-border-radius: 0 0 6px 0;
     border-radius: 0 0 6px 0;
 }
-td.red{
+td.red {
     color: #FF0000;
 }
-td.first-column
-{
+td.first-column {
     text-align: left;
 }
 
