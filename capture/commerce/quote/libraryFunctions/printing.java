@@ -13,6 +13,7 @@ Updates:    20141106 Added logic to set the after year 1-4 dates based on the ef
             20150117 Julie Felberg - #69 Added logic to set the print versions of the rate restrictions
             20150122 Gaurav Dawar - #352 - correcting the calculations for Delivery for it to flow through infopro
             20150210 John Palubinskas - #68 moved rate restriction logic to postPricingFormulas
+			20150226 Gaurav Dawar - #431 - Added Existing Terms to be used as MTM functionality.
 =====================================================================================================
 */
 
@@ -430,16 +431,20 @@ if(CSAName <> ""){
 initialTermForDocOutput = "";
 renewalTermForDocOutput =  "";
 
-if(salesActivity_quote == "Existing Customer" AND initialTerm_quote == "Existing Terms"){
+if(salesActivity_quote == "Existing Customer" AND initialTerm_quote == "Existing Terms" AND contractLength_quote <> 1){
 	initialTermForDocOutput = string(hiddenExisitingTerm) + " MONTHS";
+}elif(salesActivity_quote == "Existing Customer" AND initialTerm_quote == "Existing Terms" AND contractLength_quote == 1){
+	initialTermForDocOutput = "MONTH TO MONTH";
 }elif(initialTerm_quote == "1"){
 	initialTermForDocOutput = "MONTH TO MONTH";
 }else{
 	initialTermForDocOutput = initialTerm_quote + " MONTHS";
 }
 
-if(salesActivity_quote == "Existing Customer" AND renewalTerm_quote == "Existing Terms"){
+if(salesActivity_quote == "Existing Customer" AND renewalTerm_quote == "Existing Terms" AND contractLength_quote <> 1){
 	renewalTermForDocOutput = string(hiddenExisitingTerm)  + " MONTHS";
+}elif(salesActivity_quote == "Existing Customer" AND renewalTerm_quote == "Existing Terms" AND contractLength_quote == 1){
+	initialTermForDocOutput = "MONTH TO MONTH";
 }elif(renewalTerm_quote == "1"){
 	renewalTermForDocOutput = "MONTH TO MONTH";
 }else{
