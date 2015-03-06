@@ -2,6 +2,9 @@
  * @param dependencies {Array} name of modules this code depends on. Can exclude ".js"
  * @param callback {Function} function containing this module's functionality.
  * @version Fri Feb 25 18:44:56 2011
+ * 
+ * 20150304 - John Palubinskas - #25 comment out all coloring of buttons
+ *
  */
 require([], function() {
   /*
@@ -107,28 +110,28 @@ require([], function() {
 						$('#view_history').closest("table").hide();
 					}	
 				}
-				if($("input[name=_step_varname]").val() == 'newCustomerAndSite_bmClone_1'){
-					// If customer has already been selected, this can be grey
-					$('#select_customer').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// if($("input[name=_step_varname]").val() == 'newCustomerAndSite_bmClone_1'){
+				// 	// If customer has already been selected, this can be grey
+				// 	$('#select_customer').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
 
-				}
+				// }
 				
 				
 				//End of Adjust Pricing step
-								$('#delete').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#find_on_map').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#assign_quote').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#previous').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#recalculate_fees').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#calculate_total_price').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#select_additional_services').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#delete_selected').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#calculate_price').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#print_documents').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#email_documents').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#revise').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#view_history').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#create_site').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#delete').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#find_on_map').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#assign_quote').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#previous').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#recalculate_fees').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#calculate_total_price').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#select_additional_services').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#delete_selected').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#calculate_price').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#print_documents').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#email_documents').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#revise').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#view_history').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				// $('#create_site').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
 				
 			}
 		}
@@ -140,8 +143,8 @@ require([], function() {
 		if(typeof(formName) != "undefined" && formName != null && formName == "configurationForm"){
 			var return_to_quote = document.getElementById("return_to_quote");
 			if(typeof(return_to_quote) !== "undefined" && return_to_quote !== null){
-				$('#return_to_quote').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
-				$('#previous').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				//$('#return_to_quote').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+				//$('#previous').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
 				$("#return_to_quote").html("Previous");
 				
 			}	
@@ -155,7 +158,7 @@ require([], function() {
 			if(typeof(saveAction) !== "undefined" && saveAction !== null){
 				$("#save").html("Next");	
 			}
-		$('#update').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
+			//$('#update').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
 			
 		}
 		
