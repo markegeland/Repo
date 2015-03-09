@@ -111,7 +111,7 @@ modelTypeDict = dict("string"); //Key: document number, value: service type of c
 //initialize variables for existing term
 expirationDate = "";
 newExpirationDate = getdate();
-contractMonths = "";
+contractMonths = "0.0";
 todayDate = getdate();
 diffDay = 0.0;
 diffDayDoc = 0.0;
