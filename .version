@@ -1,8 +1,8 @@
-Capture Version 1.2.1
+Capture Version 1.2.2
 
 Major: 1
 Minor: 2
-Patch: 1
+Patch: 2
 
 When the code is ready in develop for each release, we create a new branch off of develop named release-YYYY-MM-DD (the expected implementation date).
 After implementation we:
