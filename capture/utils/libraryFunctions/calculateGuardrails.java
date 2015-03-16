@@ -18,7 +18,8 @@ Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formula
 		20151201 - Gaurav Dawar - Lines: 278, 2282, 2304, 2345 - Changes made to fix delivery amount when there is a change in container code in service change.
 		02/11/15 - Gaurav Dawar - #406 - Compactor and rental calculation errors (large container)
 		02/18/15 - Gaurav Dawar - #427 - Added compactor ROI
-    
+    	03/09/15 - Gaurav Dawar - #454 - Disposal calculations considering Market Rate when no compactor as well.
+		03/11/15 - Gaurav Dawar - #454 - Disposal calculations considering Market Rate when no compactor as well.
 =====================================================================================================
 */
 
@@ -1611,7 +1612,7 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		compactorROA = atof(compactorROAStr);
 	}
 	//Get Market Rental rate from tbl_div_rental table
-	marketRentalRS = bmql("SELECT market_rental_rate FROM tbl_division_rental WHERE (division = $division OR division = '0') AND has_compactor = $hasCompactor AND container_cd = $routeType AND perm_flag = $permanentFlag ORDER BY division DESC");
+	marketRentalRS = bmql("SELECT market_rental_rate FROM tbl_division_rental WHERE (division = $division OR division = '0') AND container_cd = $routeType AND perm_flag = $permanentFlag ORDER BY division DESC");
 	for each in marketRentalRS{
 		market_rental_rate = getFloat(each, "market_rental_rate");
 		break;
@@ -1694,14 +1695,20 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		//Updated 05/08/2014 - per new formula
 		//rental_base  = container_rental_floor + comp_rental_rate;
 		rentalBaseArr = float[];
-		append(rentalBaseArr, price_rental_per_month * compactorCustomerOwned); // Changed as a part of SR 3-9437035701
+		compactor_flag = ((1 - isContainerCustomerOwned) * compactorCustomerOwned) + ((1 - hasCompactor) * (1 - isContainerCustomerOwned));
+		print "compactor_flag"; print compactor_flag;
+		print "isContainerCustomerOwned"; print isContainerCustomerOwned;
+		print "compactorCustomerOwned"; print compactorCustomerOwned;
+		print "hasCompactor"; print hasCompactor;
+		print "price_rental_per_month"; Print price_rental_per_month;
+		append(rentalBaseArr, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701
 		append(rentalBaseArr, container_rental_floor * rental_factor * alloc_rental);
 		
 		//rental_base  = (max(rentalBaseArr) / rental_factor) + comp_rental_rate;
 		rental_base  = (max(rentalBaseArr) / rental_factor) + (comp_rental_floor/(1-rsg_compactor_base_roa));
 		//Add compactor differential between base and target
 		rentalTargetArray = float[];
-		append(rentalTargetArray, price_rental_per_month * compactorCustomerOwned); // Changed as a part of SR 3-9437035701 
+		append(rentalTargetArray, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701 
 		append(rentalTargetArray, container_rental_floor * rental_factor * alloc_rental);
 		//rental_target  = (max(rentalTargetArray)/rental_factor) + (comp_rental_rate + (comp_rental_rate * 
 						 //(rsg_compactor_target_roa - rsg_compactor_base_roa)));
@@ -1709,7 +1716,7 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		
 		//Add compactor diffenetial between target and stretch
 		rentalStretchArray = float[];
-		append(rentalStretchArray, price_rental_per_month * compactorCustomerOwned); // Changed as a part of SR 3-9437035701
+		append(rentalStretchArray, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701
 		append(rentalStretchArray, container_rental_floor * rental_factor * alloc_rental);
 		//rental_stretch = (max(rentalStretchArray) /rental_factor) + (comp_rental_rate + (comp_rental_rate * 
 		//				(rsg_compactor_stretch_roa - rsg_compactor_base_roa)));
