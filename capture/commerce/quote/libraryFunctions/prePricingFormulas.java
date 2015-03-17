@@ -46,6 +46,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150215 - John Palubinskas - #68 fixed direct cost logic since it wasn't pulling the costs consistently
 			20150224 - Gaurav Dawar - #431 - Fixed Existing Terms calculation logic and its visibility criteria
 			20150306 - Gaurav Dawar - #452 - Fixed Existing Terms calculation logic to use contract term from account status instead of original date
+			20150317 - Gaurav Dawar - #474 - Quantity passed over to calculate guardrails for large containers to multiply with market rental rate.
 =====================================================================================================
 */
 
@@ -1164,6 +1165,7 @@ for line in line_process{
             put(guardrailInputDict, "containerGroup", containerGroupForTransaction_quote);  //J.Felberg passing additional fields for FRF and ERF calculations
             put(guardrailInputDict, "siteNumber_quote", siteNumber_quote); //J.Felberg passing additional fields for FRF and ERF calculations
             put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
+			put(guardrailInputDict, "quantity", quantityStr);
             
             if(DEBUG){
                 print "guardrailInputDict for large Container";
