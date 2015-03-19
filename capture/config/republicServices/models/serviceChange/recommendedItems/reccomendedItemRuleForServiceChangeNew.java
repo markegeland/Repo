@@ -144,7 +144,7 @@ for eachRec in partsRecordSet{
 			for eachRep in PartReplacementSet{
 				CF10 = getFloat(eachRep, "custom_field10");
 				if(CF10 == atof(containerSize_readOnly)){
-					if(containerSize_sc <> "No Change" AND atof(containerSize_sc) <> atof(containerSize_readOnly)){
+					if(containerSize_sc <> "No Change" AND atof(containerSize_sc) <> atof(containerSize_readOnly) AND isCustomerOwned == false){
 						retStr = retStr  + get(eachRep, "part_number") + "~" + string(quantity_readOnly) + "~" + "rateType" + VALUE_DELIM + "Removal" + ATTR_DELIM + "Occurrence" + VALUE_DELIM + "One-Time" + ATTR_DELIM + "ServiceCode" + VALUE_DELIM + "REM" + "~" + "0.0" + "~" + "REM" + string(index) + "|^|";
 					}
 				}
