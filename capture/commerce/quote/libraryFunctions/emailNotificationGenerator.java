@@ -23,7 +23,7 @@ Updates:
                                   Completely reworked function to get rid of styles embedded in the tags.
     20150215 - John Palubinskas - #68 Additional work for adding quantity columns.  Calculate fees correctly on conatiner
                                   comparison tables, and fix formatting issues.
-    20150216 - John Palubinskas - #68 fix issue with 
+    20150223 - John Palubinskas - #430 fix approval email incorrectly showing competitor by checking priceAdjustmentReason_line.
     
 ================================================================================
 */
@@ -94,7 +94,9 @@ for line in line_process{
         //Service Changes
         elif(line.priceType_line == "Service Change"){
             salesActivity = line.activity_line + " - " + line.priceAdjustmentReason_line;
-            competitor = getconfigattrvalue(line._parent_doc_number, "competitor"); //TODO: need to check adjustment reason for rollback due to comp before setting
+            if (line.priceAdjustmentReason_line == "Rollback: Competitive Bid") {
+                competitor = getconfigattrvalue(line._parent_doc_number, "competitor");
+            }
 
             if(line.activity_line == "Service level change"){
                 if(findinarray(SCDocNum, line._parent_doc_number) == -1){
@@ -218,6 +220,7 @@ else{
     }   
 }
 
+// Hide the competitor row if there is no competitor
 if(trim(competitor) == ""){
     displayCompetitor = " class='hide'";
 }

@@ -17,7 +17,9 @@ Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formula
 		20141210 - Aaron Quintanilla - Corrected disposal fee removal 
 		20151201 - Gaurav Dawar - Lines: 278, 2282, 2304, 2345 - Changes made to fix delivery amount when there is a change in container code in service change.
 		02/11/15 - Gaurav Dawar - #406 - Compactor and rental calculation errors (large container)
-    
+		02/18/15 - Gaurav Dawar - #427 - Added compactor ROI
+    	03/09/15 - Gaurav Dawar - #454 - Disposal calculations considering Market Rate when no compactor as well.
+		03/11/15 - Gaurav Dawar - #454 - Disposal calculations considering Market Rate when no compactor as well.
 =====================================================================================================
 */
 
@@ -1580,7 +1582,6 @@ elif(priceType == "Containers"){
 comp_rental_floor = 0.0;
 comp_rental_rate = 0.0;
 container_rental_floor = 0.0;
-	
 //added to rental_type == None to conditional to handle the rental part of container going to per haul line item if rental is off - Gaurav 20150211	
 if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily") AND priceType == "Large Containers"){
 	//Calculate price_rental_per_month 
@@ -1611,7 +1612,7 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		compactorROA = atof(compactorROAStr);
 	}
 	//Get Market Rental rate from tbl_div_rental table
-	marketRentalRS = bmql("SELECT market_rental_rate FROM tbl_division_rental WHERE (division = $division OR division = '0') AND has_compactor = $hasCompactor AND container_cd = $routeType AND perm_flag = $permanentFlag ORDER BY division DESC");
+	marketRentalRS = bmql("SELECT market_rental_rate FROM tbl_division_rental WHERE (division = $division OR division = '0') AND container_cd = $routeType AND perm_flag = $permanentFlag ORDER BY division DESC");
 	for each in marketRentalRS{
 		market_rental_rate = getFloat(each, "market_rental_rate");
 		break;
@@ -1647,21 +1648,21 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		compactor_depr = atof(compactorDeprStr);
 	}
 	
-	if(rental_factor > 0 AND feePct <> -1.0){
+	if(rental_factor > 0 AND feePct <> -1.0 AND alloc_rental == 1){
 		//Updated 04/08/2014
-		comp_rental_floor = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);
+		comp_rental_floor = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
+						+ (compactor_cost * 0.065 / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);
 		//comp_rental_rate = compactorCustomerOwned * (compactor_depr + (compactor_cost * comp_maint_factor/12.0) + 
 						//(compactor_cost * rsg_compactor_base_roa /12.0))/rental_factor/(1 + feePct);
 		comp_rental_rate = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
 						+ (compactor_cost * rsg_compactor_base_roa / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);				
-
 		//Changed as per SR 3-9428639511 removed  ( containerMntPerHaul * (1 - isContainerCustomerOwned))
-		container_rental_floor = (containerDepreciation + containerROA) *  haulsPerMonth * alloc_rental / rental_factor; // Changed as part of SR 3-9437035701
+		container_rental_floor = (containerDepreciation + containerROA) *  haulsPerMonth / rental_factor; // Changed as part of SR 3-9437035701
 		// container_rental_floor formula: container_rental_floor:=(oper_cont_depr + roa_container) * hauls_per_month * alloc_rental / rental_factor
 	}
 	if(rental_type == "None"){//added to handle the rental part of container going to per haul line item if rental is off - Gaurav 20150211
 		container_rental_floor = (containerDepreciation + containerROA) *  haulsPerMonth;
-	}			  
+	}
 	put(returnDict, "comp_rental_floor", string(comp_rental_floor));
 	put(returnDict, "container_rental_floor", string(container_rental_floor));
 	put(returnDict, "comp_rental_rate", string(comp_rental_rate));
@@ -1683,7 +1684,7 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		rental_floor_price = max(rentalArray);
 	}*/
 	
-	rental_floor = (container_rental_floor + comp_rental_floor);
+	rental_floor = (container_rental_floor * alloc_rental  + comp_rental_floor);
 	//put(returnDict, "rental_floor", string(rental_floor));
 	
 	//Divisions should only be providing market rates on containers but not compactors
@@ -1694,24 +1695,32 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		//Updated 05/08/2014 - per new formula
 		//rental_base  = container_rental_floor + comp_rental_rate;
 		rentalBaseArr = float[];
-		append(rentalBaseArr, price_rental_per_month); // Changed as a part of SR 3-9437035701
-		append(rentalBaseArr, container_rental_floor * rental_factor);
+		compactor_flag = ((1 - isContainerCustomerOwned) * compactorCustomerOwned) + ((1 - hasCompactor) * (1 - isContainerCustomerOwned));
+		print "compactor_flag"; print compactor_flag;
+		print "isContainerCustomerOwned"; print isContainerCustomerOwned;
+		print "compactorCustomerOwned"; print compactorCustomerOwned;
+		print "hasCompactor"; print hasCompactor;
+		print "price_rental_per_month"; Print price_rental_per_month;
+		append(rentalBaseArr, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701
+		append(rentalBaseArr, container_rental_floor * rental_factor * alloc_rental);
 		
-		rental_base  = (max(rentalBaseArr) / rental_factor) + comp_rental_rate;
-		
+		//rental_base  = (max(rentalBaseArr) / rental_factor) + comp_rental_rate;
+		rental_base  = (max(rentalBaseArr) / rental_factor) + (comp_rental_floor/(1-rsg_compactor_base_roa));
 		//Add compactor differential between base and target
 		rentalTargetArray = float[];
-		append(rentalTargetArray, price_rental_per_month); // Changed as a part of SR 3-9437035701 
-		append(rentalTargetArray, container_rental_floor * rental_factor);
-		rental_target  = (max(rentalTargetArray)/rental_factor) + (comp_rental_rate + (comp_rental_rate * 
-						 (rsg_compactor_target_roa - rsg_compactor_base_roa)));
+		append(rentalTargetArray, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701 
+		append(rentalTargetArray, container_rental_floor * rental_factor * alloc_rental);
+		//rental_target  = (max(rentalTargetArray)/rental_factor) + (comp_rental_rate + (comp_rental_rate * 
+						 //(rsg_compactor_target_roa - rsg_compactor_base_roa)));
+		rental_target  = (max(rentalTargetArray)/rental_factor) + (comp_rental_floor/(1-rsg_compactor_target_roa));
 		
 		//Add compactor diffenetial between target and stretch
 		rentalStretchArray = float[];
-		append(rentalStretchArray, price_rental_per_month); // Changed as a part of SR 3-9437035701
-		append(rentalStretchArray, container_rental_floor * rental_factor);
-		rental_stretch = (max(rentalStretchArray) /rental_factor) + (comp_rental_rate + (comp_rental_rate * 
-						(rsg_compactor_stretch_roa - rsg_compactor_base_roa)));
+		append(rentalStretchArray, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701
+		append(rentalStretchArray, container_rental_floor * rental_factor * alloc_rental);
+		//rental_stretch = (max(rentalStretchArray) /rental_factor) + (comp_rental_rate + (comp_rental_rate * 
+		//				(rsg_compactor_stretch_roa - rsg_compactor_base_roa)));
+		rental_stretch = (max(rentalStretchArray) /rental_factor) + (comp_rental_floor/(1-rsg_compactor_stretch_roa));
 		
 		put(returnDict, "rsg_compactor_base_roa", string(rsg_compactor_base_roa));				 
 		put(returnDict, "rsg_compactor_target_roa", string(rsg_compactor_target_roa));				 
@@ -1788,6 +1797,11 @@ if(priceType == "Large Containers"){
 			//haulFloor = (haulFloorRatePerHaul +((1 - allocatedDisposalFlag) * disposalRatePerTon * tonsPerHaul) + 
 						//(((1 - alloc_rental) * rental_floor * rental_factor * (1 + feePct)) / haulsPerMonth)) / (1 + feePct);
 			//Updated as part of 3-9428639511, changed disposalRatePerTon to disposalCostPerTon
+			print "haul floor";print haulFloorRatePerHaul;
+			print "alloc rantal";print alloc_rental;
+			print "cont rental floor";print container_rental_floor;
+			print "rental factor";print rental_factor;
+			print "hauls per month";print haulsPerMonth;
 			haulFloor = haulFloorRatePerHaul +(((1 - alloc_rental) * container_rental_floor * rental_factor) / haulsPerMonth);			
 		}
 								
@@ -1811,9 +1825,9 @@ if(priceType == "Large Containers"){
 		//append(haulBaseArr, (basePriceAdj - (disposalPerTonFeeAdj * haulsPerMonth * tonsPerHaul)) / haulsPerMonth);
 
 		//Changed as part of SR 3-9428639511
-		append(haulBaseArr, (basePriceAdj - (container_rental_floor * rental_factor))/ haulsPerMonth);
-		append(haulTargetArr, (targetPriceAdj - (container_rental_floor * rental_factor))/ haulsPerMonth);
-		append(haulStretchArr, (stretchPriceAdj - (container_rental_floor * rental_factor))/ haulsPerMonth);
+		append(haulBaseArr, (basePriceAdj - (container_rental_floor * rental_factor * alloc_rental))/ haulsPerMonth);
+		append(haulTargetArr, (targetPriceAdj - (container_rental_floor * rental_factor * alloc_rental))/ haulsPerMonth);
+		append(haulStretchArr, (stretchPriceAdj - (container_rental_floor * rental_factor * alloc_rental))/ haulsPerMonth);
 	}
 	
 	haulBase = max(haulBaseArr);
@@ -1921,7 +1935,6 @@ if(priceType == "Large Containers"){
 	peakRateArray = float[];
 	if(haulBase > 0){	
 		append(peakRateArray, (haulFloor/haulBase) - 1.0);
-
 	}
 	append(peakRateArray, 0.0);
 	minPeakRate = min(peakRateArray);
