@@ -36,7 +36,7 @@ Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to 
 		20150202 - seperated AND and OR for correct logical iterations for correct calculation of comp on fees.
 =======
 >>>>>>> origin/develop
-
+		20150323 - #473 - Gaurav Dawar - Added Functionality for contract terms of MTM or 12 months to not qualify for the rate restriction additional payment
 
 
 ================================================================================ */
@@ -398,7 +398,7 @@ for each in modelLoop{
 		}
 	}
 	//CALCULATE RATE RESTRICTION
-	if(customerRateRestriction_quote == false){
+	if(customerRateRestriction_quote == false AND atof(initialTerm_quote) >= 24){
 		rateRestrictionQuery = BMQL("SELECT comp_pct FROM comp_job_code_rules WHERE job_code = $creatorCode AND variable_id = 'customerRateRestriction_quote' AND lob = $modelLOB");
 		for rate in rateRestrictionQuery{
 			tempPercent = tempPercent + atof(get(rate,"comp_pct"));
