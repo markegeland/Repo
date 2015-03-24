@@ -20,6 +20,7 @@ Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formula
 		02/18/15 - Gaurav Dawar - #427 - Added compactor ROI
     	03/09/15 - Gaurav Dawar - #454 - Disposal calculations considering Market Rate when no compactor as well.
 		03/11/15 - Gaurav Dawar - #454 - Disposal calculations considering Market Rate when no compactor as well.
+		03/17/15 - Gaurav Dawar - #474 - Rental Market Rate multiplied with the quantity.
 =====================================================================================================
 */
 
@@ -1619,7 +1620,7 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 	}
 	put(returnDict, "market_rental_rate", string(market_rental_rate));
 	// rental allocation
-	price_rental_per_month = market_rental_rate * (1 + fullFeePct) * alloc_rental; // Changed as per SR 3-9437035701
+	price_rental_per_month = market_rental_rate * (1 + fullFeePct) * alloc_rental * quantity; // Changed as per SR 3-9437035701
 	
 	rental_factor = 1.0;
 	//if rental type is Daily convert monthly rental charges into daily charges
