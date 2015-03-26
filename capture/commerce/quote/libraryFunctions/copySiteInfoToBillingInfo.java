@@ -1,4 +1,6 @@
+//20150326 - #59 - GD - Changed the updating process of bill to information for change of owner.
 returnStr = "";
+emptystr = "";
 custInfoCompany = siteName_quote;
 custInfoAttn = authorizedBy_quote;
 custInfoAddr1 = _quote_process_siteAddress_quote_address;
@@ -10,12 +12,12 @@ custInfoCounty = _quote_process_siteAddress_quote_fax;
 custInfoPhone = _quote_process_siteAddress_quote_phone;
 siteContact = _quote_process_siteAddress_quote_first_name;
 
-
-
-if(_quote_process_billTo_company_name == ""){
+print _quote_process_billTo_state;
+print _quote_process_billTo_city;
+if(_quote_process_billTo_company_name == "" AND salesActivity_quote <> "Change of Owner"){
 	returnStr = returnStr + "1~" + "_quote_process_billTo_company_name" + "~" + custInfoCompany + "|";
 }
-if(_quote_process_billTo_company_name_2 == ""){
+if(_quote_process_billTo_company_name_2 == "" AND salesActivity_quote <> "Change of Owner"){
 	returnStr = returnStr + "1~" + "_quote_process_billTo_company_name_2" + "~" + custInfoAttn + "|";
 }
 if(_quote_process_billTo_address == ""){
@@ -27,9 +29,9 @@ if(_quote_process_billTo_address_2 == ""){
 if(_quote_process_billTo_city == ""){
 	returnStr = returnStr + "1~" + "_quote_process_billTo_city" + "~" + custInfoCity + "|";
 }
-
-returnStr = returnStr + "1~" + "_quote_process_billTo_state" + "~" + custInfoState + "|";
-
+if(_quote_process_billTo_state == ""){
+	returnStr = returnStr + "1~" + "_quote_process_billTo_state" + "~" + custInfoState + "|";
+}
 if(_quote_process_billTo_zip == ""){
 	returnStr = returnStr + "1~" + "_quote_process_billTo_zip" + "~" + custInfoZip + "|";
 }
@@ -37,7 +39,7 @@ if(county_bill_To_quote == ""){
 	returnStr = returnStr + "1~" + "county_bill_To_quote" + "~" + custInfoCounty + "|";
 }
 
-if(_quote_process_billTo_phone == ""){
+if(_quote_process_billTo_phone == "" AND salesActivity_quote <> "Change of Owner"){
 	if(len(custInfoPhone) == 10) {
 		areaCode = substring(custInfoPhone, 0, 3);
 		exchange = substring(custInfoPhone, 3, 6);
@@ -63,7 +65,7 @@ if(len(_quote_process_billTo_phone) == 10) {
 	returnStr = returnStr + "1~" + "_quote_process_billTo_phone" + "~" + thisPhone + "|";
 }
 
-if(_quote_process_billTo_first_name == ""){
+if(_quote_process_billTo_first_name == "" AND salesActivity_quote <> "Change of Owner"){
 	returnStr = returnStr + "1~" + "_quote_process_billTo_first_name" + "~" + siteContact + "|";
 }
 
@@ -81,5 +83,10 @@ if(contactTelNoGenerateDocs_quote  == "") {
 	returnStr = returnStr + "1~" + "contactTelNoGenerateDocs_quote" + "~" + custInfoPhone + "|";
 }
 
-
+if(salesActivity_quote == "Change of Owner"){
+	returnStr = returnStr + "1~" + "_quote_process_billTo_company_name" + "~" + emptystr + "|";
+	returnStr = returnStr + "1~" + "_quote_process_billTo_company_name_2" + "~" + emptystr + "|";
+	returnStr = returnStr + "1~" + "_quote_process_billTo_phone" + "~" + emptystr + "|";
+	returnStr = returnStr + "1~" + "_quote_process_billTo_first_name" + "~" + emptystr + "|";
+}
 return returnStr;
