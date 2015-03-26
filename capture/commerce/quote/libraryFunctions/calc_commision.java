@@ -31,12 +31,7 @@ Updates:    20141229 - John Palubinskas - initialize large cont dictionaries to 
 		20150115 - Aaron Quintanilla - Changed small container calculations starting on line 121 to include fees with delivery to more accurately calculate commision.  Moved fees to about other line calculations, added fees to delivery values, removed 'addErfFrf' variable.
 		20150117 - Aaron Quintanilla - Changed tier commission calculations to check for 0 in denominators. 
 		20150122 - #361 - Gaurav Dawar - Added Functionality to hide Comp for Change of owner and Existing Customer Quotes(Except New Site).
-<<<<<<< HEAD
-		20150130 - Aaron Quintanilla - Fixed small container one time commission, small container display percentage, and small container displayed value, and corrected the totalling of all commission.
-		20150202 - seperated AND and OR for correct logical iterations for correct calculation of comp on fees.
-=======
->>>>>>> origin/develop
-		20150323 - #473 - Gaurav Dawar - Added Functionality for contract terms of MTM or 12 months to not qualify for the rate restriction additional payment
+
 
 
 ================================================================================ */
@@ -344,61 +339,44 @@ for each in modelLoop{
 	modelLOB = get(modelCategory,modelDocNumber);
 	tempPercent = 0.0;
 	//CALCULATE FEES
-	queryOne = "";
-	queryTwo = "";
-	FRF = false;
-	ERF = false;
-	Admin_Fee = false;
-	tempTest = feesToCharge_quote;
-	if(find(feesToCharge_quote,"FRF")<>-1){
-		FRF = true;
+	feeArray=string[];
+	tempTest = feesToCharge_quote; 
+	if(find(feesToCharge_quote,"FRF")<>-1 AND find(feesToCharge_quote, "Fixed Fuel")==-1){
+		append(feeArray, "FRF");
 	}
-	if(find(feesToCharge_quote,"ERF")<>-1){
-		ERF = true;
+	if(find(feesToCharge_quote,"ERF")<>-1 AND find(feesToCharge_quote, "Fixed Environment")==-1){
+		append(feeArray, "ERF");
 	}
-	if(find(feesToCharge_quote,"Admin Fee")<>-1){
-		Admin_Fee = true;
+	if(find(feesToCharge_quote,"Admin Fee")<>-1 AND find(feesToCharge_quote, "Fixed Administrative")==-1){
+		append(feeArray, "Admin Fee");
 	}
-	if(FRF == true AND ERF == true AND Admin_Fee == true){
-		queryOne = "FRF~ERF~Admin Fee";
-		queryTwo = queryOne;
+divQuery = BMQL("SELECT fRFRate, eRFRate, adminAmount FROM divisionFeeRate WHERE divisionNumber = $division_RO_quote AND infopro_div_nbr = $infoProNumberDisplayOnly_quote"); print divQuery;
+for div in divQuery{
+	if(getfloat(div,"fRFRate") == 0.0){
+		append(feeArray, "FRF");
 	}
-	elif(FRF == true AND ERF == true AND Admin_Fee == false){
-		queryOne = "FRF~ERF";
-		queryTwo = queryOne;
+	if(getfloat(div, "eRFRate") == 0.0){
+		append(feeArray, "ERF");	
 	}
-	elif((FRF == true OR ERF == true) AND Admin_Fee == true){//seperated AND and OR for correct logical iterations. (GD) - 20150202
-		queryTwo = "Admin Fee";
-		if(FRF == true){
-			queryOne = "FRF";
-		}
-		if(ERF == true){
-			queryOne = "ERF";
-		}
+	if(getfloat(div, "adminAmount") == 0.0){
+		append(feeArray, "Admin Fee");	
 	}
-	else{
-		if(FRF == true){
-			queryOne = "FRF";
-		}
-		if(ERF == true){
-			queryOne = "ERF";
-		}
-		if(Admin_Fee == true){
-			queryOne = "Admin Fee";
-		}
-		queryTwo = queryOne;
-	}
-	if(queryOne <> ""){
-		feesQuery = BMQL("SELECT comp_pct FROM comp_job_code_rules WHERE job_code = $creatorCode AND variable_id = 'feesToCharge_quote' AND lob = $modelLOB AND ( variable_level = $queryOne OR variable_level = $queryTwo )");
-		for fee in feesQuery{
-			tempPercent = tempPercent + atof(get(fee,"comp_pct"));
-			if(queryOne == queryTwo){
-				break;
-			}
-		}
-	}
+}
+if((findinarray(feeArray, "FRF")<>-1) AND (findinarray(feeArray, "ERF")<>-1)){
+	append(feeArray, "FRF~ERF");
+}
+if((findinarray(feeArray, "FRF")<>-1) AND (findinarray(feeArray, "ERF")<>-1) AND (findinarray(feeArray, "Admin Fee")<>-1)){
+	append(feeArray, "FRF~ERF~Admin Fee");
+}
+print feeArray;
+feesQuery = BMQL("SELECT comp_pct FROM comp_job_code_rules WHERE job_code = $creatorCode AND variable_id = 'feesToCharge_quote' AND lob = $modelLOB AND variable_level IN $feeArray");//compare var level to new array **in array
+print feesQuery;
+for fee in feesQuery{
+	tempPercent = tempPercent + getfloat(fee, "comp_pct");
+}
+
 	//CALCULATE RATE RESTRICTION
-	if(customerRateRestriction_quote == false AND atof(initialTerm_quote) >= 24){
+	if(customerRateRestriction_quote == false){
 		rateRestrictionQuery = BMQL("SELECT comp_pct FROM comp_job_code_rules WHERE job_code = $creatorCode AND variable_id = 'customerRateRestriction_quote' AND lob = $modelLOB");
 		for rate in rateRestrictionQuery{
 			tempPercent = tempPercent + atof(get(rate,"comp_pct"));
@@ -644,8 +622,8 @@ for tier in tierPricing{
 		smallGroupPrices[i] = smallGroupPrices[i] + smallMonthlyTotalFloor_quote; 
 		largeGroupPrices[i] = largeGroupPrices[i] + floorLargeTotal; 
 		tempOneTimeCom = 0.0;
-		for each in modelLoop{ 
-			modelDocNumber = each;
+		for model in modelLoop{ 
+			modelDocNumber = model;
 			tempBaseCom = get(floorComBasePct,modelDocNumber); 
 			tempModelPrice = get(floorModelPrice,modelDocNumber); 
 			tempAdderCom = get(modelAdderDict,modelDocNumber); 
@@ -673,8 +651,8 @@ for tier in tierPricing{
 		smallGroupPrices[i] = smallGroupPrices[i] + smallMonthlyTotalBase_quote; 
 		largeGroupPrices[i] = largeGroupPrices[i] + baseLargeTotal; 
 		tempOneTimeCom = 0.0;
-		for each in modelLoop{
-			modelDocNumber = each;
+		for model in modelLoop{
+			modelDocNumber = model;
 			tempBaseCom = get(baseComBasePct,modelDocNumber); 
 			tempModelPrice = get(baseModelPrice,modelDocNumber); 
 			tempAdderCom = get(modelAdderDict,modelDocNumber); 
