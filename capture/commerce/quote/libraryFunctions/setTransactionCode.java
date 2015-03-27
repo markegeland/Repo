@@ -24,6 +24,7 @@ Updates:	20140625 - Andrew - pulled in competitorCode_quote to prevent blank com
 			20140918 - John Palubinskas - Added functionality to handle setting trans/reason code to 01/01
                      for existing customers adding service to a new site.  Added document header to
                      track updates. Issue 776.
+            20150326 - John Palubinskas - #449 remove check for new from competitor
     
 =====================================================================================================
 */
@@ -66,9 +67,9 @@ if(contractStatus_quote == "Close Account" OR contractStatus_quote == "Close Sit
 }elif(salesActivity_quote == "New/New"){
 	transactionCode_New_CSA = "01";
 	reasonCode_New_CSA = "01";
-}elif(salesActivity_quote == "New from Competitor"){
-	transactionCode_New_CSA = "01";
-	reasonCode_New_CSA = "02";
+// }elif(salesActivity_quote == "New from Competitor"){
+// 	transactionCode_New_CSA = "01";
+// 	reasonCode_New_CSA = "02";
 }elif(salesActivity_quote == "Change of Owner"){ //Only for Change of Owner, Old CSA applies, for everything else it is new CSA
 	transactionCode_New_CSA = "01";
 	reasonCode_New_CSA = "11";
