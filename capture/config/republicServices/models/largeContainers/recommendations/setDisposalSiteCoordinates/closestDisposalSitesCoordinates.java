@@ -12,6 +12,7 @@
 	
 	Change Log:
 	12/2/2014	J Felberg	Replaced estHaulsPerMonth_l with totalEstimatedHaulsMonth_l
+	03/27/2015 - Aaron Quintanilla - #102 - Added Unit of Measure Logic
 	
 */
 
@@ -39,6 +40,9 @@ if(isCustomerOwned){
 if(customerOwnedCompactor){
 	compactorCustomerOwned = 1;
 }
+
+unitOfMeasureArr = split(unitOfMeasure, " ");
+unitOfMeasureShort = unitOfMeasureArr[1];
 
 partsArray = string[];
 compactorStr = "0";
@@ -159,7 +163,11 @@ if(division_config <> ""){
 if(wasteType <> ""){
 	isWasteTypeNotNull = true;
 }
-resultset = bmql("SELECT Disposal_Site_Cd, Site_Name, DisposalSite_DivNbr, WasteType, Latitude, Longitude, Extra_On_Site_Mins, is_RSG_owned FROM Disposal_Sites WHERE ($isDivisionNotNull AND DisposalSite_DivNbr = $division_config) AND ($isWasteTypeNotNull AND WasteType = $wasteType)");
+
+unitOfMeasureArr = split(unitOfMeasure, " ");
+unitOfMeasureShort = unitOfMeasureArr[1];
+
+resultset = bmql("SELECT Disposal_Site_Cd, Site_Name, DisposalSite_DivNbr, WasteType, Latitude, Longitude, Extra_On_Site_Mins, is_RSG_owned FROM Disposal_Sites WHERE ($isDivisionNotNull AND DisposalSite_DivNbr = $division_config) AND ($isWasteTypeNotNull AND WasteType = $wasteType) AND unit_of_measure = $unitOfMeasureShort");
 
 //print resultset;
 //For each record in the resultset, get the latitude, longitude and their distance/ duration
@@ -433,6 +441,7 @@ for result in resultset{
 				}
 				put(stringDict, "industry", industry_quote);
 				put(stringDict, "containerType_l", containerType_l);
+				put(stringDict, "unitOfMeasure", unitOfMeasure);
 				
 
 				pricingDict = util.largeContainerPricing(stringDict);
