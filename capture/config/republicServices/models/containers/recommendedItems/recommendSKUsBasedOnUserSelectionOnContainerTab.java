@@ -1,3 +1,18 @@
+/*
+================================================================================
+Name:   		Recommend SKUs Based On User Selection On Container Tab
+Author:
+Create date:
+Description:		Sets the line item grid for small containers
+        
+Input:   		Small container configuration attributes
+                    
+Output:  		String describing the template for small container line items
+
+Updates:	
+		03/27/15 - Mike (Republic) - #145 - Small Container Compactor - Added the Compactor Rental and Installation line items
+=====================================================================================================
+*/
 retStr  = "";
 VALUE_DELIM = "^_^";
 ATTR_DELIM = "@_@";
@@ -40,7 +55,9 @@ print partsRecordSet;
 for eachRec in partsRecordSet{
 	partNum = get(eachRec, "part_number");
 	retStr = retStr   + partNum + "~" + string(qty) + "~" + "Occurrence" + VALUE_DELIM + "Monthly" +ATTR_DELIM+"rateType" + VALUE_DELIM + "Base"+ "~" + "~" + "identifier1|^|";
-	
+	if(compactor){
+		retStr = retStr   + partNum + "~" + string(qty) + "~" + "Occurrence" + VALUE_DELIM + "Monthly" +ATTR_DELIM+"rateType" + VALUE_DELIM + "Compactor Rental"+ "~" + "~" + "identifier4|^|";
+	}
 	if(serviceRequirement == "On-call"){
 		retStr = retStr  + partNum + "~" + "1" + "~" + "Occurrence" + VALUE_DELIM + "One-Time" + "~"  + "~" + "identifier2|^|";
 	}
@@ -48,6 +65,10 @@ for eachRec in partsRecordSet{
 	if(NOT(isCustomerOwned)){
 		retStr = retStr   + partNum + "~" + string(qty) + "~" + "Occurrence" + VALUE_DELIM + "One-Time" +ATTR_DELIM+"rateType" + VALUE_DELIM + "Delivery"+ "~" + "~" + "identifier3|^|";
 	}	
+	//Installation Charges
+	if(compactor AND installationCostEstimate_s > 0){
+		retStr = retStr   + partNum + "~" + string(qty) + "~" + "Occurrence" + VALUE_DELIM + "One-Time" +ATTR_DELIM+"rateType" + VALUE_DELIM + "Installation"+ "~" + "~" + "identifier5|^|";
+	}
 }
 
 return retStr ;

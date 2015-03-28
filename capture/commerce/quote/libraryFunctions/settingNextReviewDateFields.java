@@ -16,6 +16,7 @@ Description: Sets the editable and non-editable NRD fields
 Updates:
           20141022 John Palubinskas - (Issue 870) updated to always set the NRD to fall on the 1st of the month
           20140930 John Palubinskas - (Issue 809) updated to have NRD of 10 months even if not rate restricted
+          20150325 John Palubinskas - #449 remove references to new from competitor
 =====================================================================================================
 */
 
@@ -32,7 +33,7 @@ if(_system_current_step_var == "generateDocuments"){
     formattedEffectiveServiceDate = strtojavadate(substring(effectiveServiceDate_quote,0,10), "yyyy-MM-dd");
     dateAfterMonths = adddays(formattedEffectiveServiceDate, numOfDaysIn10Months);
 
-    if(lower(salesActivity_quote) == "new/new" OR lower(salesActivity_quote) == "new from competitor"){
+    if(lower(salesActivity_quote) == "new/new"){
 
         nonEditableNRD = datetostr(adddays(formattedEffectiveServiceDate, numOfDaysIn10Months)); 
 
