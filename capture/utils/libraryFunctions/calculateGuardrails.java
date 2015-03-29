@@ -716,7 +716,7 @@ if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(g
 	disposalRatePerYard = 0.0;
 	
 	disposalCostPerLoad = 0.0;
-	disposalRatePerYard = 0.0;
+	disposalRatePerLoad = 0.0;
 	
 	if(priceType == "Large Containers"){
 			//Format unitOfMeasure to values used in Disposal_Sites table
