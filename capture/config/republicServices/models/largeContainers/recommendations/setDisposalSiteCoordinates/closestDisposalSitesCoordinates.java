@@ -11,9 +11,10 @@
     Step 6: Form a delimited string to prepare input for the Disposal sites Array set
     
     Change Log:
-    20141202  J Felberg     - Replaced estHaulsPerMonth_l with totalEstimatedHaulsMonth_l
+    20141202  J Felberg     - Replaced estHaulsPerMonth_l with totalEstimatedHaulsMonth_l	
     20150327  J Palubinskas - #449 remove check for new from competitor
-    
+	03/27/2015 - Aaron Quintanilla - #102 - Added Unit of Measure Logic
+	
 */
 
 //Begin of Rec Items logic
@@ -40,9 +41,13 @@ if(customerOwnedCompactor){
     compactorCustomerOwned = 1;
 }
 
+unitOfMeasureArr = split(unitOfMeasure, " ");
+unitOfMeasureShort = unitOfMeasureArr[1];
+
 partsArray = string[];
 compactorStr = "0";
 
+compactorStr = "0";
 if(containerType_l == "Open Top"){ //Open top implies no compactor
     compactorStr = "0";
 }elif(containerType_l == "Self-Contained Container"){ //Self-contained and stationary imply compactor exists, so should be set to 1.
@@ -140,9 +145,13 @@ if(division_config <> ""){
     isDivisionNotNull = true;
 }
 if(wasteType <> ""){
-    isWasteTypeNotNull = true;
+	isWasteTypeNotNull = true;
 }
-resultset = bmql("SELECT Disposal_Site_Cd, Site_Name, DisposalSite_DivNbr, WasteType, Latitude, Longitude, Extra_On_Site_Mins, is_RSG_owned FROM Disposal_Sites WHERE ($isDivisionNotNull AND DisposalSite_DivNbr = $division_config) AND ($isWasteTypeNotNull AND WasteType = $wasteType)");
+
+unitOfMeasureArr = split(unitOfMeasure, " ");
+unitOfMeasureShort = unitOfMeasureArr[1];
+
+resultset = bmql("SELECT Disposal_Site_Cd, Site_Name, DisposalSite_DivNbr, WasteType, Latitude, Longitude, Extra_On_Site_Mins, is_RSG_owned FROM Disposal_Sites WHERE ($isDivisionNotNull AND DisposalSite_DivNbr = $division_config) AND ($isWasteTypeNotNull AND WasteType = $wasteType) AND unit_of_measure = $unitOfMeasureShort");
 
 //print resultset;
 //For each record in the resultset, get the latitude, longitude and their distance/ duration
@@ -416,6 +425,7 @@ for result in resultset{
                 }
                 put(stringDict, "industry", industry_quote);
                 put(stringDict, "containerType_l", containerType_l);
+				put(stringDict, "unitOfMeasure", unitOfMeasure);
                 
 
                 pricingDict = util.largeContainerPricing(stringDict);

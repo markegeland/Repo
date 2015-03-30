@@ -47,6 +47,9 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			20150224 - Gaurav Dawar - #431 - Fixed Existing Terms calculation logic and its visibility criteria
 			20150306 - Gaurav Dawar - #452 - Fixed Existing Terms calculation logic to use contract term from account status instead of original date
 			20150317 - Gaurav Dawar - #474 - Quantity passed over to calculate guardrails for large containers to multiply with market rental rate.
+			03/27/2015 - Mike (Republic) - Small Container Compactor - Added necessary items to dictionaries for pricing and guardrails.  Return new XML tags.
+			03/27/2015 - Aaron Quintanilla - #102 - Added new unit of measure config attribute to be pushed into Calculate Guardraisl for new disposal calculations
+			
 =====================================================================================================
 */
 
@@ -236,11 +239,6 @@ if(salesActivity_quote == "Existing Customer"){
     if((diffMth >= 22) AND (diffMth <= 33)){ diffMthRnd = 24; }
     if((diffMth > 33)){ diffMthRnd = 36; }
     print diffMthRnd;
-    //Set existingTermFlag_quote to true is diffDays is less than 90
-    /*if ((diffDay < 90)){
-        lessThan90Days = true;
-        print "Less Than 90 Days";
-    }*/
 }
 
 //=============================== End - Calculation for Existing Terms=====================//
@@ -333,7 +331,6 @@ if(siteContainerstextStr <> ""){
                     tempArray = string[];
                     //print frequencyStr;
                     append(tempArray, frequencyStr);
-                    //if(not(isnull(wasteType)) AND containskey(allocationDaysDict, wasteType)){                
                     if(not(isnull(wasteType))){
                         if(containskey(allocationDaysDict, wasteType)){
                             pickupDaysArr = get(allocationDaysDict, wasteType);
@@ -472,9 +469,7 @@ for line in line_process{
             wasteType_db = "";
             containerType_db = "";
             
-            
-            //accountSalesHistRecordSet = bmql("SELECT Container_Cnt, Monthly_Sales_Amt FROM Account_Sales_Hist WHERE infopro_acct_nbr = $_quote_process_customer_id AND Container_Grp_Nbr = $containerGroupForTransaction_quote");- this menu is not applicable anymore 
-            //accountSalesHistRecordSet = bmql("SELECT Container_Cnt, Monthly_Sales_Amt FROM Account_Sales_Hist WHERE infopro_acct_nbr = $_quote_process_customer_id AND Container_Grp_Nbr = $containerGroupForTransaction_quote");
+           
             //Anitha making changes to above query on 09/11/2014 to fix yardsPerMonth issue. Instead of using containerGroupForTransaction_quote, we must use currentContainerGrpNum
             accountSalesHistRecordSet = bmql("SELECT Container_Cnt, Monthly_Sales_Amt FROM Account_Sales_Hist WHERE infopro_acct_nbr = $_quote_process_customer_id AND Container_Grp_Nbr = $currentContainerGrpNum");
             for eachRecord in accountSalesHistRecordSet{
@@ -486,7 +481,6 @@ for line in line_process{
             //Need containerType, wasteType, wasteCategory, routeTypeDerived, onsiteTimeInMins columns
             /*We don't need Pickup_Period_Unit column anymore in account_statu table because it's value is always "week", so just hard-coding the local variable here*/
             //Anitha making changes to below query on 09/11/2014 to fix yardsPerMonth issue. Instead of using containerGroupForTransaction_quote, we must use currentContainerGrpNum
-            //accountStatusRecordSet = bmql("SELECT container_cnt, Shared_Cont_Grp_Nbr, Acct_Type, Pickup_Per_Tot_Lifts, Pickup_Period_Length, has_Compactor, Pickup_Schedule, Lift_Days, Container_Size, Container_Cd, waste_type, frf_rate_pct, erf_rate_pct, is_frf_charged, is_erf_charged, is_frf_locked, is_erf_locked, is_erf_on_frf, contract_term, is_Admin_Charged, Admin_Rate, monthly_rate, is_container_owned, container_category, new_cust_cg_flag, period, acct_nbr FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote AND Container_Grp_Nbr = $containerGroupForTransaction_quote");
             accountStatusRecordSet = bmql("SELECT container_cnt, Shared_Cont_Grp_Nbr, Acct_Type, Pickup_Per_Tot_Lifts, Pickup_Period_Length, has_Compactor, Pickup_Schedule, Lift_Days, Container_Size, Container_Cd, waste_type, frf_rate_pct, erf_rate_pct, is_frf_charged, is_erf_charged, is_frf_locked, is_erf_locked, is_erf_on_frf, contract_term, is_Admin_Charged, Admin_Rate, monthly_rate, is_container_owned, container_category, new_cust_cg_flag, period, acct_nbr FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote AND Container_Grp_Nbr = $currentContainerGrpNum"); //Add any other filters as appropriate to get more specific record
             
             for eachRecord in accountStatusRecordSet{
@@ -747,16 +741,6 @@ if(DEBUG){
     print allocationFactorDict;
 }
 
-/*
-//Variables used to find Transaction Code
-totalMonthlyYardsNew = 0.0;
-totalMonthlyTonsNew = 0.0;
-totalHaulNew = 0.0;
-totalRentalNew = 0.0;
-totalDisposalNew = 0.0;
-totalRentalNew = 0.0;
-totalSmallContainerPriceNew = 0.0;*/
-
 if(initialTerm_quote == "Existing Terms"){
     initialTerm = diffMthRnd;
 }
@@ -872,6 +856,8 @@ for line in line_process{
         print "parentDoc=="+parentDoc;
         priceIncreaseLine = false;
         closeContainerLine = false;
+		
+	installationCostEstimate_s = 0.0;
         
         //Determine if service change is price increase or close container
         if(containskey(modelTypeDict, line._parent_doc_number)){
@@ -939,7 +925,7 @@ for line in line_process{
             
             billingType = getconfigattrvalue(line._parent_doc_number, "billingType_l");
             overrideTimeStr = getconfigattrvalue(line._parent_doc_number, "OverrideTotalTime_l");
-            customerOwnedCompactor = getconfigattrvalue(line._parent_doc_number, "customerOwnedCompactor");
+            customerOwnedCompactorStr = getconfigattrvalue(line._parent_doc_number, "customerOwnedCompactor");
             frequencyStr = getconfigattrvalue(line._parent_doc_number, "frequency");
             // 20141022(James): overwrite routeTypeDervied variable from above for large container
             routeTypeDervied = getconfigattrvalue(line._parent_doc_number, "routeTypeDervied");
@@ -950,7 +936,8 @@ for line in line_process{
             containerType_l = getconfigattrvalue(line._parent_doc_number, "containerType_l");
             adjustedTotalTime_l = getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l");
             installationChargeStr = getconfigattrvalue(line._parent_doc_number, "onetimeInstallationCharge_l");
-            if(isnumber(installationChargeStr)){
+            
+			if(isnumber(installationChargeStr)){
                 installationCharge_l = atof(installationChargeStr);
             }
             put(installChargeDict, line._parent_doc_number, installationCharge_l);
@@ -966,17 +953,23 @@ for line in line_process{
                 oncallHauls = 0.0;
             }
             
-            if(customerOwnedCompactor == "true"){
+            if(customerOwnedCompactorStr == "true"){
                 compactorCustomerOwned = 1;
             }
         
             if(isnumber(overrideTimeStr)){
                 overrideTime = atof(overrideTimeStr);
             }
-        
+			unitOfMeasure = getconfigattrvalue(line._parent_doc_number, "unitOfMeasure");
+			//Check for null UOM, default to 'Per Ton'
+			if(isnull(unitOfMeasure)){
+				unitOfMeasure = "Per Ton";
+			}
             put(stringDict, "wasteCategory", wasteCategory);
             put(stringDict, "siteName", siteName);  //Should be specific to the site the user selected
             put(stringDict, "wasteType", wasteType); 
+			put(stringDict, "unitOfMeasure", unitOfMeasure);
+			put(stringDict, "containerSize", containerSize);
             put(stringDict, "LOB", lOBCategoryDerived);
             put(stringDict, "arrayDelimiter", arrayDelimiter);
             put(stringDict, "routeType", routeTypeDervied); 
@@ -1166,6 +1159,8 @@ for line in line_process{
             put(guardrailInputDict, "siteNumber_quote", siteNumber_quote); //J.Felberg passing additional fields for FRF and ERF calculations
             put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
 			put(guardrailInputDict, "quantity", quantityStr);
+			put(guardrailInputDict, "unitOfMeasure", unitOfMeasure);
+			put(guardrailInputDict, "containerSize", containerSize);
             
             if(DEBUG){
                 print "guardrailInputDict for large Container";
@@ -1210,6 +1205,19 @@ for line in line_process{
                 append(containerTypesArray, "Small");
             }
             
+		customerOwnedCompactorStr = getconfigattrvalue(line._parent_doc_number, "customerOwnedCompactor");
+	    customerOwnedCompactor = 0;
+            if(customerOwnedCompactorStr == "true"){
+                customerOwnedCompactor = 1;
+            }
+
+	    //Installation Charge
+            installationChargeStr = getconfigattrvalue(line._parent_doc_number, "installationCostEstimate_s");
+
+            if(isnumber(installationChargeStr)){
+                installationCostEstimate_s = atof(installationChargeStr);
+            }
+            put(installChargeDict, line._parent_doc_number, installationCostEstimate_s);
             allocationFactor = 1.0;
             if(containskey(allocationFactorDict, wasteType)){
                 allocationFactor = get(allocationFactorDict, wasteType);
@@ -1242,7 +1250,9 @@ for line in line_process{
             put(stringDict, "onsiteTimeInMins", getconfigattrvalue(line._parent_doc_number, "onsiteTimeInMins"));
             put(stringDict, "isCustomerOwned", getconfigattrvalue(line._parent_doc_number, "isCustomerOwned"));
             put(stringDict, "newCustomerConfig", string(newCustomerConfig)); //Use this instead of Sales Activity for customer type
-            
+            put(stringDict, "customerOwnedCompactor", getconfigattrvalue(line._parent_doc_number, "customerOwnedCompactor"));
+            put(stringDict, "compactorValue", getconfigattrvalue(line._parent_doc_number, "compactorValue"));
+            put(stringDict, "model_name", line._model_name);
             /*if(DEBUG){
             print "Small Container Pricing Input Dict";
             print stringDict;
@@ -1326,12 +1336,11 @@ for line in line_process{
             put(guardrailInputDict, "customer_id", _quote_process_customer_id);  //J.Felberg passing additional fields for FRF and ERF calculations
             put(guardrailInputDict, "containerGroup", containerGroupForTransaction_quote);  //J.Felberg passing additional fields for FRF and ERF calculations
             put(guardrailInputDict, "siteNumber_quote", siteNumber_quote); //J.Felberg passing additional fields for FRF and ERF calculations
-            
-            /*if(DEBUG){
-            print "guardrailInputDict for Small Container";
-            print guardrailInputDict;
-            }*/
-            
+            put(guardrailInputDict, "hasCompactor", get(outputDict, "hasCompactor"));
+            put(guardrailInputDict, "compactorValue", get(outputDict, "compactorValue"));
+            put(guardrailInputDict, "customerOwnedCompactor", get(outputDict, "customerOwnedCompactor"));
+            put(guardrailInputDict, "costToServeCompactor", get(outputDict, "costToServeCompactor"));
+            put(guardrailInputDict, "containerRentalFactor", get(outputDict, "containerRentalFactor"));
             print "this is the input for small containers";
             print guardrailInputDict;
             
@@ -1342,10 +1351,7 @@ for line in line_process{
             guardrailDebugInputDict = guardrailInputDict;
             guardrailDebugOutputDict = guardrailOutputDict;
             
-            /*if(DEBUG){
-                print "guardrailOutputDict for Small Container";
-                print guardrailOutputDict;
-            }*/
+
             if(DEBUG){
                 //Call the debugger function to map BM variables to RS variables
                 print "BM -> RS variable mapping";
@@ -1357,21 +1363,11 @@ for line in line_process{
             returnStr = returnStr + line._document_number + "~" + "yardsPerMonth_line" + "~" + string(yardsPerMonth) + "|";
             returnStr = returnStr + line._parent_doc_number + "~" + "yardsPerMonth_line" + "~" + string(yardsPerMonth) + "|";
             
-            //Calculate Total Monthly Yards - used to set Transaction Code
-            //totalMonthlyYardsNew = totalMonthlyYardsNew + yardsPerMonth;
-        
         }elif(priceType == SERVICE_CHANGE AND NOT(priceIncreaseLine) AND NOT(closeContainerLine)){
             //ADded 04/13/2014 - Competitor identification pending
             if(competitor_quote == ""){
                 competitorFactor = 1.0;
             }
-            /*
-            //TO DO - Identify how competitor is selected on existing quote and handle accordingly
-            for eachRecord in customerTypeFactorRecordSet{
-                //Iterate on result set and get competitor adjustment factor
-                competitor_db = get(eachRecord, "competitor");
-            } 
-            */
             
             //get the container type from data table Account_Status
             allocationFactor = 1.0;
@@ -1447,6 +1443,7 @@ for line in line_process{
             put(currentStringDict, "salesActivityConfig", salesActivityConfig);
             put(currentStringDict, "Pickup_Period_Length", Pickup_Period_Length);
             put(currentStringDict, "useCurrentPickupsPerDay_sc", useCurrentPickupsPerDay_sc);
+			put(currentStringDict, "model_name", line._model_name);
             
             /*if(DEBUG){
             print "Input Dict for Service Change for Current Small Container";
@@ -1523,17 +1520,6 @@ for line in line_process{
             put(guardrailCurrentInputDict, "wasteType", wasteType_db); 
             put(guardrailCurrentInputDict, "division", division_quote); 
             put(guardrailCurrentInputDict, "costToServeMonth", get(currentSmallContainerDict, "costToServeMonth")); 
-            //Uncomment these when Large container is handled for service change
-            //Update this section - TO DO 
-            /*
-            if(containerType_db == "Large"){
-                put(guardrailCurrentInputDict, "billingType", billingType);
-                put(guardrailCurrentInputDict, "tonsPerHaul", getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l"));
-                put(guardrailCurrentInputDict, "driverCost", get(currentSmallContainerDict, "driverCost")); 
-                put(guardrailCurrentInputDict, "truckCost", get(currentSmallContainerDict, "truckCost"));
-                put(guardrailCurrentInputDict, "truckROA", get(currentSmallContainerDict, "truckROA"));
-                put(guardrailCurrentInputDict, "truckDepreciation", get(currentSmallContainerDict, "truckDepreciation"));
-            }*/
             put(guardrailCurrentInputDict, "commission", get(currentSmallContainerDict, "commission"));
             put(guardrailCurrentInputDict, "haulsPerMonth", estHaulsPerMonthStr);
             put(guardrailCurrentInputDict, "accountType", accountType_quote);
@@ -1582,8 +1568,7 @@ for line in line_process{
             print guardrailCurrentInputDict;
             }*/
             put(guardrailCurrentInputDict, "feesToCharge", feesToCharge_quote);
-            guardrailCurrentOutputDict = util.calculateGuardrails(guardrailCurrentInputDict);
-            
+            guardrailCurrentOutputDict = util.calculateGuardrails(guardrailCurrentInputDict);          
             guardrailDebugInputDict = guardrailCurrentInputDict;
             guardrailDebugOutputDict = guardrailCurrentOutputDict;
             
@@ -1719,12 +1704,6 @@ for line in line_process{
             put(guardrailInputDict, "wasteType", wasteType_sc); 
             put(guardrailInputDict, "division", division_quote); 
             put(guardrailInputDict, "costToServeMonth", get(serviceChangeSmallContainerDict, "costToServeMonth")); 
-            //Uncomment these when Large container is handled for service change
-            /*
-            if(containerType_db == "Large"){
-                put(guardrailInputDict, "billingType", billingType);
-                put(guardrailInputDict, "tonsPerHaul", getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l"));
-            }*/
             put(guardrailInputDict, "driverCost", get(serviceChangeSmallContainerDict, "driverCost")); 
             put(guardrailInputDict, "truckCost", get(serviceChangeSmallContainerDict, "truckCost"));
             put(guardrailInputDict, "truckROA", get(serviceChangeSmallContainerDict, "truckROA"));
@@ -1821,7 +1800,6 @@ for line in line_process{
         elif(priceType == SERVICE_CHANGE AND (priceIncreaseLine OR closeContainerLine)){
             //Set the activity flag and Competitor information for non-priced existing customer configurations
             //If no competitor was selected on the quote, use the default value New/New to get the default table row
-            //competitor = getconfigattrvalue(line._parent_doc_number, "competitor");
             competitor = "new/new";
             competitorFactorRecordSet = bmql("SELECT competitor, competitor_factor, Competitor_Cd FROM div_competitor_adj WHERE division = $division_quote");
             for eachRecord in competitorFactorRecordSet{
@@ -1914,6 +1892,23 @@ for line in line_process{
                 }
                 if(containskey(guardrailOutputDict, "haulStretch")){
                     stretchPriceStr = get(guardrailOutputDict, "haulStretch");
+                }
+                if(containskey(existingCustDataDict, parentDoc+":monthlyRate")){
+                    currentPriceStr = get(existingCustDataDict, parentDoc+":monthlyRate");  
+                }
+            }
+			elif(rateTypeLower == "compactor rental"){
+                if(containskey(guardrailOutputDict, "compactorRentalFloor")){
+                    floorPriceStr = get(guardrailOutputDict, "compactorRentalFloor");
+                }
+                if(containskey(guardrailOutputDict, "compactorRentalBase")){
+                    basePriceStr = get(guardrailOutputDict, "compactorRentalBase");
+                }
+                if(containskey(guardrailOutputDict, "compactorRentalTarget")){
+                    targetPriceStr = get(guardrailOutputDict, "compactorRentalTarget");
+                }
+                if(containskey(guardrailOutputDict, "compactorRentalStretch")){
+                    stretchPriceStr = get(guardrailOutputDict, "compactorRentalStretch");
                 }
                 if(containskey(existingCustDataDict, parentDoc+":monthlyRate")){
                     currentPriceStr = get(existingCustDataDict, parentDoc+":monthlyRate");  
@@ -2135,18 +2130,9 @@ for line in line_process{
             
             if(salesActivity_quote == "Existing Customer"){
                 isAdminCharged = false;
-               /* if(priceType == SMALL_CONTAINER OR container == SMALL_CONTAINER OR priceType == SERVICE_CHANGE){
-                    if(containskey(existingCustDataDict, parentDoc+":Is_Admin_On")){
-                        isAdminOn = get(existingCustDataDict, parentDoc+":Is_Admin_On");
-                        if(isAdminOn == "1" OR (feesToCharge_quote <> "" AND NOT(isnull(feesToCharge_quote)) AND find(feesToCharge_quote, "Admin Fee") > -1 )){
-                            isAdminCharged = true;
-                        }
-                    }
-                }else{*/
                     if(feesToCharge_quote <> "" AND NOT(isnull(feesToCharge_quote)) AND find(feesToCharge_quote, "Admin Fee") > -1 ){
                         isAdminCharged = true;
                     }
-               // }
                 if(NOT(isAdminCharged)){
                     adminRateStr = "0.0";
                 }
@@ -2419,11 +2405,9 @@ for line in line_process{
                 if(isnumber(_quote_process_siteAddress_quote_company_name_2)) {
                   siteLongitude = atof(_quote_process_siteAddress_quote_company_name_2);
                 }
-                // util.getDispSiteFromPolygon(siteLatitude, siteLongitude, infoproDivision_RO_quote, "");
                 disposalSiteCostCommercialDict = util.getDispSiteAndCostFromZip(infoproDivision_RO_quote, division_quote, _quote_process_siteAddress_quote_zip, "Solid Waste", "", false);
                     print "disposalSiteCostCommercialDict ";
-                    print disposalSiteCostCommercialDict ;
-                //disposalSiteCostCommercialDict = util.getDisposalRegionFromCustomerSiteGeocodes(siteLatitude + COMM_VALUE_DELIM + siteLongitude);
+                    print disposalSiteCostCommercialDict;
                 if(containskey(disposalSiteCostCommercialDict, "disposalCost")){
                     disposalSiteCostCommercialStr = get(disposalSiteCostCommercialDict, "disposalCost");
                 }
@@ -2551,6 +2535,5 @@ returnStr = returnStr + "1~" + "smallSolidWasteCost_quote" + "~" + string(smallS
                       + "1~" + "largeRecyclingCost_quote" + "~" + string(largeRecCost) + "|"
                       + "1~" + "totalContainerCost_quote" + "~" + string(totalContCost) + "|";
 //============================= End - Set direct cost attributes ======================================//
-
 
 return returnStr;

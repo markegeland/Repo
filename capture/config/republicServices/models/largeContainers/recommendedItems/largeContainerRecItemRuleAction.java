@@ -93,7 +93,7 @@ for eachRec in partsRecordSet{
 			if(eachRate == "Haul"){
 				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, "Per Haul");
 			}elif(eachRate == "Overage"){
-				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, "Per Ton");
+				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, unitOfMeasure);
 			}
 			
 			retStr = retStr + thisPartStr; 
