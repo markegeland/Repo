@@ -24,6 +24,7 @@ Updates:
     20150215 - John Palubinskas - #68 Additional work for adding quantity columns.  Calculate fees correctly on conatiner
                                   comparison tables, and fix formatting issues.
     20150223 - John Palubinskas - #430 fix approval email incorrectly showing competitor by checking priceAdjustmentReason_line.
+    20150223 - Mike Boylan      - #145 Add the Compactor Asset Value
     
 ================================================================================
 */
@@ -151,8 +152,8 @@ for line in line_process{
                     append(ContQuantityArr, string(line._price_quantity));
                     append(ContainerArr, line.description_line);
                     append(RatePerHaulArr, string(line.perHaulRate_line));
-                    append(ContTypeArr, line._model_name);
-                    append(CompactorValArr, "N/A");
+                    append(ContTypeArr, line._model_name); 
+                    append(CompactorValArr, getconfigattrvalue(line._parent_doc_number, "compactorValue"));
                     append(TotalServiceTimeArr, "N/A");
                     append(CostPerHaulArr, "N/A");
                     append(TonsPerHaulArr, "N/A");
@@ -350,7 +351,7 @@ if(NOT isempty(ContPDocNum)){
     
     for eachCont in ContPDocNum{
         compactorValue = "N/A";
-        if(isnumber(CompactorValArr[ContIndex]) AND (CompactorValArr[ContIndex] <> "0")){
+        if(isnumber(CompactorValArr[ContIndex]) AND atof(CompactorValArr[ContIndex]) > 0){
             compactorValue = formatascurrency(atof(CompactorValArr[ContIndex]),"USD");
         }
 

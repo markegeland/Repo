@@ -42,6 +42,8 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
                                           Moved all rate restriction logic from Printing action to postPricing formulas since it's needed for approvals.
                                           Fix incorrect disposal site being displayed.
 
+             03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
+
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
 =======================================================================================================================
@@ -84,6 +86,8 @@ largeMonthlyNetRevenue_SolidWaste = 0.0; //Only solid waste - large
 largeMonthlyNetRevenue_Recycling = 0.0; //Only Recycling - small
 
 smallMonthlyPriceIncludingFees = 0.0; //Both Solid waste and recycling combined - small
+smallMonthlyBaseIncludingFees = 0.0; //Both Solid waste and recycling combined - small
+smallMonthlyRentalIncludingFees = 0.0; //Both Solid waste and recycling combined - small
 smallMonthlyRevenue_SolidWaste = 0.0; //Only solid waste - small
 smallMonthlyRevenue_Recycling = 0.0; //Only Recycling - small 
 smallMonthlyNetRevenue_SolidWaste = 0.0; //Only solid waste - small
@@ -95,8 +99,6 @@ SMALL_CONTAINER = "Containers";
 SERVICE_CHANGE = "Service Change";
 firstModelDataStr = "";
 delimer = "$$";
-
-
 
 //Calculation of One time delivery credit and amount
 totalOneTimePrice = 0.0;
@@ -250,6 +252,24 @@ for line in line_process{
         
         //Calculate Monthly Total ERF Fees - Calculate these only for Core/ Base line item
         if(line.rateType_line == "Base" AND line.isPartLineItem_line){ //if  the line item is smallcontainer base or largecontainer rental, the fee values on line item grid can be directly used as there is no multiplication factor of estimatedLifts/esthaulspermonth or disposal tons per haul that need to be applied on these line items
+
+            if(isERFWaived_quote == 0){
+                erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
+                erfTotalSellBase = erfTotalSellBase + erfAmountBase;
+                erfTotalSellTarget = erfTotalSellTarget + erfAmountTarget;
+                erfTotalSellStretch = erfTotalSellStretch + erfAmountStretch;
+                erfTotalSell = erfTotalSell + erfAmountSell;
+            }
+            
+            if(isFRFWaived_quote == 0){
+                frfTotalSellTarget = frfTotalSellTarget + frfAmountTarget;
+                frfTotalSellFloor = frfTotalSellFloor + frfAmountFloor;
+                frfTotalSellBase = frfTotalSellBase + frfAmountBase;
+                frfTotalSellStretch = frfTotalSellStretch + frfAmountStretch;
+                frfTotalSell = frfTotalSell + frfAmountSell;
+            }
+
+	}elif(line.rateType_line == "Compactor Rental" AND line.isPartLineItem_line){ 
 
             if(isERFWaived_quote == 0){
                 erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
@@ -551,6 +571,16 @@ for line in line_process{
         }
         elif(line.rateType_line == "Base" AND line.isPartLineItem_line){
             smallMonthlyPriceIncludingFees = smallMonthlyPriceIncludingFees + totalPrice;
+            smallMonthlyBaseIncludingFees = smallMonthlyBaseIncludingFees + totalPrice;
+            if(lower(line.wasteCategory_line) == "solid waste"){
+                smallMonthlyRevenue_SolidWaste = smallMonthlyRevenue_SolidWaste + totalPrice; //totalPrice includes fee except adminRate, but admin should be added only once at quote level, hence only shown in totalRevenue but not smallContainerRevenue
+            }elif(lower(line.wasteCategory_line) == "recycling"){
+                smallMonthlyRevenue_Recycling = smallMonthlyRevenue_Recycling + totalPrice;//totalPrice includes fee except adminRate, but admin should be added only once at quote level, hence only shown in totalRevenue but not smallContainerRevenue
+            }
+        }
+        elif(line.rateType_line == "Compactor Rental" AND line.isPartLineItem_line){
+            smallMonthlyPriceIncludingFees = smallMonthlyPriceIncludingFees + totalPrice;
+            smallMonthlyRentalIncludingFees = smallMonthlyRentalIncludingFees + totalPrice;
             if(lower(line.wasteCategory_line) == "solid waste"){
                 smallMonthlyRevenue_SolidWaste = smallMonthlyRevenue_SolidWaste + totalPrice; //totalPrice includes fee except adminRate, but admin should be added only once at quote level, hence only shown in totalRevenue but not smallContainerRevenue
             }elif(lower(line.wasteCategory_line) == "recycling"){
@@ -885,22 +915,6 @@ if(_system_current_step_var == "adjustPricing"){
     print level2NotifierArr;
 
     //Get the notifier (Non-Approver) logins from User Hierarchy table, if not already found
-    /*
-    if((level1NotifierRequired OR  level2NotifierRequired) AND (sizeofarray(level1NotifierArr) ==0 AND sizeofarray(level2NotifierArr) == 0)){
-        //Get the list of approvers from User_Hierarchy
-        userHierarchyRecordSet = bmql("SELECT Level_1_Approver,Level_2_Approver,Level_3_Approver FROM User_Hierarchy WHERE User_Login = $userLoginLower OR User_Login = $userLoginUpper OR User_Login = $_system_user_login AND Home_Division_Nbr = $division_quote");
-        for eachRec in userHierarchyRecordSet{
-            //Add approvers to Notifiers array
-            if(level1NotifierRequired){
-                append(level1NotifierArr,get(eachRec, "Level_1_Approver") );
-            }
-            if(level2NotifierRequired){
-                append(level2NotifierArr,get(eachRec, "Level_2_Approver") );
-            }
-        }
-    }
-    */
-
     //Generate email id's for Notifiers (Non-approvers)
     notifiersArray = string[];
     if((sizeofarray(level1NotifierArr) > 0 OR sizeofarray(level2NotifierArr) > 0) AND (level2NotifierRequired OR level1NotifierRequired)){
@@ -1011,6 +1025,8 @@ returnStr = returnStr   + "1~" + "divisionSalesGroup_quote" + "~" + (divisionSal
                         + "1~" + "largeMonthlyDisposalPriceInclFees_quote" + "~" + string(largeMonthlyDisposalPriceInclFees) + "|"
                         + "1~" + "largeMonthlyRentalPriceInclFees_quote" + "~" + string(largeMonthlyRentalPriceInclFees) + "|"
                         + "1~" + "largeMonthlyTotalPriceInclFees_quote" + "~" + string(largeMonthlyTotalPriceInclFees) + "|"
+                        + "1~" + "smallMonthlyBasePriceInclFees_quote" + "~" + string(smallMonthlyBaseIncludingFees) + "|"
+                        + "1~" + "smallMonthlyRentalPriceInclFees_quote" + "~" + string(smallMonthlyRentalIncludingFees) + "|"
                         + "1~" + "smallMonthlyTotalPriceInclFees_quote" + "~" + string(smallMonthlyPriceIncludingFees) + "|"
                         + "1~" + "totalMonthlyAmtInclFees_quote" + "~" + string(totalMonthlyAmount) + "|"
                         + "1~" + "smallSolidWasteRevenue_quote" + "~" + string(smallMonthlyRevenue_SolidWaste) + "|"
