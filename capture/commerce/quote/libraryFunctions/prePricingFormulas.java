@@ -49,6 +49,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			20150317 - Gaurav Dawar - #474 - Quantity passed over to calculate guardrails for large containers to multiply with market rental rate.
 			03/27/2015 - Mike (Republic) - Small Container Compactor - Added necessary items to dictionaries for pricing and guardrails.  Return new XML tags.
 			03/27/2015 - Aaron Quintanilla - #102 - Added new unit of measure config attribute to be pushed into Calculate Guardraisl for new disposal calculations
+            20150331 - John Palubinskas - #449 Move competitor from quote to line level
 			
 =====================================================================================================
 */
@@ -130,6 +131,9 @@ containerGroupDict = dict("string"); //container group logic
 containerGroup = "";
 containerGroupLine = "";
 hasDelivery = false;
+competitorCode = "";
+competitorFactor = 1.0;
+competitorFactorStr = "";
 
 /*These dictionaries are declared only for debugging purposes*/
 pricingDebugInputDict = dict("string");
@@ -174,6 +178,11 @@ if(erfOnFrfDivision == 1){
     isERFOnFRFChargedAtDivisionLevel = true;
     eRFOnFRF = 1.0;
 }
+
+if(customerHasMultipleSites_quote){
+    isERFAndFRFChargedOnAdmin = "No";
+}
+
 print "frfRate: " + string(frfRate);
 print "erfRate: " + string(erfRate);
 print "adminAmount: " + adminRateStr;
@@ -243,46 +252,7 @@ if(salesActivity_quote == "Existing Customer"){
 
 //=============================== End - Calculation for Existing Terms=====================//
 
-//=============================== START - Customer Type Factor Calculation ===============================//
-competitorFactorStr = "";
-competitorCode = "";
-competitorFactor = 1.0;
-competitor = "";
-//If no competitor was selected on the quote, use the default value New/New to get the default table row
-if(salesActivity_quote <> "New/New"){
-    competitor = competitor_quote;
-    //If current customer has more than 1 site isERFAndFRFChargedOnAdmin should be OFF
-    if(customerHasMultipleSites_quote){
-        isERFAndFRFChargedOnAdmin = "No";
-    }
-}
-if(competitor == ""){
-    competitor = "New/New";
-}
-
-//Changed 6/30/14 by Andrew, added in logic for division = 0
-competitorFactorRecordSet = bmql("SELECT competitor, competitor_factor, Competitor_Cd, division FROM div_competitor_adj WHERE division = $division_quote OR division = '0' ORDER BY division DESC");
-for eachRecord in competitorFactorRecordSet{
-    competitor_db = get(eachRecord, "competitor");
-    if(lower(competitor_db) == lower(competitor)){
-        competitorFactorStr = get(eachRecord, "competitor_factor");
-        //Added by Aaron Q on 09/01/2014 for SR 3-9423125271
-        if (competitorCode_quote == ""){
-            competitorCode = get(eachRecord, "Competitor_Cd");
-        }
-        else{
-            competitorCode = competitorCode_quote;
-        }
-        break;
-    }
-
-}
-print "competitorFactorStr: " + competitorFactorStr;
-
-
-if(isnumber(competitorFactorStr)){
-    competitorFactor = 1.0 + atof(competitorFactorStr);
-}
+//=============================== START - Site Container Data ===============================//
 
 siteContainerstextStr = siteContainersData_quote;
 if(salesActivity_quote == "Existing Customer" AND siteContainersData_quote == ""){
@@ -299,9 +269,10 @@ if(salesActivity_quote == "Existing Customer" AND siteContainersData_quote == ""
     if(containskey(containersOutputDict, "text")){
         siteContainerstextStr = get(containersOutputDict, "text");
     }
-    returnStr = returnStr + "1" + "~" + "siteContainerGroupsHTMLText_quote" + "~" + siteContainershtmlStr + "|"
-                          + "1" + "~" + "siteContainersData_quote" + "~" + siteContainerstextStr + "|";
+    returnStr = returnStr + "1~siteContainerGroupsHTMLText_quote~" + siteContainershtmlStr + "|"
+                          + "1~siteContainersData_quote~" + siteContainerstextStr + "|";
 }
+
 if(siteContainerstextStr <> ""){
     /*siteContainersData_quote -sample string as below:
     containerGroup:1$_$containerCnt:1.0$_$size:4.0$_$pickupPeriodLength:1$_$pickupPerTotLifts:1.0$_$period:1.0$_$hasCompactor:0$_$Lift_Days:0010000$_$waste_type:Solid Waste$_$frequency:1/Week@_@containerGroup:2$_$containerCnt:1.0$_$size:4.0$_$pickupPeriodLength:1$_$pickupPerTotLifts:1.0$_$period:1.0$_$hasCompactor:0$_$Lift_Days:0010000$_$waste_type:Recycling$_$frequency:1/Week
@@ -351,13 +322,8 @@ if(siteContainerstextStr <> ""){
         }
     }
 }   
-
-
-
-returnStr = returnStr + "1" + "~" + "competitorFactor_quote" + "~" + string(competitorFactor) + "|"
-                      + "1" + "~" + "competitorCode_quote" + "~" + competitorCode + "|";
                         
-//=============================== END - Customer Type Factor Calculation ===============================//
+//=============================== END - Site Container Data ===============================//
 
 //=============================== START- Division Service Calculation ===============================//
 //Begin Loop over line items - this loop is only to store attribute values in dictionaries/ arrays/ variable - not for any calculations
@@ -387,6 +353,38 @@ for line in line_process{
             containerGroup = "";
         }
         put(containerGroupDict, docNum, containerGroup);
+
+        // Competitor and CompetitorFactor at line level
+        competitorCode = getconfigattrvalue(line._document_number, "competitor");  // this will be 3 character code + 1 character region letter
+
+        // If there was no competitor set in config, set to NEW to pick up the Div 0 NEW competitor_factor
+        if (competitorCode == "") {
+            competitorCode = "NEW";
+        }
+
+        competitorFactorRecordSet = bmql("SELECT division, Competitor_Cd, competitor_factor, infopro_reg FROM div_competitor_adj WHERE division = $division_quote OR division = '0' ORDER BY division DESC");
+
+        for eachRecord in competitorFactorRecordSet{
+
+            competitorCode_db = get(eachRecord, "Competitor_Cd");
+            region_db = get(eachRecord, "infopro_reg");
+
+            if((competitorCode_db + region_db) == competitorCode){
+                competitorFactorStr = get(eachRecord, "competitor_factor");
+                break;
+            }
+        }
+
+        if(isnumber(competitorFactorStr)){
+            competitorFactor = 1.0 + atof(competitorFactorStr);
+        }
+        // Remove the region letter before we populate the competitorCode_line value
+        if (len(competitorCode) == 4) {
+            competitorCode = substring(competitorCode,0,3);
+        }
+
+        returnStr = returnStr + line._document_number + "~competitorCode_line~" + competitorCode + "|"
+                              + line._document_number + "~competitorFactor_line~" + string(competitorFactor) + "|";
 
         //Small Container
         if(line._model_name == SMALL_CONTAINER){
@@ -650,19 +648,20 @@ for line in line_process{
         }//End of Service change
         
         if(isnumber(line._parent_doc_number)){
-            returnStr = returnStr + line._parent_doc_number + "~" + "existingQuantity_line" + "~" + getconfigattrvalue(line._parent_doc_number, "quantity_readOnly") + "|"
-                        + line._parent_doc_number + "~" + "existingWasteType_line" + "~" + getconfigattrvalue(line._parent_doc_number, "wasteType_readOnly") + "|"
-                        + line._parent_doc_number + "~" + "existingContainerSize_line" + "~" + getconfigattrvalue(line._parent_doc_number, "containerSize_readOnly") + "|"
-                        + line._parent_doc_number + "~" + "existingLiftsPerContainer_line" + "~" + getconfigattrvalue(line._parent_doc_number, "liftsPerContainer_readOnly") + "|";     
+            returnStr = returnStr 
+                        + line._parent_doc_number + "~existingQuantity_line~" + getconfigattrvalue(line._parent_doc_number, "quantity_readOnly") + "|"
+                        + line._parent_doc_number + "~existingWasteType_line~" + getconfigattrvalue(line._parent_doc_number, "wasteType_readOnly") + "|"
+                        + line._parent_doc_number + "~existingContainerSize_line~" + getconfigattrvalue(line._parent_doc_number, "containerSize_readOnly") + "|"
+                        + line._parent_doc_number + "~existingLiftsPerContainer_line~" + getconfigattrvalue(line._parent_doc_number, "liftsPerContainer_readOnly") + "|";     
         }
     }
 
-    returnStr = returnStr + "1~priceIncreaseQuote_quote" + "~" + string(priceIncreaseQuote) + "|"
-                          + "1~serviceChangeQuote_quote" + "~" + string(serviceChangeQuote) + "|"
-                          + "1~competitiveBidQuote_quote" + "~" + string(competitiveBidQuote) + "|"
-                          + "1~rollbackOfPIQuote_quote" + "~" + string(rollbackOfPIQuote) + "|"
-                          + "1~generalSaveQuote_quote" + "~" + string(generalSaveQuote) + "|"
-                          + "1~customerHasAFixedFee_quote" + "~" + string(customerHasAFixedFee) + "|";
+    returnStr = returnStr + "1~priceIncreaseQuote_quote~" + string(priceIncreaseQuote) + "|"
+                          + "1~serviceChangeQuote_quote~" + string(serviceChangeQuote) + "|"
+                          + "1~competitiveBidQuote_quote~" + string(competitiveBidQuote) + "|"
+                          + "1~rollbackOfPIQuote_quote~" + string(rollbackOfPIQuote) + "|"
+                          + "1~generalSaveQuote_quote~" + string(generalSaveQuote) + "|"
+                          + "1~customerHasAFixedFee_quote~" + string(customerHasAFixedFee) + "|";
 }
 //End Loop over line items - this loop is only to store attribute values in dictionaries/ arrays/ variable - not for any calculations
 /*if(DEBUG){
@@ -856,8 +855,7 @@ for line in line_process{
         print "parentDoc=="+parentDoc;
         priceIncreaseLine = false;
         closeContainerLine = false;
-		
-	installationCostEstimate_s = 0.0;
+		installationCostEstimate_s = 0.0;
         
         //Determine if service change is price increase or close container
         if(containskey(modelTypeDict, line._parent_doc_number)){
@@ -1205,13 +1203,13 @@ for line in line_process{
                 append(containerTypesArray, "Small");
             }
             
-		customerOwnedCompactorStr = getconfigattrvalue(line._parent_doc_number, "customerOwnedCompactor");
-	    customerOwnedCompactor = 0;
+            customerOwnedCompactorStr = getconfigattrvalue(line._parent_doc_number, "customerOwnedCompactor");
+            customerOwnedCompactor = 0;
             if(customerOwnedCompactorStr == "true"){
                 customerOwnedCompactor = 1;
             }
 
-	    //Installation Charge
+            //Installation Charge
             installationChargeStr = getconfigattrvalue(line._parent_doc_number, "installationCostEstimate_s");
 
             if(isnumber(installationChargeStr)){
@@ -1341,11 +1339,11 @@ for line in line_process{
             put(guardrailInputDict, "customerOwnedCompactor", get(outputDict, "customerOwnedCompactor"));
             put(guardrailInputDict, "costToServeCompactor", get(outputDict, "costToServeCompactor"));
             put(guardrailInputDict, "containerRentalFactor", get(outputDict, "containerRentalFactor"));
+            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
+
             print "this is the input for small containers";
             print guardrailInputDict;
             
-            //Jfelberg
-            put(guardrailInputDict, "feesToCharge", feesToCharge_quote);
             guardrailOutputDict = util.calculateGuardrails(guardrailInputDict);
             
             guardrailDebugInputDict = guardrailInputDict;
@@ -1364,15 +1362,14 @@ for line in line_process{
             returnStr = returnStr + line._parent_doc_number + "~" + "yardsPerMonth_line" + "~" + string(yardsPerMonth) + "|";
             
         }elif(priceType == SERVICE_CHANGE AND NOT(priceIncreaseLine) AND NOT(closeContainerLine)){
-            //ADded 04/13/2014 - Competitor identification pending
-            if(competitor_quote == ""){
-                competitorFactor = 1.0;
-            }
-            
-            //get the container type from data table Account_Status
-            allocationFactor = 1.0;
+
             Is_ERF_On_db = "No";
             Is_FRF_On_db = "No";
+
+            // Do not apply any competitor adjustments to service changes
+            competitorFactor = 1.0;
+            
+            allocationFactor = 1.0;
             if(containskey(allocationFactorDict, wasteType)){
                 allocationFactor = get(allocationFactorDict, wasteType);
             }
@@ -1380,10 +1377,7 @@ for line in line_process{
             //Invoke Small Container Pricing once for Current configuration and once for modified/new configuration
             
             //************************** Invoke Small Container Pricing for Current configuration (Existing) ***************************************//
-            //Invoke Small Container util for Current configuration (Existing) 
             wasteType_db = get(existingCustDataDict, parentDoc+":wasteType");
-                        
-            //Get account specific data
             containerType_db = get(existingCustDataDict, parentDoc+":containerType");
             wasteCategory_db = get(existingCustDataDict, parentDoc+":wasteCategory");
             frequency_db = get(existingCustDataDict, parentDoc+":frequency");
@@ -1537,7 +1531,6 @@ for line in line_process{
             put(guardrailCurrentInputDict, "includeFRF", Is_FRF_On_db); //Current FRF Flag
             put(guardrailCurrentInputDict, "current_ERF_Pct", ERF_Pct_db);
             put(guardrailCurrentInputDict, "current_FRF_Pct", FRF_Pct_db);
-            
             put(guardrailCurrentInputDict, "initialTerm_quote", contract_term); //Get contract term from Accounts table to support legacy contract terms
             put(guardrailCurrentInputDict, "customer_zip", _quote_process_siteAddress_quote_zip);
             put(guardrailCurrentInputDict, "segment", segment_quote);
@@ -1785,30 +1778,21 @@ for line in line_process{
             
             //Return attributes for external calculations
             
-            returnStr = returnStr + line._document_number   + "~currentYardsPerMonth_line" + "~" + yardsPerMonthStr_db + "|"
-                                  + line._document_number   + "~yardsPerMonth_line" + "~" + string(yardsPerMonth_sc) + "|"
-                                  + line._document_number   + "~changeType_line" + "~" + changeType + "|"
-                                  + line._document_number   + "~serviceCode_line" + "~" + serviceCode + "|"
-                                  + line._document_number   + "~activity_line" + "~" + get(existingCustDataDict, parentDoc+":salesActivity") + "|"
-                                  + line._document_number   + "~priceAdjustmentReason_line" + "~" + get(existingCustDataDict, parentDoc+":priceAdjustmentReason") + "|"
-                                  + line._parent_doc_number + "~yardsPerMonth_line" + "~" + string(yardsPerMonth_sc) + "|"
-                                  + line._parent_doc_number + "~currentYardsPerMonth_line" + "~" + yardsPerMonthStr_db + "|";
+            returnStr = returnStr + line._document_number   + "~currentYardsPerMonth_line~" + yardsPerMonthStr_db + "|"
+                                  + line._document_number   + "~yardsPerMonth_line~" + string(yardsPerMonth_sc) + "|"
+                                  + line._document_number   + "~changeType_line~" + changeType + "|"
+                                  + line._document_number   + "~serviceCode_line~" + serviceCode + "|"
+                                  + line._document_number   + "~activity_line~" + get(existingCustDataDict, parentDoc+":salesActivity") + "|"
+                                  + line._document_number   + "~priceAdjustmentReason_line~" + get(existingCustDataDict, parentDoc+":priceAdjustmentReason") + "|"
+                                  + line._document_number   + "~competitorFactor_line~" + string(competitorFactor) + "|"
+                                  + line._parent_doc_number + "~yardsPerMonth_line~" + string(yardsPerMonth_sc) + "|"
+                                  + line._parent_doc_number + "~currentYardsPerMonth_line~" + yardsPerMonthStr_db + "|";
             
             //Calculate Total Monthly Yards - used to set Transaction Code
             //totalMonthlyYardsNew = totalMonthlyYardsNew + yardsPerMonth;
         }
         elif(priceType == SERVICE_CHANGE AND (priceIncreaseLine OR closeContainerLine)){
-            //Set the activity flag and Competitor information for non-priced existing customer configurations
-            //If no competitor was selected on the quote, use the default value New/New to get the default table row
-            competitor = "new/new";
-            competitorFactorRecordSet = bmql("SELECT competitor, competitor_factor, Competitor_Cd FROM div_competitor_adj WHERE division = $division_quote");
-            for eachRecord in competitorFactorRecordSet{
-                competitor_db = get(eachRecord, "competitor");
-                if(lower(competitor_db) == lower(competitor)){
-                    competitorCode = get(eachRecord, "Competitor_Cd");
-                    break;
-                }
-            }
+
             if(priceIncreaseLine){
                 //Get Customer Account Status data that is already added in first model loop to dictionary
                 routeTypeDerived = get(existingCustDataDict, parentDoc+":routeTypeDerived");
@@ -1845,9 +1829,9 @@ for line in line_process{
                 }
             }
 
-            returnStr = returnStr + "1" + "~" + "competitorCode_quote" + "~" + competitorCode + "|";                                    
-            returnStr = returnStr + line._document_number + "~" + "activity_line" + "~" + get(existingCustDataDict, parentDoc+":salesActivity") + "|";
-            returnStr = returnStr + line._document_number + "~" + "priceAdjustmentReason_line" + "~" + get(existingCustDataDict, parentDoc+":priceAdjustmentReason") + "|";
+            returnStr = returnStr + line._document_number + "~activity_line~" + get(existingCustDataDict, parentDoc+":salesActivity") + "|"
+                                  + line._document_number + "~priceAdjustmentReason_line~" + get(existingCustDataDict, parentDoc+":priceAdjustmentReason") + "|";
+
         }
         //=============================== END - Service Change Price Calculation ===============================//  
         
