@@ -15,7 +15,7 @@ Input:   	monthlyTotal: String - Monthly Total attributes for floor, base, targe
 Output:  	String - Output parsed as HTML by the attribute to display table of attributes
 
 Updates:	11/13/13 - Zach Schlieder - Updated table formatting to match site branding, especially commerce line item grid      
-    
+		03/27/15 - Mike (Republic) - Separated small container into Base and Compactor Rental    
 =====================================================================================================
 */
 //=============================== START - Building HTML String ===============================//
@@ -94,22 +94,54 @@ returnStr = returnStr   + "</tr>";
  //End of labels row
  //Start of Small Containers row
 if(commercialExists_quote){
+	//Start of Small Containers Base row
 	returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
 							+ "<td  >Small Container Base Rates</td>";
 	if(NOT(isSalesrep)){
-		returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(smallMonthlyTotalFloor_quote,"USD") + "</td>";
+		returnStr = returnStr 	+ "<td  align=\"center\" >" 
+					+  formatascurrency(smallMonthlyTotalBaseFloor_quote,"USD") 
+					+ "</td>";
 	}
-	returnStr = returnStr   + "<td  align=\"center\" >" +  formatascurrency(smallMonthlyTotalBase_quote,"USD") + "</td>"
-							+ "<td  align=\"center\" >" +  formatascurrency(smallMonthlyTotalTarget_quote,"USD") + "</td>"
-							+ "<td  align=\"center\" >" +  formatascurrency(smallMonthlyTotalStretch_quote,"USD") + "</td>";
+	returnStr = returnStr   + "<td  align=\"center\" >" 
+		                +  formatascurrency(smallMonthlyTotalBaseBase_quote,"USD") + "</td>"
+				+ "<td  align=\"center\" >" 
+				+  formatascurrency(smallMonthlyTotalBaseTarget_quote,"USD") 
+				+ "</td>"
+				+ "<td  align=\"center\" >" 
+				+  formatascurrency(smallMonthlyTotalBaseStretch_quote,"USD") 
+				+ "</td>";
 	if(isExistingCustomer){	
 		returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(smallTotalCurrentPrice_quote, "USD") + "</td>";
 	}	
-	returnStr = returnStr 	+ "<td  align=\"center\" >" +  formatascurrency(smallMonthlyTotalProposed_quote,"USD") + "</td>";
+	returnStr = returnStr 	+ "<td  align=\"center\" >" +  formatascurrency(smallMonthlyTotalBaseProposed_quote,"USD") + "</td>";
 	if(isExistingCustomer){	
 		returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(smallChangeInPrice_quote, "USD") + "</td>";
 	}
 	returnStr = returnStr	+ "</tr>" ;
+
+	//Start of Small Containers Compactor Rental row
+	if(smallMonthlyTotalRentalProposed_quote > 0.00){
+		returnStr = returnStr	+ "<tr class='rs_tr_td_style'>" 
+					+ "<td  >Small Container Compactor Rental Rates</td>";
+		if(NOT(isSalesrep)){
+			returnStr = returnStr 	+ "<td  align=\"center\" >" 
+						+  formatascurrency(smallMonthlyTotalRentalFloor_quote,"USD") 
+						+ "</td>";
+		}
+		returnStr = returnStr   + "<td  align=\"center\" >" 
+					+  formatascurrency(smallMonthlyTotalRentalBase_quote,"USD") + "</td>"
+					+ "<td  align=\"center\" >" 
+					+  formatascurrency(smallMonthlyTotalRentalTarget_quote,"USD") 
+					+ "</td>"
+					+ "<td  align=\"center\" >" 
+					+  formatascurrency(smallMonthlyTotalRentalStretch_quote,"USD") 
+					+ "</td>";
+		returnStr = returnStr 	+ "<td  align=\"center\" >" 
+					+  formatascurrency(smallMonthlyTotalRentalProposed_quote,"USD") 
+					+ "</td>";
+		returnStr = returnStr	+ "</tr>" ;
+	}
+
 }//End of Small Containers row
 if(industrialExists_quote){
 	//Start of Large Containers Haul row

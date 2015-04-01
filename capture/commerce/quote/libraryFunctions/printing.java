@@ -14,6 +14,7 @@ Updates:    20141106 Added logic to set the after year 1-4 dates based on the ef
             20150122 Gaurav Dawar - #352 - correcting the calculations for Delivery for it to flow through infopro
             20150210 John Palubinskas - #68 moved rate restriction logic to postPricingFormulas
 			20150226 Gaurav Dawar - #431 - Added Existing Terms to be used as MTM functionality.
+			20150326 Gaurav Dawar - #59 - Not auto updating the close date to be a day less than effective date for change of Owner.
 =====================================================================================================
 */
 
@@ -58,6 +59,9 @@ if it is empty and and csa is not chosen, but proposal is chosen, then error sho
 	if(NOT(isnull(closeDate))){
 		closeDateStr = datetostr(closeDate, "yyyy-MM-dd");
 	}
+}
+if(salesActivity_quote == "Change of Owner"){
+	closeDateStr = serviceCloseDate_quote;
 }
 for line in line_process{
 	//Model Line Items

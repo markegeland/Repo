@@ -1,3 +1,5 @@
+// 20150325 - John Palubinskas - #449 remove check for new from competitor
+
 nonEditableNRD = "";
 editableNRD = "";
 if(_system_current_step_var == "submitted_process"){
@@ -5,7 +7,7 @@ if(_system_current_step_var == "submitted_process"){
 	numOfDaysIn10Months = (365 * 10) / 12;
 	formattedEffectiveServiceDate = strtojavadate(substring(effectiveServiceDate_quote,0,10), "MM/dd/yyyy");
 	dateAfterMonths = adddays(formattedEffectiveServiceDate, numOfDaysIn8Months);
-	if(lower(salesActivity_quote) == "new/new" OR lower(salesActivity_quote) == "new from competitor"){
+	if(lower(salesActivity_quote) == "new/new"){
 		return true;
 	}else{
 		nextReviewDateFromTable = getdate();
