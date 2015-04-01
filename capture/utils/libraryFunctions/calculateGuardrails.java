@@ -25,6 +25,7 @@ Updates:
 		03/17/15 - Gaurav Dawar - #474 - Rental Market Rate multiplied with the quantity.
 		03/27/15 - J Palubinskas - #449 - Removed reference to new from competitor
 		03/27/15 - Aaron Quintanilla - #104 - Added disposal logic for new waste types and units of measure
+		04/01/15 - Gaurav Dawar - #474 - comp rental floor multiplied by quantity to reflect no. of units for rental.
 		
 =====================================================================================================
 */
@@ -1655,8 +1656,8 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 	
 	if(rental_factor > 0 AND feePct <> -1.0 AND alloc_rental == 1){
 		//Updated 04/08/2014
-		comp_rental_floor = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
-						+ (compactor_cost * 0.065 / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);
+		comp_rental_floor = ((1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
+						+ (compactor_cost * 0.065 / 12.0)) / rental_factor) * quantity; // Removed as part of SR 3-9437035701 / (1 + feePct);
 		comp_rental_rate = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
 						+ (compactor_cost * rsg_compactor_base_roa / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);				
 		//Changed as per SR 3-9428639511 removed  ( containerMntPerHaul * (1 - isContainerCustomerOwned))
