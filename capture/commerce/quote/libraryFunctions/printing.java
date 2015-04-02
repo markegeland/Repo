@@ -15,6 +15,7 @@ Updates:    20141106 Added logic to set the after year 1-4 dates based on the ef
             20150210 John Palubinskas - #68 moved rate restriction logic to postPricingFormulas
 			20150226 Gaurav Dawar - #431 - Added Existing Terms to be used as MTM functionality.
 			20150326 Gaurav Dawar - #59 - Not auto updating the close date to be a day less than effective date for change of Owner.
+			20140327 Mike (Republic) - #145 - Small Container Compactor - Broke small containers out into Base and Compactor Rental.
 =====================================================================================================
 */
 
@@ -67,7 +68,6 @@ for line in line_process{
 	//Model Line Items
 	docNum = line._document_number;
 	if(line._model_variable_name <> ""){
-		//serviceType = ""; //Moved to quote attributes 
 		equipmentType = "";
 		equipmentSize = "";
 		frequency = "";
@@ -243,7 +243,11 @@ for line in line_process{
 		
 		if(line.rateType_line == "Base"){
 			// If the line is of type Base then assign the value to the Model sell price
-			res = res + line._parent_doc_number + "~sellPrice_line~" + string(line.sellPrice_line) + "|"; 
+			res = res + line._parent_doc_number + "~smallBasePrice_line~" + string(line.sellPrice_line) + "|"; 
+		}
+		elif(line.rateType_line == "Compactor Rental"){
+			// If the line is of type Base then assign the value to the Model sell price
+			res = res + line._parent_doc_number + "~smallRentalPrice_line~" + string(line.sellPrice_line) + "|"; 
 		}
 		elif( line.rateType_line == "Haul"){
 		// If the line is of type Haul then populate haul rate
