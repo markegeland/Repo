@@ -50,6 +50,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			03/27/2015 - Mike (Republic) - Small Container Compactor - Added necessary items to dictionaries for pricing and guardrails.  Return new XML tags.
 			03/27/2015 - Aaron Quintanilla - #102 - Added new unit of measure config attribute to be pushed into Calculate Guardraisl for new disposal calculations
             20150331 - John Palubinskas - #449 Move competitor from quote to line level
+            20150402 - John Palubinskas - #449 update to properly handle competitor adjustment when no competitor is chosen
 			
 =====================================================================================================
 */
@@ -357,17 +358,16 @@ for line in line_process{
         // Competitor and CompetitorFactor at line level
         competitorCode = getconfigattrvalue(line._document_number, "competitor");  // this will be 3 character code + 1 character region letter
 
-        // If there was no competitor set in config, set to NEW to pick up the Div 0 NEW competitor_factor
-        if (competitorCode == "") {
-            competitorCode = "NEW";
-        }
-
         competitorFactorRecordSet = bmql("SELECT division, Competitor_Cd, competitor_factor, infopro_reg FROM div_competitor_adj WHERE division = $division_quote OR division = '0' ORDER BY division DESC");
 
         for eachRecord in competitorFactorRecordSet{
-
             competitorCode_db = get(eachRecord, "Competitor_Cd");
             region_db = get(eachRecord, "infopro_reg");
+
+            // If there was no competitor set in config, set to NEW to pick up the Div 0 NEW competitor_factor
+            if (competitorCode == "") {
+                competitorCode = "NEW" + region_db;
+            }
 
             if((competitorCode_db + region_db) == competitorCode){
                 competitorFactorStr = get(eachRecord, "competitor_factor");
