@@ -51,6 +51,8 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			03/27/2015 - Aaron Quintanilla - #102 - Added new unit of measure config attribute to be pushed into Calculate Guardraisl for new disposal calculations
             20150331 - John Palubinskas - #449 Move competitor from quote to line level
             20150402 - John Palubinskas - #449 update to properly handle competitor adjustment when no competitor is chosen
+	    
+	    20150403 - Mike (Republic) - #145 Small Container Pricing - sending model to calculateGuardrails
 			
 =====================================================================================================
 */

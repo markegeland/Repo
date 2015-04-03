@@ -17,6 +17,7 @@ Updates:    20141106 Added logic to set the after year 1-4 dates based on the ef
 			20150326 Gaurav Dawar - #59 - Not auto updating the close date to be a day less than effective date for change of Owner.
 			20140327 Mike (Republic) - #145 - Small Container Compactor - Broke small containers out into Base and Compactor Rental.
             20150402 John Palubinskas - #449 removed reason code setting since it is done in setTransactionCode function
+            20150403 Mike (Republic) - #145 Small Container Pricing - fixed Base price return
 =====================================================================================================
 */
 
