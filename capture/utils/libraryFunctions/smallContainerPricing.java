@@ -22,7 +22,7 @@ Updates:	11/13/13 - Zach Schlieder - Update divisionKPI table call to handle new
 			11/26/13 - Zach Schlieder - Added Wave 2 functionality - added contactTerm for commission calculations
     
 			03/27/2015 - Mike (Republic) - Separated Compactor Rental pricing from Base Container pricing with different margins on new services only
-			04/04/2015 - Gaurav Dawar - #145 - compactor cost fix for comapctor customer owned
+			04/04/2015 - Gaurav Dawar - #145 - compactor and container cost fix for compactor and container customer owned
 =====================================================================================================
 */
 
@@ -537,7 +537,7 @@ default_disposal_3p_float = 0.0;
 		//containerValue, compactorValue - Found in parts database, based on the partNumber (SKU). Used in calculations of ROI
 		containerValue = 0.0;
 		compactorLife = 1.0;
-		if(isnumber(containerValueStr)){	//Convert the table result to a float for use in calculations
+		if(isnumber(containerValueStr) AND isCustomerOwned == 0){	//Convert the table result to a float for use in calculations
 			containerValue = atof(containerValueStr);
 		}
 		//Default to parts database if no compactorValue is provided
