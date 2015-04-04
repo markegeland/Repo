@@ -1871,15 +1871,15 @@ elif(priceType == "Containers"){
 
 		compactorRentalBase = (max(compactorRentalBaseArr) + compactor_rental_base) * hasCompactor / (1 + feePct);
 
-		append(compactorRentalTargetArr, (haulBase * containerRentalFactor));
+		append(compactorRentalTargetArr, (haulBase * containerRentalFactor * (1 + feePct)));
 		append(compactorRentalTargetArr, (targetPriceAdj * containerRentalFactor));
 
 		compactorRentalTarget = (max(compactorRentalTargetArr) + compactor_rental_target) * hasCompactor / (1 + feePct);
 
-		append(compactorRentalStretchArr, (haulTarget * containerRentalFactor));
+		append(compactorRentalStretchArr, (haulTarget * containerRentalFactor * (1 + feePct)));
 		append(compactorRentalStretchArr, (stretchPriceAdj * containerRentalFactor));
 
-		compactorRentalStretch = (max(compactorRentalTargetArr) + compactor_rental_stretch) * hasCompactor / (1 + feePct);
+		compactorRentalStretch = (max(compactorRentalStretchArr) + compactor_rental_stretch) * hasCompactor / (1 + feePct);
 	}
 }
 	
