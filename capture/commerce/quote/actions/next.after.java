@@ -8,11 +8,8 @@ if(_system_current_step_var == "start_step"){
 				+ "1~" + "divisionSalesGroup_quote" + "~" + (divisionSalesGroup) + "|"
 				+ "1~" + "divisionManagerGroup_quote" + "~" + (divisionManagerGroup) + "|"
 				+ "1~" + "divisionExecManagerGroup_quote" + "~" + (divisionExecManagerGroup) + "|";
-						
-	
-
-	
 }
+
 // added this code for assigning the default fee values
 fees="";
 containerCnt= 0;
@@ -96,3 +93,4 @@ result = result + "1~numOfContainersOnThisAccountAndSite_quote~" + string(contai
 
 
 return result + commerce.setStatus("next");
+
