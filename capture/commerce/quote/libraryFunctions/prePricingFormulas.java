@@ -52,8 +52,8 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150331 - John Palubinskas - #449 Move competitor from quote to line level
             20150402 - John Palubinskas - #449 update to properly handle competitor adjustment when no competitor is chosen
 	    
-	    20150403 - Mike (Republic) - #145 Small Container Pricing - sending model to calculateGuardrails
-			
+			20150403 - Mike (Republic) - #145 Small Container Pricing - sending model to calculateGuardrails
+			20150405 - Gaurav Dawar - #145 - Fixed InstallationCharge_line for doc engine
 =====================================================================================================
 */
 
@@ -2082,7 +2082,10 @@ for line in line_process{
                 divisionReloStr = get(guardrailOutputDict, "REL");
                 divisionReloStr_ui = get(guardrailOutputDict, "REL");
             }
-            
+            if(priceType == SMALL_CONTAINER OR container == SMALL_CONTAINER){
+				installationChg = get(installChargeDict, parentDoc);
+				returnStr = returnStr + parentDoc + "~" + "installationCharge_line" + "~" + string(installationChg) + "|";
+			}      
             if(priceType == LARGE_CONTAINER OR container == LARGE_CONTAINER){
 
                 //Specific to Large container
