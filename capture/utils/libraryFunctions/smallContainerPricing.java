@@ -23,7 +23,7 @@ Updates:	11/13/13 - Zach Schlieder - Update divisionKPI table call to handle new
     
 			03/27/2015 - Mike (Republic) - Separated Compactor Rental pricing from Base Container pricing with different margins on new services only
 			04/04/2015 - Gaurav Dawar - #145 - compactor and container cost fix for compactor and container customer owned
-			04/07/2015 - Gaurav Dawar - #145 - compactor asset value to be gross amount not per container.
+			04/07/2015 - Gaurav Dawar - #145 - compactor asset value to be gross amount not per container and container rental factor to be 0 for compactor customer owned.
 =====================================================================================================
 */
 
@@ -886,7 +886,7 @@ if(hasCompactor == 1 AND modelName <> "Service Change"){
 
 	costToServeCompactor = total_compactor_depr_maint + compactorROI;
 
-	containerRentalFactor = ((containerValue * containerQuantity * floorROI / 12) + totalContainerDepreciation) / costToServeContainer; 
+	containerRentalFactor = ((containerValue * containerQuantity * floorROI / 12) + totalContainerDepreciation) * (1 - customerOwnedCompactor)/ costToServeContainer; 
 
 	floor = costToServeContainer;
 }
