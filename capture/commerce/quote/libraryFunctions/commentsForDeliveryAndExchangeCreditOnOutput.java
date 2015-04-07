@@ -11,7 +11,8 @@ Input:       line item grid values.
 Output:      String (documentNumber + "~" + attributeVariableName + "~" + value + "|")
 
 Updates:   	 01/21/15 - Gaurav (Republic) - #352 #322 - making delivery and removal "Per Service compared to "One time" and correcting the calculations for Delivery and removal
-		 03/27/15 - Mike (Republic( - #145 - Small Container Compactor - Added teh compactor asset value comments for the CSA
+		 03/27/15 - Mike (Republic( - #145 - Small Container Compactor - Added the compactor asset value comments for the CSA
+		 04/07/15 - Mike (Republic( - #145 - Small Container Compactor - Fixed the source of compactor asset value.
 
 
 =======================================================================================================================
@@ -147,7 +148,7 @@ for line in line_process{
 		}
 		if(line.rateType_line == "Compactor Rental"){
 			
-			assetValueStr = getconfigattrvalue(line._parent_doc_number, "compactorAssetValue");
+			assetValueStr = getconfigattrvalue(line._parent_doc_number, "compactorValue");
 			if(isnumber(assetValueStr)){
 				assetValue = atof(assetValueStr);
 				if(assetValue > 0.0){
