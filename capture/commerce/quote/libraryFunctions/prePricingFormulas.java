@@ -51,8 +51,6 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			03/27/2015 - Aaron Quintanilla - #102 - Added new unit of measure config attribute to be pushed into Calculate Guardraisl for new disposal calculations
             20150331 - John Palubinskas - #449 Move competitor from quote to line level
             20150402 - John Palubinskas - #449 update to properly handle competitor adjustment when no competitor is chosen
-	    
-			20150403 - Mike (Republic) - #145 Small Container Pricing - sending model to calculateGuardrails
 			20150405 - Gaurav Dawar - #145 - Fixed InstallationCharge_line for doc engine
 =====================================================================================================
 */
@@ -815,7 +813,7 @@ for line in line_process{
     }
 
     if(line._parent_doc_number <> ""){  //Only apply pricing to non-model line items
-
+		print "line._parent_doc_number";print line._parent_doc_number;
         //Initialize variables
         arrayDelimiter = "@@";
         outputDict = dict("string");
@@ -868,7 +866,7 @@ for line in line_process{
                 closeContainerLine = true;
             }
         }
-        
+        print "GD-installChargeDict";print installChargeDict;
         if(containskey(installChargeDict, line._parent_doc_number)){
             installationChg = get(installChargeDict, line._parent_doc_number);
         }
@@ -1213,11 +1211,12 @@ for line in line_process{
 
             //Installation Charge
             installationChargeStr = getconfigattrvalue(line._parent_doc_number, "installationCostEstimate_s");
-
+			print "GD-installationChargeStr";print installationChargeStr;
             if(isnumber(installationChargeStr)){
                 installationCostEstimate_s = atof(installationChargeStr);
             }
             put(installChargeDict, line._parent_doc_number, installationCostEstimate_s);
+			
             allocationFactor = 1.0;
             if(containskey(allocationFactorDict, wasteType)){
                 allocationFactor = get(allocationFactorDict, wasteType);
@@ -2082,10 +2081,10 @@ for line in line_process{
                 divisionReloStr = get(guardrailOutputDict, "REL");
                 divisionReloStr_ui = get(guardrailOutputDict, "REL");
             }
-            if(priceType == SMALL_CONTAINER OR container == SMALL_CONTAINER){
+			if(priceType == SMALL_CONTAINER OR container == SMALL_CONTAINER){
 				installationChg = get(installChargeDict, parentDoc);
 				returnStr = returnStr + parentDoc + "~" + "installationCharge_line" + "~" + string(installationChg) + "|";
-			}      
+			}            
             if(priceType == LARGE_CONTAINER OR container == LARGE_CONTAINER){
 
                 //Specific to Large container
@@ -2328,7 +2327,7 @@ for line in line_process{
 
         occurrence = util.parseThroughLineItemComment(inputDict);
         
-        
+        print "GD-Install";print installationChg;
         
         returnStr = returnStr + line._document_number + "~" + "costToServe_line" + "~" + string(costToServe) + "|"
                               + line._document_number + "~" + "isSellPriceDefaultSetCopy_line" + "~" + line.isSellPriceDefaultSet_line + "|"
@@ -2395,7 +2394,7 @@ for line in line_process{
                 if(isnumber(_quote_process_siteAddress_quote_company_name_2)) {
                   siteLongitude = atof(_quote_process_siteAddress_quote_company_name_2);
                 }
-                disposalSiteCostCommercialDict = util.getDispSiteAndCostFromZip(infoproDivision_RO_quote, division_quote, _quote_process_siteAddress_quote_zip, "Solid Waste", "", false);
+                disposalSiteCostCommercialDict = util.getDispSiteAndCostFromZip(infoproDivision_RO_quote, division_quote, _quote_process_siteAddress_quote_zip, wasteType, "", false);
                     print "disposalSiteCostCommercialDict ";
                     print disposalSiteCostCommercialDict;
                 if(containskey(disposalSiteCostCommercialDict, "disposalCost")){
