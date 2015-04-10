@@ -1,5 +1,5 @@
 /*
-==================================================================================================
+================================================================================
 Name:   		Recommend SKUs Based On User Selection On Container Tab
 Author:
 Create date:
@@ -9,9 +9,9 @@ Input:   		Small container configuration attributes
                     
 Output:  		String describing the template for small container line items
 
-Updates:	03/27/15 - Mike (Republic) - #145 - Small Container Compactor - Added the Compactor Rental and Installation line items
-         	04/07/15 - Mike (Republic) - #145 - Small Container Compactor - Eliminated the rental line if the compactor is owned by the customer
-==================================================================================================
+Updates:	
+		03/27/15 - Mike (Republic) - #145 - Small Container Compactor - Added the Compactor Rental and Installation line items
+=====================================================================================================
 */
 retStr  = "";
 VALUE_DELIM = "^_^";
@@ -55,7 +55,7 @@ print partsRecordSet;
 for eachRec in partsRecordSet{
 	partNum = get(eachRec, "part_number");
 	retStr = retStr   + partNum + "~" + string(qty) + "~" + "Occurrence" + VALUE_DELIM + "Monthly" +ATTR_DELIM+"rateType" + VALUE_DELIM + "Base"+ "~" + "~" + "identifier1|^|";
-	if(compactor AND NOT(customerOwnedCompactor)){
+	if(compactor){
 		retStr = retStr   + partNum + "~" + string(qty) + "~" + "Occurrence" + VALUE_DELIM + "Monthly" +ATTR_DELIM+"rateType" + VALUE_DELIM + "Compactor Rental"+ "~" + "~" + "identifier4|^|";
 	}
 	if(serviceRequirement == "On-call"){

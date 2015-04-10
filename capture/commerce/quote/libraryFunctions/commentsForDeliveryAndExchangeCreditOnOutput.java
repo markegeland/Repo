@@ -11,8 +11,6 @@ Input:       line item grid values.
 Output:      String (documentNumber + "~" + attributeVariableName + "~" + value + "|")
 
 Updates:   	 01/21/15 - Gaurav (Republic) - #352 #322 - making delivery and removal "Per Service compared to "One time" and correcting the calculations for Delivery and removal
-		 03/27/15 - Mike (Republic( - #145 - Small Container Compactor - Added the compactor asset value comments for the CSA
-		 04/07/15 - Mike (Republic( - #145 - Small Container Compactor - Fixed the source of compactor asset value.
 
 
 =======================================================================================================================
@@ -20,7 +18,6 @@ Updates:   	 01/21/15 - Gaurav (Republic) - #352 #322 - making delivery and remo
 retStr = "";
 creditStr = "";
 installStr = "";
-assetStr = "";
 pickupStr = "";
 minTonStr = "";
 //line 24 to 31 - added 20150119 - GD - #352 #322 - making delivery and removal "Per Service compared to "One time" and correcting the calculations for Delivery and removal
@@ -141,19 +138,9 @@ for line in line_process{
 			}
 		}
 		if(line.rateType_line == "Installation"){
-			installationChg = line.sellPrice_line;
+			installationChg = line.sellPrice_line ;
 			if(installationChg > 0.0){
 				installStr = installStr + "<p>" + "One-time Installation Charge for " + routeType + " " + containerSize + " yard - " + formatascurrency(installationChg, "USD") + "</p>";
-			}
-		}
-		if(line.rateType_line == "Compactor Rental"){
-			
-			assetValueStr = getconfigattrvalue(line._parent_doc_number, "compactorValue");
-			if(isnumber(assetValueStr)){
-				assetValue = atof(assetValueStr);
-				if(assetValue > 0.0){
-					assetStr = assetStr + "<p>" + "Compactor Asset Value for " + routeType + " " + containerSize + " yard - " + formatascurrency(assetValue, "USD") + "</p>";
-				}
 			}
 		}
 		if(line.rateType_line == "Base" OR line.rateType_line == "Haul"){
@@ -175,7 +162,6 @@ for line in line_process{
 
 retStr = retStr + "1~" + "deliveryAndExchangeCreditStringForOutput_quote" + "~" + creditStr + "|"; 
 retStr = retStr + "1~" + "installationChargeHTMLString_quote" + "~" + installStr + "|";
-retStr = retStr + "1~" + "assetValueHTMLString_quote" + "~" + assetStr + "|";
 retStr = retStr + "1~" + "pickUpDaysCommentHTML_quote" + "~" + pickupStr + "|";
 retStr = retStr + "1~" + "minimumTonnageHTMLStr_quote" + "~" + minTonStr + "|";
 //added 20150119 - GD - #352 #322 - making delivery and removal "Per Service compared to "One time" and correcting the calculations for Delivery and removal

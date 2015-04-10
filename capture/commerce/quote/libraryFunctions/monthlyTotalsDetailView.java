@@ -16,7 +16,6 @@ Output:  	String - Output parsed as HTML by the attribute to display table of at
 
 Updates:	11/13/13 - Zach Schlieder - Updated table formatting to match site branding, especially commerce line item grid      
 		03/27/15 - Mike (Republic) - Separated small container into Base and Compactor Rental    
-		04/08/15 - Mike (Republic) - Fixed line item issues for Compactor Rental lines on Existing customers
 =====================================================================================================
 */
 //=============================== START - Building HTML String ===============================//
@@ -137,17 +136,9 @@ if(commercialExists_quote){
 					+ "<td  align=\"center\" >" 
 					+  formatascurrency(smallMonthlyTotalRentalStretch_quote,"USD") 
 					+ "</td>";
-		if(isExistingCustomer){	
-			returnStr = returnStr + "<td  align=\"center\" >" +  formatascurrency(0.00, "USD") + "</td>";
-		}
 		returnStr = returnStr 	+ "<td  align=\"center\" >" 
 					+  formatascurrency(smallMonthlyTotalRentalProposed_quote,"USD") 
 					+ "</td>";
-		if(isExistingCustomer){	
-			returnStr = returnStr 	+ "<td  align=\"center\" >" 
-						+  formatascurrency(smallMonthlyTotalRentalProposed_quote,"USD") 
-						+ "</td>";
-		}
 		returnStr = returnStr	+ "</tr>" ;
 	}
 
