@@ -43,6 +43,7 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
                                           Fix incorrect disposal site being displayed.
 
              03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
+             04/09/15 - Mike (Republic) - #145 Small Container Compactor - added calculations for grand total compactor expense.
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -139,6 +140,8 @@ ModelSiteString = "";
 ModelSiteArray = string[];
 ModelDescDict = dict("string");
 
+totalCompactorAssetValue = 0.0;
+
 //=============================== END - Variable Initialization ===============================//
 
 
@@ -161,6 +164,20 @@ for line in line_process{
             }
 		}
 			
+	
+	//Calculate total asset value of all compactors
+	compactorAssetValueStr = "";
+	compactorAssetValue = 0.0;
+
+	if(line.rateType_line == "Compactor Rental" AND line.isPartLineItem_line){ 
+                compactorAssetValueStr = getconfigattrvalue(line._parent_doc_number, "compactorValue");
+		if(isnumber(compactorAssetValueStr)){
+			compactorAssetValue = atof(compactorAssetValueStr);
+		}
+	}
+	totalCompactorAssetValue = totalCompactorAssetValue + compactorAssetValue;
+
+
         deliveryPrice = 0.0;
         estLiftsPerMonth = 0.0;
         estTonsPerHaul = 0.0;
@@ -1036,7 +1053,9 @@ returnStr = returnStr   + "1~" + "divisionSalesGroup_quote" + "~" + (divisionSal
                         + "1~" + "smallSolidWasteNetRevenue_quote" + "~" + string(smallMonthlyNetRevenue_SolidWaste) + "|"
                         + "1~" + "smallRecyclingNetRevenue_quote" + "~" + string(smallMonthlyNetRevenue_Recycling) + "|"
                         + "1~" + "largeSolidWasteNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_SolidWaste) + "|"
-                        + "1~" + "largeRecyclingNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_Recycling) + "|";
+                        + "1~" + "largeRecyclingNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_Recycling) + "|"
+                        + "1~" + "totalCompactorAssetValue_quote" + "~" + string(totalCompactorAssetValue) + "|";
+
 if(_system_current_step_var == "adjustPricing"){                    
     returnStr = returnStr   + "1~" + "level1ApprovalRequired_quote" + "~" + string(level1ApprovalRequired) + "|"
                             + "1~" + "level2ApprovalRequired_quote" + "~" + string(level2ApprovalRequired) + "|"
