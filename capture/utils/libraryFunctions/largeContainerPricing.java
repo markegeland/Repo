@@ -14,7 +14,7 @@ Updates:	12/5/13 - Srikar - Replaced disposalSiteCosts table with Disposal_Sites
 			12/28/13 - Zach Schlieder - Rewrote to match James' code
 			02/11/15 - Gaurav Dawar - #406 - Compactor and rental calculation errors (large container)
 			03/26/15 - Aaron Quintanilla - #102 - Disposal Changes, added calculations for varying unit of measure
-    
+			04/08/15 - Gaurav Dawar - #510 - Compactor Asset Value is a Gross value not per container.
 =====================================================================================================
 */
 
@@ -108,7 +108,7 @@ if(isnumber(totalTimePerHaulStr)){
 	totalTimePerHaul = atof(totalTimePerHaulStr);
 }
 if(isnumber(compactorValueConfigStr)){
-	compactorValueConfig = atof(compactorValueConfigStr);
+	compactorValueConfig = atof(compactorValueConfigStr)/containerQuantity;
 }
 if(isnumber(containerSizeStr)){
 		containerSize = atof(containerSizeStr);

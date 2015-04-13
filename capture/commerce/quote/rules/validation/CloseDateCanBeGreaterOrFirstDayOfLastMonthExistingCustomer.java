@@ -13,9 +13,9 @@ else{
 }
 newDate=temp[0]+dateSeperator+"01"+dateSeperator+temp[2];
 firstDayOfthisMonth=strtodate(newDate, dateFormat);
-
-if(_system_current_step_var == "generateDocuments" AND chooseCSA_quote){
-	if(serviceCloseDate_quote<> "" AND comparedates(formattedServiceCloseDate ,firstDayOfthisMonth) == -1){
+lastdayOfMonthBefore=adddays(firstDayOfthisMonth,-1);
+if(_system_current_step_var == "generateDocuments" AND chooseCSA_quote AND salesActivity_quote == "Change of Owner"){
+	if(serviceCloseDate_quote<> "" AND comparedates(formattedServiceCloseDate ,lastdayOfMonthBefore) == -1){
 		return true;
 	}
 }
