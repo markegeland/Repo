@@ -25,6 +25,7 @@ Updates:
                                   comparison tables, and fix formatting issues.
     20150223 - John Palubinskas - #430 fix approval email incorrectly showing competitor by checking priceAdjustmentReason_line.
     20150223 - Mike Boylan      - #145 Add the Compactor Asset Value
+    20150413 - John Palubinskas - #449 Handle multiple competitors
     
 ================================================================================
 */
@@ -75,7 +76,8 @@ submittersComments = "";
 rateRestrictions = "";
 displayCompetitor = "";
 salesActivity = salesActivity_quote;
-competitor = competitor_quote;
+competitor = "";
+competitorArray = string[];
 
 for line in line_process{
     //models
@@ -84,6 +86,19 @@ for line in line_process{
     }
     //line items
     if(isnumber(line._parent_doc_number)){
+
+        //Competitors
+        if(line.billingType_line == "Monthly"){
+            competitor = getconfigattrvalue(line._parent_doc_number, "competitor");
+            competitorCd = "";
+            if (NOT isnull(competitor) AND 
+                len(competitor) == 4 AND 
+                NOT substring(competitor,0,3) == "NEW") {
+                competitorCd = substring(competitor,0,3);
+                append(competitorArray, competitorCd);
+            }
+        }
+
         //Ad Hoc Items
         if(line._parent_line_item == "Ad-Hoc Line Items"){
             AdHocDescArr[AdHocIndex] = line.description_line;
@@ -95,9 +110,6 @@ for line in line_process{
         //Service Changes
         elif(line.priceType_line == "Service Change"){
             salesActivity = line.activity_line + " - " + line.priceAdjustmentReason_line;
-            if (line.priceAdjustmentReason_line == "Rollback: Competitive Bid") {
-                competitor = getconfigattrvalue(line._parent_doc_number, "competitor");
-            }
 
             if(line.activity_line == "Service level change"){
                 if(findinarray(SCDocNum, line._parent_doc_number) == -1){
@@ -171,6 +183,24 @@ for line in line_process{
     }
 }
 
+// Get the competitors from the competitor codes
+CompetitorRecordSet = BMQL("SELECT competitor FROM div_competitor_adj WHERE division = $division_quote AND Competitor_Cd IN $competitorArray");
+
+competitor = "";
+for eachCompetitor in CompetitorRecordSet{
+    if(competitor == ""){
+        competitor = get(eachCompetitor,"competitor");
+    }
+    else{
+        competitor = competitor + ", " + get(eachCompetitor,"competitor");
+    }
+}
+
+// Hide the competitor row if there is no competitor
+if(trim(competitor) == ""){
+    displayCompetitor = " class='hide'";
+}
+
 // We have approvers and submitter arrays passed in as Strings when they're really string[].
 // Remove the array brackets from SubmittedBy (there should be just a single entry)
 // and create our own string[] for approvers for the User_Hierarchy lookup.
@@ -221,10 +251,6 @@ else{
     }   
 }
 
-// Hide the competitor row if there is no competitor
-if(trim(competitor) == ""){
-    displayCompetitor = " class='hide'";
-}
 
 // % of Floor
 if(smallMonthlyTotalBase_quote == 0){

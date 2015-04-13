@@ -47,13 +47,13 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			20150224 - Gaurav Dawar - #431 - Fixed Existing Terms calculation logic and its visibility criteria
 			20150306 - Gaurav Dawar - #452 - Fixed Existing Terms calculation logic to use contract term from account status instead of original date
 			20150317 - Gaurav Dawar - #474 - Quantity passed over to calculate guardrails for large containers to multiply with market rental rate.
-			03/27/2015 - Mike (Republic) - Small Container Compactor - Added necessary items to dictionaries for pricing and guardrails.  Return new XML tags.
-			03/27/2015 - Aaron Quintanilla - #102 - Added new unit of measure config attribute to be pushed into Calculate Guardraisl for new disposal calculations
+			20150327 - Mike (Republic) - Small Container Compactor - Added necessary items to dictionaries for pricing and guardrails.  Return new XML tags.
+			20150327 - Aaron Quintanilla - #102 - Added new unit of measure config attribute to be pushed into Calculate Guardraisl for new disposal calculations
             20150331 - John Palubinskas - #449 Move competitor from quote to line level
-            20150402 - John Palubinskas - #449 update to properly handle competitor adjustment when no competitor is chosen
-	    
+            20150402 - John Palubinskas - #449 update to properly handle competitor adjustment when no competitor is chosen	    
 			20150403 - Mike (Republic) - #145 Small Container Pricing - sending model to calculateGuardrails
 			20150405 - Gaurav Dawar - #145 - Fixed InstallationCharge_line for doc engine
+            20150412 - John Palubinskas - #449 comment out setting priceType = SMALL_CONTAINER in order to fix looping error on existing cust PI
 =====================================================================================================
 */
 
@@ -1807,7 +1807,7 @@ for line in line_process{
                 if(lower(container_category_db) == "commercial"){
                     container = "Small Container";
                     serviceChangePriceType = "Containers";
-                    priceType = SMALL_CONTAINER;
+                    //priceType = SMALL_CONTAINER; // 20150412 - comment out in order to fix looping error on existing cust PI
                 }elif(lower(containerType_db) == "industrial"){
                     container = "Large Container";
                     serviceChangePriceType = "Large Container";
