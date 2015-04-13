@@ -18,6 +18,7 @@ Updates:    20141106 Added logic to set the after year 1-4 dates based on the ef
 			20140327 Mike (Republic) - #145 - Small Container Compactor - Broke small containers out into Base and Compactor Rental.
             20150402 John Palubinskas - #449 removed reason code setting since it is done in setTransactionCode function
             20150403 Mike (Republic) - #145 Small Container Pricing - fixed Base price return
+            20150410 Mike (Republic) - #145 Small Container Pricing - Zeroed out Compactor Rental and Installation when compactor is turned off.
 =====================================================================================================
 */
 
@@ -39,6 +40,9 @@ flatPriceDict = dict("float");
 rentalPriceDict = dict("float");
 deliveryPriceDict = dict("float");
 haulsPerMonthDict = dict("float"); //This dict will hold the part line items estimatedLifts_line value, but not the model line items value.
+compactorRentalDict = dict("float");
+installationPriceDict = dict("float");
+
 
 
 totalDisposalTons = 0.0;
@@ -242,9 +246,9 @@ for line in line_process{
         if(line.rateType_line == "Base"){
             // If the line is of type Base then assign the value to the Model sell price
 			res = res + line._parent_doc_number + "~sellPrice_line~" + string(line.sellPrice_line) + "|"; 
-		}
-		elif(line.rateType_line == "Compactor Rental"){
-			res = res + line._parent_doc_number + "~smallRentalPrice_line~" + string(line.sellPrice_line) + "|"; 
+	}
+	elif(line.rateType_line == "Compactor Rental"){
+                put(compactorRentalDict, line._parent_doc_number,line.sellPrice_line );
         }
         elif( line.rateType_line == "Haul"){
         // If the line is of type Haul then populate haul rate
@@ -316,6 +320,9 @@ for line in line_process{
         }elif( line.rateType_line == "Exchange"){
             oneTimeLinesExist = true;
         }   
+        elif(line.rateType_line == "Installation"){
+                put(installationPriceDict, line._parent_doc_number,line.installationCharge_line);
+	}
     }
 }
 print haulPriceDict;
@@ -359,6 +366,20 @@ for eachDocNum in parentDocArr{
             rentalRate = rentalRate * rentalRateFactor;
         }
         res = res + eachDocNum + "~monthlyRentalRate_line~" + string(rentalRate)+ "|"; 
+    }
+    if(containskey(compactorRentalDict, eachDocNum)){
+        compactorRentalRate = get(compactorRentalDict, eachDocNum);
+	res = res + eachDocNum + "~smallRentalPrice_line~" + string(compactorRentalRate) + "|"; 
+    }
+    else{
+	res = res + eachDocNum + "~smallRentalPrice_line~" + "0.0" + "|"; 
+    }
+    if(containskey(installationPriceDict, eachDocNum)){
+        installationRate = get(installationPriceDict, eachDocNum);
+	res = res + eachDocNum + "~installationCharge_line~" + string(InstallationRate) + "|"; 
+    }
+    else{
+	res = res + eachDocNum + "~installationCharge_line~" + "0.0" + "|"; 
     }
     if(containskey(deliveryPriceDict, eachDocNum)){
         deliveryRate = get(deliveryPriceDict, eachDocNum);
