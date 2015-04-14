@@ -25,6 +25,7 @@ Updates:
                                   comparison tables, and fix formatting issues.
     20150223 - John Palubinskas - #430 fix approval email incorrectly showing competitor by checking priceAdjustmentReason_line.
     20150223 - Mike Boylan      - #145 Add the Compactor Asset Value
+    20150223 - Mike Boylan      - #145 Change Compactor Asset Value to Total Compactor Expense
     
 ================================================================================
 */
@@ -343,7 +344,7 @@ if(NOT isempty(ContPDocNum)){
                           + "<table><tr>"
                             + "<th>Qty</th>"  
                             + "<th>Container</th>"  
-                            + "<th>Compactor Asset Value</th>"
+                            + "<th>Total Compactor Expense</th>"
                             + "<th>Total Service Time</th>"
                             + "<th>Tons Per Haul</th>"
                             + "<th>Disposal Site</th>"
