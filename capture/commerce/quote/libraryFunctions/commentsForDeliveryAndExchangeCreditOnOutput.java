@@ -13,6 +13,7 @@ Output:      String (documentNumber + "~" + attributeVariableName + "~" + value 
 Updates:   	 01/21/15 - Gaurav (Republic) - #352 #322 - making delivery and removal "Per Service compared to "One time" and correcting the calculations for Delivery and removal
 		 03/27/15 - Mike (Republic( - #145 - Small Container Compactor - Added the compactor asset value comments for the CSA
 		 04/07/15 - Mike (Republic( - #145 - Small Container Compactor - Fixed the source of compactor asset value.
+		 04/14/15 - Mike (Republic( - #145 - Small Container Compactor - Title change to Total Compactor Expense
 
 
 =======================================================================================================================
@@ -152,13 +153,11 @@ for line in line_process{
 			if(isnumber(assetValueStr)){
 				assetValue = atof(assetValueStr);
 				if(assetValue > 0.0){
-					assetStr = assetStr + "<p>" + "Compactor Asset Value for " + routeType + " " + containerSize + " yard - " + formatascurrency(assetValue, "USD") + "</p>";
+					assetStr = assetStr + "<p>" + "Total Compactor Expense for " + routeType + " " + containerSize + " yard - " + formatascurrency(assetValue, "USD") + "</p>";
 				}
 			}
 		}
 		if(line.rateType_line == "Base" OR line.rateType_line == "Haul"){
-			//print "parentDocNum"; print parentDocNum; 
-			
 			if(containskey(pickupDaysDict, parentDocNum)){
 				pickupStr = pickupStr + "<p>" + "Tentative Pickup Days for " + routeType + " " + containerSize + " yard - " + get(pickupDaysDict, parentDocNum) + "</p>";
 			}
