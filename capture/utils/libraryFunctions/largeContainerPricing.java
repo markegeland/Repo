@@ -15,6 +15,7 @@ Updates:	12/5/13 - Srikar - Replaced disposalSiteCosts table with Disposal_Sites
 			02/11/15 - Gaurav Dawar - #406 - Compactor and rental calculation errors (large container)
 			03/26/15 - Aaron Quintanilla - #102 - Disposal Changes, added calculations for varying unit of measure
 			04/08/15 - Gaurav Dawar - #510 - Compactor Asset Value is a Gross value not per container.
+			04/14/15 - Gaurav Dawar - #102 - Fixed the BMQL for picking up the correct cost for per yard and per load.
 =====================================================================================================
 */
 
@@ -350,7 +351,9 @@ bad_debt_factor_str = "";
 
 	//=============================== START - Lookups on the Disposal_Sites table ===============================//
 	//Replaced disposalSiteCosts table with Disposal_Sites
-	disposalSiteCostsRecordSet = bmql("SELECT WasteType, cost, dsp_xfer_priceperton FROM Disposal_Sites WHERE Site_Name = $siteName AND WasteType = $wasteType AND DisposalSite_DivNbr = $division");
+	unitOfMeasureArr = split(unitOfMeasure, " ");
+	unitOfMeasureShort = unitOfMeasureArr[1];
+	disposalSiteCostsRecordSet = bmql("SELECT WasteType, cost, dsp_xfer_priceperton, unit_of_measure FROM Disposal_Sites WHERE Site_Name = $siteName AND WasteType = $wasteType AND DisposalSite_DivNbr = $division AND unit_of_measure = $unitOfMeasureShort");
 	for eachRecord in disposalSiteCostsRecordSet{
 		if(get(eachRecord, "unit_of_measure") == "Ton"){
 			disposalCostPerTonStr = get(eachRecord, "cost");
