@@ -24,6 +24,9 @@ Updates:
     20150215 - John Palubinskas - #68 Additional work for adding quantity columns.  Calculate fees correctly on conatiner
                                   comparison tables, and fix formatting issues.
     20150223 - John Palubinskas - #430 fix approval email incorrectly showing competitor by checking priceAdjustmentReason_line.
+    20150223 - Mike Boylan      - #145 Add the Compactor Asset Value
+    20150413 - John Palubinskas - #449 Handle multiple competitors
+    20150223 - Mike Boylan      - #145 Change Compactor Asset Value to Total Compactor Expense
     
 ================================================================================
 */
@@ -74,7 +77,8 @@ submittersComments = "";
 rateRestrictions = "";
 displayCompetitor = "";
 salesActivity = salesActivity_quote;
-competitor = competitor_quote;
+competitor = "";
+competitorArray = string[];
 
 for line in line_process{
     //models
@@ -83,6 +87,19 @@ for line in line_process{
     }
     //line items
     if(isnumber(line._parent_doc_number)){
+
+        //Competitors
+        if(line.billingType_line == "Monthly"){
+            competitor = getconfigattrvalue(line._parent_doc_number, "competitor");
+            competitorCd = "";
+            if (NOT isnull(competitor) AND 
+                len(competitor) == 4 AND 
+                NOT substring(competitor,0,3) == "NEW") {
+                competitorCd = substring(competitor,0,3);
+                append(competitorArray, competitorCd);
+            }
+        }
+
         //Ad Hoc Items
         if(line._parent_line_item == "Ad-Hoc Line Items"){
             AdHocDescArr[AdHocIndex] = line.description_line;
@@ -94,9 +111,6 @@ for line in line_process{
         //Service Changes
         elif(line.priceType_line == "Service Change"){
             salesActivity = line.activity_line + " - " + line.priceAdjustmentReason_line;
-            if (line.priceAdjustmentReason_line == "Rollback: Competitive Bid") {
-                competitor = getconfigattrvalue(line._parent_doc_number, "competitor");
-            }
 
             if(line.activity_line == "Service level change"){
                 if(findinarray(SCDocNum, line._parent_doc_number) == -1){
@@ -151,8 +165,8 @@ for line in line_process{
                     append(ContQuantityArr, string(line._price_quantity));
                     append(ContainerArr, line.description_line);
                     append(RatePerHaulArr, string(line.perHaulRate_line));
-                    append(ContTypeArr, line._model_name);
-                    append(CompactorValArr, "N/A");
+                    append(ContTypeArr, line._model_name); 
+                    append(CompactorValArr, getconfigattrvalue(line._parent_doc_number, "compactorValue"));
                     append(TotalServiceTimeArr, "N/A");
                     append(CostPerHaulArr, "N/A");
                     append(TonsPerHaulArr, "N/A");
@@ -168,6 +182,24 @@ for line in line_process{
             }
         }
     }
+}
+
+// Get the competitors from the competitor codes
+CompetitorRecordSet = BMQL("SELECT competitor FROM div_competitor_adj WHERE division = $division_quote AND Competitor_Cd IN $competitorArray");
+
+competitor = "";
+for eachCompetitor in CompetitorRecordSet{
+    if(competitor == ""){
+        competitor = get(eachCompetitor,"competitor");
+    }
+    else{
+        competitor = competitor + ", " + get(eachCompetitor,"competitor");
+    }
+}
+
+// Hide the competitor row if there is no competitor
+if(trim(competitor) == ""){
+    displayCompetitor = " class='hide'";
 }
 
 // We have approvers and submitter arrays passed in as Strings when they're really string[].
@@ -220,10 +252,6 @@ else{
     }   
 }
 
-// Hide the competitor row if there is no competitor
-if(trim(competitor) == ""){
-    displayCompetitor = " class='hide'";
-}
 
 // % of Floor
 if(smallMonthlyTotalBase_quote == 0){
@@ -342,7 +370,7 @@ if(NOT isempty(ContPDocNum)){
                           + "<table><tr>"
                             + "<th>Qty</th>"  
                             + "<th>Container</th>"  
-                            + "<th>Compactor Asset Value</th>"
+                            + "<th>Total Compactor Expense</th>"
                             + "<th>Total Service Time</th>"
                             + "<th>Tons Per Haul</th>"
                             + "<th>Disposal Site</th>"
@@ -350,7 +378,7 @@ if(NOT isempty(ContPDocNum)){
     
     for eachCont in ContPDocNum{
         compactorValue = "N/A";
-        if(isnumber(CompactorValArr[ContIndex]) AND (CompactorValArr[ContIndex] <> "0")){
+        if(isnumber(CompactorValArr[ContIndex]) AND atof(CompactorValArr[ContIndex]) > 0){
             compactorValue = formatascurrency(atof(CompactorValArr[ContIndex]),"USD");
         }
 

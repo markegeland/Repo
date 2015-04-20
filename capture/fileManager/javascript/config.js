@@ -4,6 +4,7 @@
  * @version Fri Feb 25 18:44:56 2011
  *
  * 20150304 - John Palubinskas - #25 remove setting the button backgroundColor
+ * 20150323 - James Shrenk - #451 remove functionality from onReverseGeocodeSuccess
  *
  */
   
@@ -18,7 +19,6 @@ require([], function(rtq) {
         var longitudeCustomerSite;
         var latitudeDispSite1 ;
         var longitudeDispSite1;
-        //$('#return_to_quote').closest("td.button-middle").css('backgroundColor', '#979FA2 !important');
 
         //Get the BingMapKey -  License
         var bingMapKey = $('input[name=bingMapsKey]').val();
@@ -104,23 +104,11 @@ require([], function(rtq) {
                 searchManager.reverseGeocode(request1);
             }
         } 
-        //Set Map zoom level & add push pins at locations
-        function onReverseGeocodeSuccess(result, userData) 
-        { 
-            if (result) { 
-                //map.entities.clear(); 
-                var topResult = result.results && result.results[0]; 
-                //if (topResult) { 
-                    var pushpin = new Microsoft.Maps.Pushpin(result.location, null); 
-                    arr.push(result.location);
-                    map.setView({ center: result.location, zoom: Number($('input[name=bingMapsConfigZoomLevel_quote]').val()) }); 
-                    map.entities.push(pushpin); 
-               // } 
-            } 
+
+        function onReverseGeocodeSuccess(result, userData) { 
         } 
 
         function onReverseGeocodeFailed(result, userData) { 
-            //console.log('Rev geocode failed'); 
         } 
 
         if (searchManager) 

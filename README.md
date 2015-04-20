@@ -6,6 +6,7 @@ Just starting with the Capture repository?  Read on...
 ## Quick Links
 - [Capture Issue Tracker](https://github.com/RepublicServicesRepository/Capture/issues)
 - [Great Git Tutorial](https://www.atlassian.com/git/tutorials/)
+- [Developer's Cheat Sheet](https://github.com/RepublicServicesRepository/Capture/wiki/Developer's-Cheat-Sheet)
 
 ## Developers
 ####Installing Git
@@ -30,10 +31,12 @@ Based on that, there are few quick points to summarize:
 3. Sync up local repos with remote Capture repos. (`git fetch/merge`, or `git pull`)
 4. Create a new branch for the feature. (`git checkout -b new-branch-name develop`)
 5. Edit files to implement awesome feature. (use your favorite editor)
-6. Test your changes in Capture Dev.
-7. Merge feature branch into develop. (`git checkout develop`, `git merge --no-ff new-branch-name`)
-8. Delete your feature branch (`git branch -d new-branch-name`)
-9. Push your feature to capture/develop (`git push capture develop`)
-12. Open [the issues list](https://github.com/RepublicServicesRepository/Capture/issues), upload any testing documentation you have, add any notes for the test team that will help them, set the issue to 'test', and find the next issue to work on.
+6. Test your changes in Capture Dev and remember to grab screen shots for your unit testing documentation!
+7. Add your files to staging. (`git add .`)
+8. Commit your files to the branch. (`git commit -m "#123 develop awesome new feature"`)
+9. Merge feature branch into develop. (`git checkout develop`, `git merge --no-ff new-branch-name`)
+10. Delete your feature branch since you're done with it. (`git branch -d new-branch-name`)
+11. Push your feature to capture/develop. (`git push capture develop`)
+12. Open [the issues list](https://github.com/RepublicServicesRepository/Capture/issues), upload any testing documentation you have, add any notes for the test team that will help them, set the issue to 'test' and assign to the QA lead, and if time of day < 17:00, go to step 2, else
 13. :beers:
 

@@ -11,6 +11,7 @@ Output:     String (documentNumber + "~" + attributeVariableName + "~" + value +
 
 Updates:    20141007 - JPalubinskas - Added contID functionality for F/O indicator
             20141218 - JPalubinskas - Upgrade fix for split function
+			20150220 - Gaurav Dawar - To make sub contract "C" as an option similar to permanent for account type.
         
 =====================================================================================================
 */
@@ -48,6 +49,13 @@ accountTypeDict = dict("string");
 put(accountTypeDict,"P", "Permanent");
 put(accountTypeDict,"T", "Temporary");
 put(accountTypeDict,"S", "Seasonal");
+put(accountTypeDict,"C", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"A", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"B", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"E", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"I", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"L", "Permanent");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
+put(accountTypeDict,"X", "Temporary");//Added (20150220) - GD - #404 - To make sub contract "C" as an option similar to permanent for account type.
 //containerGroupToDisplayTextArr = string[];
 
 if(eRFCharged_quote == "1" ) {

@@ -9,10 +9,11 @@ Input:   		stringDict: String Dictionary - Contains values of Config and Commerc
                     
 Output:  		String Dictionary - Contains attribute name and value pairs for use in Config or Commerce
 
-Updates:	Srikar - 02/05/2014 - Updated basePrice, targetPriceAdj, stretchPriceAdj formulas
-Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formulas for small container
-		 J Felberg - 11/15/2014 - Changed "Fixed Environmental Recovery Fee (ERF)" to "Fixed Environment Recovery Fee (ERF)"
-     J Palubinskas - 11/17/2014 - Updated divisionFeeRate queries to look up based on Lawson and InfoPro division
+Updates:
+		20140205 - Srikar - Updated basePrice, targetPriceAdj, stretchPriceAdj formulas
+		20140315 - Srikar - Updated haulBase, haulTarget, haulStretch formulas for small container
+		20141115 - J Felberg - Changed "Fixed Environmental Recovery Fee (ERF)" to "Fixed Environment Recovery Fee (ERF)"
+		20141117 - J Palubinskas - Updated divisionFeeRate queries to look up based on Lawson and InfoPro division
 		20141204 - Aaron Quintanilla - Corrected Industrial Flat Rate Disposal Price Rounding Error
 		20141210 - Aaron Quintanilla - Corrected disposal fee removal 
 		20151201 - Gaurav Dawar - Lines: 278, 2282, 2304, 2345 - Changes made to fix delivery amount when there is a change in container code in service change.
@@ -20,9 +21,15 @@ Updates:	Srikar - 03/15/2014 - Updated haulBase, haulTarget, haulStretch formula
 		02/18/15 - Gaurav Dawar - #427 - Added compactor ROI
     	03/09/15 - Gaurav Dawar - #454 - Disposal calculations considering Market Rate when no compactor as well.
 		03/11/15 - Gaurav Dawar - #454 - Disposal calculations considering Market Rate when no compactor as well.
+		03/27/15 - Mike (Republic) - #145 - Small Container Compactor - Split compactor rental from base amount for small containers.
+		03/17/15 - Gaurav Dawar - #474 - Rental Market Rate multiplied with the quantity.
+		03/27/15 - J Palubinskas - #449 - Removed reference to new from competitor
+		03/27/15 - Aaron Quintanilla - #104 - Added disposal logic for new waste types and units of measure
+		04/01/15 - Gaurav Dawar - #474 - comp rental floor multiplied by quantity to reflect no. of units for rental.
+		04/03/15 - Gaurav Dawar - #145 - Fixed the guardrail calculation for haul and rental.
+		
 =====================================================================================================
 */
-
 
 //=============================== START - Variable Initialization ===============================//
 //Default Variables
@@ -71,15 +78,17 @@ workingCapitalStr = "";
 containerMntPerHaulStr = "";
 isContainerCustomerOwnedStr = "";
 hasCompactorStr = "";
-/*
-begin1 = getcurrenttimeinmillis();
-begin2 = 0.0;
-begin3 = 0.0;
-begin4 = 0.0;
-*/
+unitOfMeasure = "";
+	unitOfMeasureArr = string[];
+	unitOfMeasureShort = "";
+
 perHaulCostsStr = "0.0"; //Added as a part of SR 3-9428639511
 
-
+costToServeCompactorStr = "";
+customerOwnedCompactorStr = "";
+costToServeContainerStr = "";
+containerRentalFactorStr = "";
+modelName = "";
 if(containskey(stringDict, "erfOnFrfRate")){
 	erfOnFrfRateStr = get(stringDict, "erfOnFrfRate");
 }
@@ -127,8 +136,6 @@ if(containskey(stringDict, "segment")){
 	segment = get(stringDict, "segment");
 }
 
-//feesToCharge = get(stringDict, "feesToCharge");
-	//Temporary
 if(containskey(stringDict, "includeERF")){
 	includeERF = get(stringDict, "includeERF");
 }
@@ -219,6 +226,9 @@ if(containskey(stringDict, "containerMntPerHaul")){
 if(containskey(stringDict, "isContainerCustomerOwned")){
 	isContainerCustomerOwnedStr = get(stringDict, "isContainerCustomerOwned");
 }
+if(containskey(stringDict, "unitOfMeasure")){
+	unitOfMeasure = get(stringDict, "unitOfMeasure");
+}
 
 isFRFFixed = false;
 isERFFixed = false;
@@ -305,6 +315,21 @@ if(containskey(stringDict, "perHaulCosts")){
 	perHaulCostsStr = get(stringDict, "perHaulCosts");
 }
 
+if(containskey(stringDict, "costToServeCompactor")){
+	costToServeCompactorStr = get(stringDict, "costToServeCompactor");
+}
+if(containskey(stringDict, "customerOwnedCompactor")){
+	customerOwnedCompactorStr = get(stringDict, "customerOwnedCompactor");
+}
+if(containskey(stringDict, "costToServeContainer")){
+	costToServeContainerStr = get(stringDict, "costToServeContainer");
+}
+if(containskey(stringDict, "containerRentalFactor")){
+	containerRentalFactorStr = get(stringDict, "containerRentalFactor");
+}
+if(containskey(stringDict, "model_name")){ 	 	
+	modelName = get(stringDict, "model_name"); 	 	
+}
 //Convert necessary variables from string to integer for use in calculations
 frfFlag = 0;
 erfFlag = 0;
@@ -322,28 +347,12 @@ cr_rollback_of_pi = 0;
 cr_competitive_bid = 0;
 cr_service_change = 0;
 
-//START - temporary workaround while resolving fee issues. Requires running Save & Price action twice
-/*
-if(feesToCharge <> ""){
-	if(find(feesToCharge, "FRF") <> -1){
-		frfFlag = 1;
-	}
-	if(find(feesToCharge, "ERF") <> -1){
-		erfFlag = 1;
-	}
-}*/
 if(includeERF == "Yes"){
 	erfFlag = 1;
 }
 if(includeFRF == "Yes"){
 	frfFlag = 1;
 }
-/* converted this to be table driven - 18th March 2014
-if(erfFlag == 1 AND frfFlag == 1){
-	erfOnFrfFlag = 1;
-}*/
-//END - temporary workaround while resolving fee issues.
-
 
 if(isnumber(cr_new_businessStr)){
 	cr_new_business = atoi(cr_new_businessStr);
@@ -354,11 +363,10 @@ if(isnumber(hasCompactorStr)){
 }
 
 isExistingCustomer = false;
-if(customerType <> "New/New" AND customerType <> "New from Competitor"){
+if(customerType <> "New/New"){
 	isExistingCustomer = true;
 }
 
-//if(find(billingType, "Disposal") <> -1){
 if(find(billingType, "Disposal") <> -1 OR billingType == "Haul + Minimum Tonnage"){
 	allocatedDisposalFlag = 1;
 }
@@ -383,6 +391,9 @@ rental_factor = 0.0;
 rental_base = 0.0;
 rental_target = 0.0;
 rental_stretch = 0.0;
+compactor_rental_base = 0.0;
+compactor_rental_target = 0.0;
+compactor_rental_stretch = 0.0;
 alloc_rental = 0;
 competitive_bid_amt = 0.0;
 initialTerm = 0.0;
@@ -393,6 +404,10 @@ workingCapital = 0.0;
 containerMntPerHaul = 0.0;
 perHaulCosts = 0.0; //Added as a part of SR 3-9428639511
 
+costToServeCompactor = 0.0;
+costToServeContainer = 0.0;
+containerRentalFactor = 0.0;
+customerOwnedCompactor = 0;
 if(isnumber(erfOnFrfRateStr)){
 	erfOnFrfRate = atof(erfOnFrfRateStr);
 }
@@ -463,7 +478,18 @@ if(isnumber(isContainerCustomerOwnedStr)){
 	isContainerCustomerOwned = atoi(isContainerCustomerOwnedStr);
 }
 
-
+if(isnumber(costToServeCompactorStr)){
+	costToServeCompactor = atof(costToServeCompactorStr);
+}
+if(isnumber(customerOwnedCompactorStr)){
+	customerOwnedCompactor = atoi(customerOwnedCompactorStr);
+}
+if(isnumber(costToServeContainerStr)){
+	costToServeContainer = atof(costToServeContainerStr);
+}
+if(isnumber(containerRentalFactorStr)){
+	containerRentalFactor = atof(containerRentalFactorStr);
+}
 //Get the ERF on FRF flag based on division & Info pro number from divisionFeeRate table
 divisionFeeRateRS = bmql("SELECT erf_on_frf FROM divisionFeeRate WHERE divisionNumber = $division AND infopro_div_nbr = $infoProDivNum");
 
@@ -501,9 +527,15 @@ adminAmountStr = "";
 
 //Get this from Disposal_Sites table
 disposalCostPerTonStr = "";
+disposalRatePerTonStr = "";
+
+disposalCostPerYardStr = "";
+disposalRatePerYardStr = "";
+
+disposalCostPerLoadStr = "";
+disposalRatePerLoadStr = "";
 
 //Get these from IND_Margins table
-disposalRatePerTonStr = "";
 baseMarginStr = "";
 targetMarginStr = "";
 stretchMarginStr = "";
@@ -591,9 +623,6 @@ if(isExistingCustomer){ //If its a new business for existing customer
 		put(returnDict, "pi_amount", string(pi_amount));
 		put(returnDict, "curr_margin_percentile", string(curr_margin_percentile));
 
-		
-		//revenue =  monthly_rate; //add frf and erf fee as well to this
-		
 		revenue = monthly_rate * (1 + frf_rate_pct/100 * is_FRF_Charged * (1 + is_erf_on_frf * erf_rate_pct/100 * is_ERF_Charged) + erf_rate_pct/100 * is_ERF_Charged);
 		put(returnDict, "revenue", string(revenue));
 		
@@ -686,24 +715,64 @@ if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(g
 	//=============================== START - Lookups on the Disposal_Sites table ===============================//
 	disposalCostPerTon = 0.0;
 	disposalRatePerTon = 0.0;
+	
+	disposalCostPerYard = 0.0;
+	disposalRatePerYard = 0.0;
+	
+	disposalCostPerLoad = 0.0;
+	disposalRatePerLoad = 0.0;
+	
 	if(priceType == "Large Containers"){
-		if(wasteType == "Solid Waste"){
-			disposalSiteCostsRecordSet = bmql("SELECT cost, market_rate FROM Disposal_Sites WHERE Site_Name = $siteName AND WasteType = $wasteType AND DisposalSite_DivNbr = $division");
+			//Format unitOfMeasure to values used in Disposal_Sites table
+				unitOfMeasureArr = split(unitOfMeasure, " ");
+				unitOfMeasureShort = unitOfMeasureArr[1];
+			disposalSiteCostsRecordSet = bmql("SELECT cost, market_rate FROM Disposal_Sites WHERE Site_Name = $siteName AND WasteType = $wasteType AND DisposalSite_DivNbr = $division AND unit_of_measure = $unitOfMeasureShort");
 			for eachRecord in disposalSiteCostsRecordSet{
-				disposalCostPerTonStr = get(eachRecord, "cost");
-				disposalRatePerTonStr = get(eachRecord, "market_rate");
+				if(unitOfMeasure == "Per Ton"){
+					disposalCostPerTonStr = get(eachRecord, "cost");
+					disposalRatePerTonStr = get(eachRecord, "market_rate");
+				}elif(unitOfMeasure == "Per Yard"){
+					disposalCostPerYardStr = get(eachRecord, "cost");
+					disposalRatePerYardStr = get(eachRecord, "market_rate");
+				}elif(unitOfMeasure == "Per Load"){
+					disposalCostPerLoadStr = get(eachRecord, "cost");
+					disposalRatePerLoadStr = get(eachRecord, "market_rate");
+				}
 				break;	//Only one record is expected
 			}
-			
+			disposalCostPerTon = 0.0;
+			disposalRatePerTon = 0.0;
 			if(isnumber(disposalCostPerTonStr)){	//Convert the table result to a float for use in calculations
 				disposalCostPerTon = atof(disposalCostPerTonStr);
 			}
-			if(isnumber(disposalRatePerTonStr)){	//Convert the table result to a float for use in calculations
+			if(isnumber(disposalRatePerTonStr)){	
 				disposalRatePerTon = atof(disposalRatePerTonStr);
 			}
-		}
+			
+			disposalCostPerYard = 0.0;
+			disposalRatePerYard = 0.0;
+			if(isnumber(disposalCostPerYardStr)){	
+				disposalCostPerYard = atof(disposalCostPerYardStr);
+			}
+			if(isnumber(disposalRatePerYardStr)){	
+				disposalRatePerYard = atof(disposalCostPerYardStr); 
+			}
+			
+			disposalCostPerLoad = 0.0;
+			disposalRatePerLoad = 0.0;
+			if(isnumber(disposalCostPerLoadStr)){	
+				disposalCostPerLoad = atof(disposalCostPerLoadStr);
+			}			
+			if(isnumber(disposalRatePerLoadStr)){	
+				disposalRatePerLoad = atof(disposalRatePerLoadStr);
+			}
+		print "NEW DISPOSAL INFORMATION STUFFS!!!!"; print disposalSiteCostsRecordSet;
 		put(returnDict, "disposalCostPerTon", string(disposalCostPerTon));
 		put(returnDict, "disposalRatePerTon", string(disposalRatePerTon));
+		put(returnDict, "disposalCostPerYard", string(disposalCostPerYard));
+		put(returnDict, "disposalRatePerYard", string(disposalRatePerYard));
+		put(returnDict, "disposalCostPerLoad", string(disposalCostPerLoad));
+		put(returnDict, "disposalRatePerLoad", string(disposalRatePerLoad));
 	}
 	//=============================== END - Lookups on the Disposal_Sites table ===============================//
 	
@@ -770,7 +839,6 @@ if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(g
 	}
 	else{
 		peakRateFound = false;
-		//peakSeasonRecordSet = bmql("SELECT peak_adj_factor, startDate,endDate, wasteType, division, zip FROM Peak_Season_Rates WHERE (division = $divisionNbr OR division = 0) AND (zip = $customer_zip OR zip = '0') AND accountType = $accountType AND container_type = $containerType AND container_size = $containerSizeFloat ORDER BY division DESC, zip DESC");
 		peakSeasonRecordSet = bmql("SELECT peak_adj_factor, startDate,endDate, wasteType, division, zip FROM Peak_Season_Rates WHERE (division = $divisionNbr OR division = 0) AND (zip = $customer_zip OR zip = '0') AND accountType = $accountType AND container_type = $containerType AND container_size = $containerSizeFloat AND wasteType = $wasteCategory ORDER BY division DESC, zip DESC");
 		// BB 10-Jun-2014: Update query to pull Division 0 records as well as specific division, and to pull only matching or 0 zip codes
 		// BB 10-Jun-2014: Added Container Size to query
@@ -821,7 +889,6 @@ if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(g
 								endDate=strtojavadate(get(data,"endDate"), dateFormat);		
 								print "UTIL";print wasteType;print wasteTypeDB;print today;print "UTIL";
 								// today >= StartDate && today <= EndDate	
-								//if( (comparedates(today,startDate) == 1 OR comparedates(today,startDate) == 0) AND (comparedates(today,endDate) == -1  OR comparedates(today,endDate) == 0) AND wasteType == wasteTypeDB){ 	
 								if( (comparedates(today,startDate) == 1 OR comparedates(today,startDate) == 0) AND (comparedates(today,endDate) == -1  OR comparedates(today,endDate) == 0)){
 									peakRate = peakRate + getFloat(data, "peak_adj_factor");
 									print "found"; 
@@ -857,15 +924,9 @@ if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(g
 		indMarginsRecordSet = bmql("SELECT base_margin_new, target_margin_new, stretch_margin_new, base_margin_existing, targetMarginExisting, stretchMrgnExisting FROM tbl_IND_margins WHERE cur_div_nbr = $division AND waste_type = $wasteCategory");
 		//Commented existing margin values - these are information only columns and only new margins to be used irrespective of sales activity type
 		for eachRecord in indMarginsRecordSet{
-			/*if(isExistingCustomer){
-				baseMarginStr = get(eachRecord, "base_margin_existing");
-				targetMarginStr = get(eachRecord, "targetMarginExisting");
-				stretchMarginStr = get(eachRecord, "stretchMrgnExisting");
-			}else{*/
 				baseMarginStr = get(eachRecord, "base_margin_new");
 				targetMarginStr = get(eachRecord, "target_margin_new");
 				stretchMarginStr = get(eachRecord, "stretch_margin_new");
-			//}
 			break;	//Only one record is expected
 		}
 	}
@@ -874,19 +935,10 @@ if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(g
 		divMarkupsRecordSet = bmql("SELECT cat_yards_per_month, base_margin_new, target_margin_new, stretch_margin_new, base_margin_existing, targetMarginExisting, stretchMrgnExisting FROM tbl_div_mark_ups WHERE division = $division AND waste_type = $wasteCategory AND (min_yds < $yardsPerMonth AND max_yds >= $yardsPerMonth)");
 		
 		for eachRecord in divMarkupsRecordSet{
-			//Updated 04/07/2014, per James existing columns are reference only as of today for the business team. Irrespective of customer type we have to use new margin values all the time.
-			/*if(isExistingCustomer){
-				cat_yards_per_month = get(eachRecord, "cat_yards_per_month");
-				baseMarginStr = get(eachRecord, "base_margin_existing");
-				targetMarginStr = get(eachRecord, "targetMarginExisting");
-				stretchMarginStr = get(eachRecord, "stretchMrgnExisting");	
-			}else{*/
 				cat_yards_per_month = get(eachRecord, "cat_yards_per_month");
 				baseMarginStr = get(eachRecord, "base_margin_new");
 				targetMarginStr = get(eachRecord, "target_margin_new");
 				stretchMarginStr = get(eachRecord, "stretch_margin_new");	
-			//}
-			
 			break;	//Only one record is expected
 		}
 	}
@@ -1022,10 +1074,6 @@ if(cr_new_business == 1 AND isExistingCustomer AND serviceChangeType <> ""){ //I
 	
 	//Calculate customer's current margin relative to current floor price
 	//cost & floor prices are unit prices
-	/*
-	if(currentCost > 0){	
-		curr_margin_percent = ((revenue - currentCost)/currentCost) * 100;
-	}*/
 	
 	if(revenue > 0){
 		curr_margin_percent = curr_margin_dollars/revenue;
@@ -1161,39 +1209,22 @@ if(cr_new_business == 0 AND isExistingCustomer AND serviceChangeType <> ""){
 
 //=============================== END Get Current Service pricing guardrails for existing customers ===============================//
 
-//=============================== START - Calculate Guardrails Excluding Fees ===============================//
-//totalFeePct = 1 + ((1 * frfRate) + (1 * erfRate) + erfOnFrfRate * erfRate * frfRate);
-//totalFeePct = (frfFlag * frfRate) + (erfFlag * erfRate) + (erfOnFrfFlag * erfRate * frfRate);
-//put(returnDict, "totalFeePct", string(totalFeePct));
-
-
 //=============================== START - Calculate Fee Percent ===============================//
 feePct = (frfFlag * frfRate) + (erfFlag * erfRate) + (erfOnFrfFlag * erfRate * frfRate * erfFlag * frfFlag);
 fullFeePct = frfRate + erfRate + (erfOnFrfFlag * erfRate * frfRate); //Added for SR 3-9437035701
 disposalRatePerTon = disposalRatePerTon * (1 + fullFeePct);
+disposalRatePerYard = disposalRatePerYard * (1 + fullFeePct);
+disposalRatePerLoad = disposalRatePerLoad * (1+ fullFeePct);
 put(returnDict, "feePct", string(feePct));
 put(returnDict, "fullFeePct", string(fullFeePct));
 //=============================== END - Calculate Fee Percent ===============================//
 
-/*
-if(priceType == "Large Containers"){		//NOTE: The formula for Large Containers should apply to both types. There is an error in the Small Containers formula, which will be resolved after the Validation testing
-	basePrice = (perHaulCosts * haulsPerMonth / (1 - baseMargin); //basePrice = costToServeMonth / (1 + baseMargin);
-	//disposalPerTonFeeAdj = disposalRatePerTon * (1 + feePct) * allocatedDisposalFlag; //Moved as part of SR 3-9428639511 Removed as part of 3-9437035701
-	
-}
-if(priceType == "Containers"){
-	basePrice = costToServeMonth + (1 + baseMargin); //Incorrect as per James 09/24/2014, corrected below in calculation of new_business_base
-}*/
 //Base Price formula common for both small and large containers - changed as per the new formula provided by James on 01/28/14
-//basePrice = costToServeMonth / (1 - baseMargin); 
 
 //New Base price calculation
 // new business pricing
 new_business_base = 0.0;
 if(baseMargin <> 1.0){
-	//Below line updated on 04/06/2014
-	//new_business_base = cr_new_business * costToServeMonth / (1-baseMargin);  
-	//new_business_base = costToServeMonth / (1-baseMargin);  Changed as part of SR 3-9437035701
 	if(priceType == "Large Containers"){
 	new_business_base = (perHaulCosts * haulsPerMonth) / (1 - baseMargin);
 	}
@@ -1210,8 +1241,7 @@ put(returnDict, "new_business_base", string(new_business_base));
 //Get Price Before PI with fee
 //pi_amount is a before fee amount; recalc to pull in fees
 priceBeforePI = revenue - pi_amount;
-
-//pi_rollback = cr_rollback_of_pi * ((revenue - (pi_amount * (1+feePct))) + (pi_amount * pi_retain_base)); 
+ 
 pi_rollback = (cr_rollback_of_pi * ((revenue - (pi_amount * (1 + feePct))) + ((pi_amount * (1 + feePct)) * pi_retain_base)));
 put(returnDict, "pi_rollback_base", string(pi_rollback));
 
@@ -1266,6 +1296,8 @@ basePremiumStr = "";
 baseFRFPremium = 0.0;
 
 basePriceAdj = basePrice;
+basePriceCompactor = 0.0;
+basePriceAdjTotal = 0.0;
 if(priceType == "Containers"){
 	//Adjust base pricing - Acquisition type
 	//Updated on 05/29/2014 - Price adjustment to be applied only for current container of existing customer & containers of new customers
@@ -1291,8 +1323,10 @@ if(priceType == "Containers"){
 	basePriceAdj = basePriceAdj * contract_dur_factor;
 	put(returnDict, "basePriceAdjContract", string(basePriceAdj));
 	
+	basePriceCompactor = (costToServeCompactor * cr_new_business * hasCompactor / (1 - rsg_compactor_base_roa));
+	basePriceAdjTotal = basePriceAdj + basePriceCompactor;
 	//Calculate frf premiums and fee for new quotes (turn off premium for existing)
-	basePremiumRecordSet = bmql("SELECT premium FROM Fee_Removal_Premiums WHERE minMonthlyRevenue <= $basePriceAdj AND maxMonthlyRevenue > $basePriceAdj AND (Lawson_DivNbr = $divisionNbr OR Lawson_DivNbr = 0) ORDER BY Lawson_DivNbr DESC");
+	basePremiumRecordSet = bmql("SELECT premium FROM Fee_Removal_Premiums WHERE minMonthlyRevenue <= $basePriceAdjTotal AND maxMonthlyRevenue > $basePriceAdjTotal AND (Lawson_DivNbr = $divisionNbr OR Lawson_DivNbr = 0) ORDER BY Lawson_DivNbr DESC");
 	for eachRecord in basePremiumRecordSet{
 		basePremiumStr = get(eachRecord, "premium");
 		break;
@@ -1342,16 +1376,10 @@ if(priceType == "Containers"){
 targetPriceAdj = 0.0;
 new_business_target_price = 0.0;
 if(baseMargin <> -1.0){
-	//targetPriceAdj = ((1 + targetMargin) / (1 + baseMargin)) * basePriceAdj;
-	//targetPriceAdj = ((1 - baseMargin) / (1 - targetMargin)) * basePriceAdj; //changed as per the new formulas provided by James on 01/28/14
 
 	//New Target Price calculation - Updated 27 Feb 2014
 	//new business pricing 
 	if(targetMargin <> 1.0){
-		//Below line updated on 04/06/2014
-		//new_business_target_price = (cr_new_business * ((1-baseMargin)/(1-targetMargin)) * basePriceAdj);
-		//Update - 04/07/2014 - base, target & stretch to be porportional
-		//new_business_target_price = (((1-baseMargin)/(1-targetMargin)) * basePriceAdj);
 		if(priceType == "Containers"){
 			new_business_target_price = (((1-baseMargin)/(1-targetMargin)) * basePriceAdj);
 		}elif(priceType == "Large Containers"){ //Currently all large containers are new business
@@ -1365,7 +1393,6 @@ if(baseMargin <> -1.0){
 	put(returnDict, "new_business_target_price", string(new_business_target_price));
 
 	// pi rollback
-	//pi_rollback_target_price = (cr_rollback_of_pi * (priceBeforePIIncFee + (pi_amount * pi_retain_target)));
 	pi_rollback_target_price = (cr_rollback_of_pi * ((revenue - (pi_amount * (1 + feePct))) + ((pi_amount * (1 + feePct)) * pi_retain_target)));
 	put(returnDict, "pi_rollback_target_price", string(pi_rollback_target_price));
 
@@ -1424,9 +1451,13 @@ put(returnDict, "targetPriceAdj2", string(targetPriceAdj));
 
 targetPremiumStr = "";
 targetFRFPremium = 0.0;
+targetPriceCompactor = 0.0;
+targetPriceAdjTotal = 0.0;
 //Calculate FRF Premium for target - This approach is only for small container
 if(priceType == "Containers"){
-	targetPremiumRecordSet = bmql("SELECT premium FROM Fee_Removal_Premiums WHERE minMonthlyRevenue <= $targetPriceAdj AND maxMonthlyRevenue > $targetPriceAdj AND (Lawson_DivNbr = $divisionNbr OR Lawson_DivNbr = 0) ORDER BY Lawson_DivNbr DESC");
+	targetPriceCompactor = (costToServeCompactor * cr_new_business * hasCompactor / (1 - rsg_compactor_target_roa));
+	targetPriceAdjTotal = targetPriceAdj + targetPriceCompactor;
+	targetPremiumRecordSet = bmql("SELECT premium FROM Fee_Removal_Premiums WHERE minMonthlyRevenue <= $targetPriceAdjTotal AND maxMonthlyRevenue > $targetPriceAdjTotal AND (Lawson_DivNbr = $divisionNbr OR Lawson_DivNbr = 0) ORDER BY Lawson_DivNbr DESC");
 
 	for eachRecord in targetPremiumRecordSet{
 		targetPremiumStr = get(eachRecord, "premium");
@@ -1446,14 +1477,8 @@ if(priceType == "Containers"){
 stretchPriceAdj = 0.0;
 new_business_stretch = 0.0;
 if(baseMargin <> -1.0){
-	//stretchPriceAdj = ((1 + stretchMargin) / (1 + baseMargin)) * basePriceAdj;
-	//stretchPriceAdj = ((1 - baseMargin) / (1 - stretchMargin)) * basePriceAdj; //changed as per the new formulas provided by James on 01/28/14
-	//New Stretch Price calculation - Updated 27 Feb 2014
 	//new business pricing
 	if(stretchMargin <> 1.0){
-		//Below line updated on 04/06/2014
-		//new_business_stretch = cr_new_business * ((1-baseMargin)/(1-stretchMargin)) * basePriceAdj;
-		//new_business_stretch = ((1-baseMargin)/(1-stretchMargin)) * basePriceAdj;
 		//Updated 04/07/2014
 		if(priceType == "Containers"){
 			new_business_stretch = ((1-baseMargin)/(1-stretchMargin)) * basePriceAdj;
@@ -1468,7 +1493,6 @@ if(baseMargin <> -1.0){
 	put(returnDict, "new_business_stretch", string(new_business_stretch));
 	
 	//pi rollback
-	//pi_rollback_stretch = cr_rollback_of_pi * (priceBeforePIIncFee + (pi_amount * pi_retain_stretch));
 	pi_rollback_stretch = (cr_rollback_of_pi * ((revenue - (pi_amount * (1 + feePct))) + ((pi_amount * (1 + feePct)) * pi_retain_stretch)));
 	put(returnDict, "pi_rollback_stretch", string(pi_rollback_stretch));
 	
@@ -1527,9 +1551,13 @@ put(returnDict, "stretchPriceAdj2", string(stretchPriceAdj));
 
 stretchPremiumStr = "";
 stretchFRFPremium = 0.0;
+stretchPriceCompactor = 0.0;
+stretchPriceAdjTotal = 0.0;
 //Calculate FRF Premium for Stretch price - this approach is only for Small Containers
 if(priceType == "Containers"){
-	stretchPremiumRecordSet = bmql("SELECT premium FROM Fee_Removal_Premiums WHERE minMonthlyRevenue <= $stretchPriceAdj AND maxMonthlyRevenue > $stretchPriceAdj AND (Lawson_DivNbr = $divisionNbr OR Lawson_DivNbr = 0) ORDER BY Lawson_DivNbr DESC");
+	stretchPriceCompactor = (costToServeCompactor * cr_new_business * hasCompactor / (1 - rsg_compactor_stretch_roa));
+	stretchPriceAdjTotal = stretchPriceAdj + stretchPriceCompactor;
+	stretchPremiumRecordSet = bmql("SELECT premium FROM Fee_Removal_Premiums WHERE minMonthlyRevenue <= $stretchPriceAdjTotal AND maxMonthlyRevenue > $stretchPriceAdjTotal AND (Lawson_DivNbr = $divisionNbr OR Lawson_DivNbr = 0) ORDER BY Lawson_DivNbr DESC");
 
 	for eachRecord in stretchPremiumRecordSet{
 		stretchPremiumStr = get(eachRecord, "premium");
@@ -1576,8 +1604,6 @@ elif(priceType == "Containers"){
 //=============================== END - Large container factors table look up ===============================//
 
 //=============================== BEGIN - Calculate Rental Rate ===============================//
-//Updated Rental condition on 22 March 2014 as per Test Case TC-0076
-//if((rental_type == "Monthly" OR rental_type == "Daily") AND priceType == "Large Containers" AND containerType_lStr == "Open Top" AND (billingType == "Haul + Disposal" OR billingType == "Flat Rate + Overage" OR billingType == "Haul + Minimum Tonnage")){
 
 comp_rental_floor = 0.0;
 comp_rental_rate = 0.0;
@@ -1619,7 +1645,7 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 	}
 	put(returnDict, "market_rental_rate", string(market_rental_rate));
 	// rental allocation
-	price_rental_per_month = market_rental_rate * (1 + fullFeePct) * alloc_rental; // Changed as per SR 3-9437035701
+	price_rental_per_month = market_rental_rate * (1 + fullFeePct) * alloc_rental * quantity; // Changed as per SR 3-9437035701
 	
 	rental_factor = 1.0;
 	//if rental type is Daily convert monthly rental charges into daily charges
@@ -1635,11 +1661,6 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 	
 	compactor_depr = 0.0;
 	
-	/*if(hasCompactor == 1){
-		compactor_depr = compactor_cost/compactor_life;
-	}
-	put(returnDict, "compactor_depr", string(compactor_depr));
-	*/
 	compactorDeprStr = "";
 	if(containskey(stringDict, "compactor_depr")){
 		compactorDeprStr = get(stringDict, "compactor_depr");
@@ -1650,15 +1671,12 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 	
 	if(rental_factor > 0 AND feePct <> -1.0 AND alloc_rental == 1){
 		//Updated 04/08/2014
-		comp_rental_floor = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
-						+ (compactor_cost * 0.065 / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);
-		//comp_rental_rate = compactorCustomerOwned * (compactor_depr + (compactor_cost * comp_maint_factor/12.0) + 
-						//(compactor_cost * rsg_compactor_base_roa /12.0))/rental_factor/(1 + feePct);
+		comp_rental_floor = ((1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
+						+ (compactor_cost * 0.065 / 12.0)) / rental_factor) * quantity; // Removed as part of SR 3-9437035701 / (1 + feePct);
 		comp_rental_rate = (1 - compactorCustomerOwned) * (compactor_depr + (compactor_cost * comp_maint_factor / 12.0) 
 						+ (compactor_cost * rsg_compactor_base_roa / 12.0)) / rental_factor; // Removed as part of SR 3-9437035701 / (1 + feePct);				
 		//Changed as per SR 3-9428639511 removed  ( containerMntPerHaul * (1 - isContainerCustomerOwned))
 		container_rental_floor = (containerDepreciation + containerROA) *  haulsPerMonth / rental_factor; // Changed as part of SR 3-9437035701
-		// container_rental_floor formula: container_rental_floor:=(oper_cont_depr + roa_container) * hauls_per_month * alloc_rental / rental_factor
 	}
 	if(rental_type == "None"){//added to handle the rental part of container going to per haul line item if rental is off - Gaurav 20150211
 		container_rental_floor = (containerDepreciation + containerROA) *  haulsPerMonth;
@@ -1667,26 +1685,8 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 	put(returnDict, "container_rental_floor", string(container_rental_floor));
 	put(returnDict, "comp_rental_rate", string(comp_rental_rate));
 	
-	/*if(rental_factor > 0.0 AND feePct <> -1.0){
-	
-		//Updated 04/07/2014
-		//rental_floor = ((containerDepreciation  + compactorDepreciation + containerROA + compactorROA) * haulsPerMonth * alloc_rental/ rental_factor)/(1 + feePct); 
-		rental_floor = ((containerDepreciation + compactorDepreciation + containerROA + compactorROA + (containerMntPerHaul * (1 - isContainerCustomerOwned))) * haulsPerMonth * alloc_rental / rental_factor) / (1 + feePct);
-	}
-	//set rental base price to floor (will still round later)
-	rentalArray = float[];
-	rental_floor_price = 0.0;
-	if(feePct <> -1.0 AND rental_factor > 0.0){
-		append(rentalArray, (price_rental_per_month / rental_factor) / (1 + feePct));
-	}
-	append(rentalArray, rental_floor);
-	if(sizeofarray(rentalArray) > 0){
-		rental_floor_price = max(rentalArray);
-	}*/
-	
 	rental_floor = (container_rental_floor * alloc_rental  + comp_rental_floor);
-	//put(returnDict, "rental_floor", string(rental_floor));
-	
+		
 	//Divisions should only be providing market rates on containers but not compactors
 	
 	if(rental_factor > 0.0){
@@ -1704,22 +1704,17 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		append(rentalBaseArr, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701
 		append(rentalBaseArr, container_rental_floor * rental_factor * alloc_rental);
 		
-		//rental_base  = (max(rentalBaseArr) / rental_factor) + comp_rental_rate;
 		rental_base  = (max(rentalBaseArr) / rental_factor) + (comp_rental_floor/(1-rsg_compactor_base_roa));
 		//Add compactor differential between base and target
 		rentalTargetArray = float[];
 		append(rentalTargetArray, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701 
 		append(rentalTargetArray, container_rental_floor * rental_factor * alloc_rental);
-		//rental_target  = (max(rentalTargetArray)/rental_factor) + (comp_rental_rate + (comp_rental_rate * 
-						 //(rsg_compactor_target_roa - rsg_compactor_base_roa)));
 		rental_target  = (max(rentalTargetArray)/rental_factor) + (comp_rental_floor/(1-rsg_compactor_target_roa));
 		
 		//Add compactor diffenetial between target and stretch
 		rentalStretchArray = float[];
 		append(rentalStretchArray, price_rental_per_month * compactor_flag); // Changed as a part of SR 3-9437035701
 		append(rentalStretchArray, container_rental_floor * rental_factor * alloc_rental);
-		//rental_stretch = (max(rentalStretchArray) /rental_factor) + (comp_rental_rate + (comp_rental_rate * 
-		//				(rsg_compactor_stretch_roa - rsg_compactor_base_roa)));
 		rental_stretch = (max(rentalStretchArray) /rental_factor) + (comp_rental_floor/(1-rsg_compactor_stretch_roa));
 		
 		put(returnDict, "rsg_compactor_base_roa", string(rsg_compactor_base_roa));				 
@@ -1738,20 +1733,26 @@ if((rental_type == "None" OR rental_type == "Monthly" OR rental_type == "Daily")
 		}elif(rental_type == "Monthly"){
 			roundingFactor = rounding_ind_rental;
 		}
-		/*
-		rental_base = ceil(rental_base/ roundingFactor) * roundingFactor;
-		rental_target = ceil(rental_target/ roundingFactor) * roundingFactor;
-		rental_stretch = ceil(rental_stretch/ roundingFactor) * roundingFactor;
-		
-		put(returnDict, "rounding_com_rate", string(rounding_com_rate));
-		put(returnDict, "rounding_ind_haul", string(rounding_ind_haul));
-		put(returnDict, "price_rental_per_month", string(price_rental_per_month));
-		put(returnDict, "rental_base", string(rental_base));
-		put(returnDict, "rental_target", string(rental_target));
-		put(returnDict, "rental_stretch", string(rental_stretch)); */
 	}
 }
 //=============================== END - Calculate Rental Rate ===============================//
+
+
+//=============================== START - Calculate Compactor Rental Rate ===================//
+
+if(priceType == "Containers" AND hasCompactor == 1 AND modelName <> "Service Change"){
+
+	compactor_rental_base = (cr_new_business * costToServeCompactor) / (1 - rsg_compactor_base_roa);
+	compactor_rental_target = (cr_new_business * costToServeCompactor) / (1 - rsg_compactor_target_roa);
+	compactor_rental_stretch = (cr_new_business * costToServeCompactor) / (1 - rsg_compactor_stretch_roa);
+
+	put(returnDict, "rsg_compactor_base_roa", string(rsg_compactor_base_roa));
+	put(returnDict, "rsg_compactor_target_roa", string(rsg_compactor_target_roa));
+	put(returnDict, "rsg_compactor_stretch_roa", string(rsg_compactor_stretch_roa));
+
+}
+
+//=============================== END - Calculate Compactor Rental Rate =====================//	
 
 //=============================== START - Calculate Haul Rate ===============================//
 //Haul floor rate per haul takes inputs from Config
@@ -1767,35 +1768,14 @@ haulStretch = 0.0;
 disposalPerTonFeeAdj = 0.0;											
 
 if(priceType == "Large Containers"){
-	//Overage should include disposal cost in haul & also have another line item for dollars per ton per disposal  
-	/*if(billingType == "Flat Rate + Overage"){
-		disposalPerTonFeeAdj = disposalRatePerTon; 
-	}else{
-		disposalPerTonFeeAdj = disposalRatePerTon * allocatedDisposalFlag;
-	}*/
-	//disposalPerTonFeeAdj = disposalRatePerTon * (1 + feePct) * allocatedDisposalFlag; //Moved as part of SR 3-9428639511
 	put(returnDict, "disposalPerTonFeeAdj", string(disposalPerTonFeeAdj));
-	//Updated on 04/07/2014
-	//haulFloorRatePerHaul = (driverCost + truckCost + truckROA + commission); 	// / feePct;
-	//Changed as per SR 3-9428639511
 	haulFloorRatePerHaul = (driverCost + truckCost + truckROA + commission + workingCapital + truckDepreciation) + (containerMntPerHaul * (1 - isContainerCustomerOwned)); 	
 	
 	put(returnDict, "haulFloorRatePerHaul", string(haulFloorRatePerHaul));
 
 	if(feePct <> -1.0){
-		/*haulFloor = (haulFloorRatePerHaul + ((1 - allocatedDisposalFlag) * disposalPerTonFeeAdj * tonsPerHaul)) / (1 + feePct);
-		//Reclaculate Haul Price when Rental is selected
-		if(alloc_rental == 1){
-			haul_base_temp = 0.0;
-			if(haulsPerMonth > 0.0){
-				//haulFloor = (haulFloorRatePerHaul +((1 - allocatedDisposalFlag) * disposalRatePerTon * tonsPerHaul) + (((1 - alloc_rental) * rental_floor * rental_factor * (1 + feePct)) / haulsPerMonth)) / (1 + feePct);
-				haulFloor = (haulFloorRatePerHaul + (( 1 - alloc_rental) * rental_floor * rental_factor / haulsPerMonth ));  //Changed as part of SR 3-9437035701
-			}
-		}*/
 		if(haulsPerMonth > 0){
 			//Updated 04/08/2014
-			//haulFloor = (haulFloorRatePerHaul +((1 - allocatedDisposalFlag) * disposalRatePerTon * tonsPerHaul) + 
-						//(((1 - alloc_rental) * rental_floor * rental_factor * (1 + feePct)) / haulsPerMonth)) / (1 + feePct);
 			//Updated as part of 3-9428639511, changed disposalRatePerTon to disposalCostPerTon
 			print "haul floor";print haulFloorRatePerHaul;
 			print "alloc rantal";print alloc_rental;
@@ -1808,9 +1788,7 @@ if(priceType == "Large Containers"){
 		append(haulBaseArr, haulFloorRatePerHaul);
 		append(haulTargetArr, haulFloorRatePerHaul);
 		append(haulStretchArr, haulFloorRatePerHaul);	
-	}
-	//put(returnDict, "haulFloor", string(haulFloor));
-	
+	}	
 	rentalArray = float[];
 	rental_floor_price = 0.0;
 	if(alloc_rental == 1){
@@ -1822,9 +1800,6 @@ if(priceType == "Large Containers"){
 	}
 	
 	if(haulsPerMonth <> -1.0 AND haulsPerMonth <> 0){	
-		//append(haulBaseArr, (basePriceAdj - (disposalPerTonFeeAdj * haulsPerMonth * tonsPerHaul)) / haulsPerMonth);
-
-		//Changed as part of SR 3-9428639511
 		append(haulBaseArr, (basePriceAdj - (container_rental_floor * rental_factor * alloc_rental))/ haulsPerMonth);
 		append(haulTargetArr, (targetPriceAdj - (container_rental_floor * rental_factor * alloc_rental))/ haulsPerMonth);
 		append(haulStretchArr, (stretchPriceAdj - (container_rental_floor * rental_factor * alloc_rental))/ haulsPerMonth);
@@ -1841,7 +1816,12 @@ elif(priceType == "Containers"){
 	if(feePct <> -1.0){
 		put(returnDict, "J4", string(costToServeMonth));
 		put(returnDict, "J5", string(1+feePct));
-		haulFloor = costToServeMonth / (1 + feePct);
+		if(hasCompactor == 1 AND modelName <> "Service Change"){
+			haulFloor = costToServeMonth * (1 - containerRentalFactor)/ (1 + feePct);
+		}
+		else{
+			haulFloor = costToServeMonth / (1 + feePct);
+		}
 	}
 	put(returnDict, "J3", string(haulFloor));
 	put(returnDict, "haulFloor", string(haulFloor));
@@ -1851,8 +1831,8 @@ elif(priceType == "Containers"){
 	}else{
 		append(haulBaseArr, contMin);
 	}		
-	append(haulBaseArr, costToServeMonth);
-	append(haulBaseArr, basePriceAdj);
+	append(haulBaseArr, costToServeMonth*(1 - containerRentalFactor));
+	append(haulBaseArr, basePriceAdj*(1 - containerRentalFactor));
 	append(haulBaseArr, (corp_monthly_min_per_container * (1 + feePct) * quantity));
 	
 	haulBase = max(haulBaseArr);
@@ -1860,30 +1840,51 @@ elif(priceType == "Containers"){
 		haulBase = haulBase/ (1 + feePct);
 	}
 	//append(haulTargetArr, costToServeMonth); //updated as per pricing script on 14 March 2014
-	append(haulTargetArr, (haulBase * (1 + feePct)));
-	append(haulTargetArr, targetPriceAdj);
+	append(haulTargetArr, (haulBase * (1 + feePct) * (1 - containerRentalFactor)));
+	append(haulTargetArr, targetPriceAdj*(1 - containerRentalFactor));
 	haulTarget = max(haulTargetArr);
 	if(feePct <> -1.0){
 		haulTarget = haulTarget / (1 + feePct);
 	}	
 	
-	//append(haulStretchArr, costToServeMonth); //updated as per pricing script on 14 March 2014
-	append(haulStretchArr, (haulTarget * (1 + feePct)));
-	append(haulStretchArr, stretchPriceAdj);
+	append(haulStretchArr, (haulTarget * (1 + feePct) * (1 - containerRentalFactor)));
+	append(haulStretchArr, stretchPriceAdj*(1 - containerRentalFactor));
 	haulStretch = max(haulStretchArr);
 	if(feePct <> -1.0){
 		haulStretch = haulStretch / (1 + feePct);
+	}
+	//Calculate Final Compactor Rental Guardrails
+	compactorRentalBaseArr = Float[];
+	compactorRentalTargetArr = Float[];
+	compactorRentalStretchArr = Float[];
+
+	compactorRentalFloor = 0.0;
+	compactorRentalBase = 0.0;
+	compactorRentalTarget = 0.0;
+	compactorRentalStretch = 0.0;
+
+	if(hasCompactor == 1 AND modelName <> "Service Change"){
+		compactorRentalFloor = ((costToServeMonth * containerRentalFactor) + costToServeCompactor) * hasCompactor / (1 + feePct);
+
+		append(compactorRentalBaseArr, (costToServeMonth * containerRentalFactor));
+		append(compactorRentalBaseArr, (basePriceAdj * containerRentalFactor));
+
+		compactorRentalBase = (max(compactorRentalBaseArr) + compactor_rental_base) * hasCompactor / (1 + feePct);
+
+		append(compactorRentalTargetArr, (haulBase * containerRentalFactor * (1 + feePct)));
+		append(compactorRentalTargetArr, (targetPriceAdj * containerRentalFactor));
+
+		compactorRentalTarget = (max(compactorRentalTargetArr) + compactor_rental_target) * hasCompactor / (1 + feePct);
+
+		append(compactorRentalStretchArr, (haulTarget * containerRentalFactor * (1 + feePct)));
+		append(compactorRentalStretchArr, (stretchPriceAdj * containerRentalFactor));
+
+		compactorRentalStretch = (max(compactorRentalStretchArr) + compactor_rental_stretch) * hasCompactor / (1 + feePct);
 	}
 }
 	
 //Account Type Adjustment on Price between Perm and Temp accounts – particularly on Large Container
 if(priceType == "Large Containers"){
-
-	/* if(feePct <> -1.0){ 
-		haulBase = haulBase/ (1 + feePct);
-		haulTarget = haulTarget / (1 + feePct);
-		haulStretch = haulStretch / (1 + feePct);
-	} */ //Removed as part of SR 3-9437035701
 
 	put(returnDict, "haulBase_before_rules", string(haulBase));
 	put(returnDict, "haulTarget_before_rules", string(haulTarget));
@@ -1957,22 +1958,67 @@ if(priceType == "Large Containers"){
 	
 	//Moved as part of SR 3-9437035701
 	if( feePct <> -1.0){
-		disposalFloor = (allocatedDisposalFlag * disposalCostPerTon); 
-		//put(returnDict, "disposalFloor", string(disposalFloor));  //AQ 2014-12-10
-
-		//Removed ceiling before rounding
-		disposalBase = (disposalRatePerTon * allocatedDisposalFlag);// / (1 + feePct));
-		disposalTarget = (disposalRatePerTon * allocatedDisposalFlag);// / (1 + feePct));
-		disposalStretch = (disposalRatePerTon * allocatedDisposalFlag);// / (1 + feePct));
-		Print "Allocated Disposal Flag:"; print allocatedDisposalFlag; print disposalPerTonFeeAdj;
+		//Removed ceiling before rounding, sorted calculations by unitOfMeasure
+		if(unitOfMeasure == "Per Ton"){
+			disposalFloor = (allocatedDisposalFlag * disposalCostPerTon); 
+				
+			disposalBase = (disposalRatePerTon * allocatedDisposalFlag);
+			disposalTarget = (disposalRatePerTon * allocatedDisposalFlag);
+			disposalStretch = (disposalRatePerTon * allocatedDisposalFlag);
+			//Calculation of monthly estimates for each guardrail
+			estimatedMonthlyDisposalFloor = disposalCostPerTon * haulsPerMonth * tonsPerHaul; 
+			estimatedMonthlyDisposalBase = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
+			estimatedMonthlyDisposalTarget = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
+			estimatedMonthlyDisposalStretch = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
+			
+			//Calculation of per haul estimates for each guardrail
+			estimatedPerHaulDisposalFloor = disposalCostPerTon * tonsPerHaul; 
+			estimatedPerHaulDisposalBase = disposalRatePerTon * tonsPerHaul;
+			estimatedPerHaulDisposalTarget = disposalRatePerTon * tonsPerHaul;
+			estimatedPerHaulDisposalStretch = disposalRatePerTon * tonsPerHaul;			
+		}elif(unitOfMeasure == "Per Yard"){
+			disposalFloor = (allocatedDisposalFlag * disposalCostPerYard); 
+				
+			disposalBase = (disposalRatePerYard * allocatedDisposalFlag);
+			disposalTarget = (disposalRatePerYard * allocatedDisposalFlag);
+			disposalStretch = (disposalRatePerYard * allocatedDisposalFlag);
+			//Calculation of monthly estimates for each guardrail
+			estimatedMonthlyDisposalFloor = disposalCostPerYard * haulsPerMonth * containerSizeFloat; 
+			estimatedMonthlyDisposalBase = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
+			estimatedMonthlyDisposalTarget = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
+			estimatedMonthlyDisposalStretch = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
+			
+			//Calculation of per haul estimates for each guardrail
+			estimatedPerHaulDisposalFloor = disposalCostPerYard * containerSizeFloat; 
+			estimatedPerHaulDisposalBase = disposalRatePerYard * containerSizeFloat;
+			estimatedPerHaulDisposalTarget = disposalRatePerYard * containerSizeFloat;
+			estimatedPerHaulDisposalStretch = disposalRatePerYard * containerSizeFloat;
+		}elif(unitOfMeasure == "Per Load"){
+			disposalFloor = (allocatedDisposalFlag * disposalCostPerLoad); 
+				
+			disposalBase = (disposalRatePerLoad * allocatedDisposalFlag);
+			disposalTarget = (disposalRatePerLoad * allocatedDisposalFlag);
+			disposalStretch = (disposalRatePerLoad * allocatedDisposalFlag);
+			//Calculation of monthly estimates for each guardrail
+			estimatedMonthlyDisposalFloor = disposalCostPerLoad * haulsPerMonth; 
+			estimatedMonthlyDisposalBase = disposalRatePerLoad * haulsPerMonth;
+			estimatedMonthlyDisposalTarget = disposalRatePerLoad * haulsPerMonth;
+			estimatedMonthlyDisposalStretch = disposalRatePerLoad * haulsPerMonth;
+			
+			//Calculation of per haul estimates for each guardrail
+			estimatedPerHaulDisposalFloor = disposalCostPerLoad; 
+			estimatedPerHaulDisposalBase = disposalRatePerLoad;
+			estimatedPerHaulDisposalTarget = disposalRatePerLoad;
+			estimatedPerHaulDisposalStretch = disposalRatePerLoad;
+		}
+		
 	}
 	print "Disposal: "; print disposalFloor; print disposalBase; print disposalTarget; print disposalStretch;
 	
 	// 20141016(James): Moved to post disposal calculation so that correct variables are available.
 	price_base_adj = 0.0;
 	if(feePct <> -1.0){
-		//price_base_adj = ((haulBase * haulsPerMonth) + (rental_base * rental_factor) + (disposalPerTonFeeAdj * haulsPerMonth * tonsPerHaul / (1 + feePct))) * (1 + feePct);
-		price_base_adj = haulBase * haulsPerMonth + rental_base * rental_factor + disposalRatePerTon * haulsPerMonth * tonsPerHaul;
+		price_base_adj = haulBase * haulsPerMonth + rental_base * rental_factor + estimatedMonthlyDisposalBase;
 	}
 	put(returnDict, "price_base_adj", string(price_base_adj));
 	
@@ -1993,8 +2039,7 @@ if(priceType == "Large Containers"){
 	
 	price_target_adj = 0.0;
 	if(feePct <> -1){
-		//price_target_adj = ((haulTarget * haulsPerMonth) + (rental_target * rental_factor) + (disposalPerTonFeeAdj * haulsPerMonth * tonsPerHaul / (1 + feePct))) * (1 + feePct);
-		price_target_adj = (haulTarget * haulsPerMonth) + (rental_target * rental_factor) + (disposalRatePerTon * haulsPerMonth * tonsPerHaul);
+		price_target_adj = (haulTarget * haulsPerMonth) + (rental_target * rental_factor) + (estimatedMonthlyDisposalTarget);
 	}					
 	put(returnDict, "price_target_adj", string(price_target_adj));					
 						
@@ -2016,8 +2061,7 @@ if(priceType == "Large Containers"){
 	
 	price_stretch_adj = 0.0;
 	if(feePct <> -1.0){
-		//price_stretch_adj = ((haulStretch * haulsPerMonth) + (rental_stretch * rental_factor) + (disposalPerTonFeeAdj * haulsPerMonth * tonsPerHaul / (1 + feePct))) * (1 + feePct);
-		price_stretch_adj = (haulStretch * haulsPerMonth) + (rental_stretch * rental_factor) + (disposalRatePerTon * haulsPerMonth * tonsPerHaul);
+		price_stretch_adj = (haulStretch * haulsPerMonth) + (rental_stretch * rental_factor) + (estimatedMonthlyDisposalStretch);
 	}	
 	put(returnDict, "price_stretch_adj", string(price_stretch_adj));	
 						
@@ -2073,22 +2117,15 @@ if(priceType == "Large Containers"){
 	haulBaseAdjArray = float[];
 	append(haulBaseAdjArray, haulFloor);
 	append(haulBaseAdjArray, haulBase);
-	//append(haulBaseAdjArray, minimum_haul_rate/(1+feePct));
 	append(haulBaseAdjArray, minimum_haul_rate);
 	haulBase = max(haulBaseAdjArray);
 
 	haulTargetAdjArray = float[];
-	//Updated 04/07/2014
-	//append(haulTargetAdjArray, haulBase);
 	append(haulTargetAdjArray, haulBase * ((1-baseMargin)/(1-targetMargin)));
 	append(haulTargetAdjArray, haulTarget);
 	haulTarget = max(haulTargetAdjArray);
 	
 	haulStretchAdjArray = float[];
-	//Updated 04/07/2014
-	//append(haulStretchAdjArray, haulTarget);
-	//append(haulStretchAdjArray, haulTarget * ((1-baseMargin)/(1-stretchMargin)));
-	//Updated on 04/28/2014
 	append(haulStretchAdjArray, haulBase * ((1-baseMargin)/(1-stretchMargin)));
 	append(haulStretchAdjArray, haulStretch);
 	haulStretch = max(haulStretchAdjArray);
@@ -2098,11 +2135,11 @@ if(priceType == "Large Containers"){
 	put(returnDict, "haulStretchMinimumHaul", string(haulStretch));
 	
 	// Added as part of SR 3-9428639511 Changed as part of SR 3-9437035701
-	haulFloor = haulFloor + ((1 - allocatedDisposalFlag) * disposalCostPerTon * tonsPerHaul);
-	haulBase = haulBase + ((1 - allocatedDisposalFlag) * disposalRatePerTon * tonsPerHaul);
-	haulTarget = haulTarget + ((1 - allocatedDisposalFlag) * disposalRatePerTon * tonsPerHaul);
-	haulStretch = haulStretch + ((1 - allocatedDisposalFlag) * disposalRatePerTon * tonsPerHaul);
-	print "DisposalRatePerTon"; print disposalRatePerTon;
+	haulFloor = haulFloor + ((1 - allocatedDisposalFlag) * estimatedPerHaulDisposalFloor);
+	haulBase = haulBase + ((1 - allocatedDisposalFlag) * estimatedPerHaulDisposalBase);
+	haulTarget = haulTarget + ((1 - allocatedDisposalFlag) * estimatedPerHaulDisposalTarget);
+	haulStretch = haulStretch + ((1 - allocatedDisposalFlag) * estimatedPerHaulDisposalStretch);
+	print "monthly Disposal: "; print estimatedMonthlyDisposalFloor; print estimatedMonthlyDisposalBase; print estimatedMonthlyDisposalTarget; print estimatedMonthlyDisposalStretch;
 	
 	put(returnDict, "J2", string(haulFloor));
 	haulFloor = haulFloor / (1 + feePct);
@@ -2120,6 +2157,21 @@ if(priceType == "Large Containers" AND rounding_ind_haul > 0){  //Should we roun
 	haulBase = ceil(haulBase/rounding_com_rate) * rounding_com_rate;
 	haulTarget = ceil(haulTarget/rounding_com_rate) * rounding_com_rate;
 	haulStretch = ceil(haulStretch/rounding_com_rate) * rounding_com_rate;
+	
+//Round Rental Guardrails
+	compactorRentalFloor = ceil(compactorRentalFloor/rounding_com_rate) * rounding_com_rate;
+	compactorRentalBase = ceil(compactorRentalBase/rounding_com_rate) * rounding_com_rate;
+	compactorRentalTarget = ceil(compactorRentalTarget/rounding_com_rate) * rounding_com_rate;
+	compactorRentalStretch = ceil(compactorRentalStretch/rounding_com_rate) * rounding_com_rate;
+	
+}
+
+//Return Compactor Rental Guardrails
+if(priceType == "Containers"){
+	put(returnDict, "compactorRentalFloor", string(compactorRentalFloor));
+	put(returnDict, "compactorRentalBase", string(compactorRentalBase));
+	put(returnDict, "compactorRentalTarget", string(compactorRentalTarget));
+	put(returnDict, "compactorRentalStretch", string(compactorRentalStretch));
 }
 	
 put(returnDict, "J1", string(haulFloor));
@@ -2134,16 +2186,6 @@ put(returnDict, "haulStretch", string(haulStretch));
 if(priceType == "Large Containers"){
 	if(feePct <> -1.0){
 		//=============================== START - Calculate Disposal Rate ===============================//
-		/* Moved as part of SR 3-9437035701
-		disposalFloor = (allocatedDisposalFlag * disposalCostPerTon) / (1 + feePct);
-		put(returnDict, "disposalFloor", string(disposalFloor));
-
-		//Removed ceiling before rounding
-		//disposalBase = (disposalPerTonFeeAdj / (1 + feePct));
-		//disposalTarget = (disposalPerTonFeeAdj / (1 + feePct));
-		//disposalStretch = (disposalPerTonFeeAdj / (1 + feePct)); */
-		//Round Disposal Base, Target, Stretch - Should we round even if Rental is not selected? 
-		//Changed 20121204 AQ
 		
 		targetRoundArr = float[];
 			append(targetRoundArr,disposalBase);
@@ -2278,18 +2320,7 @@ if(cr_new_business == 1 AND isExistingCustomer AND serviceChangeType <> ""){ //I
 			put(ratesDict, charge_cd, rate_Amt); //Get rates for all applicable service codes
 		}
 	}
-	/*
-	if(NOT(found)){
-		for eachRecord in accountRatesResultSet{
-			div_nbr = getFloat(eachRecord, "division_nbr");
-			rate_Amt = getFloat(eachRecord, "rate_Amt");
-			charge_cd = get(eachRecord, "charge_cd");
-			if(div_nbr == "0"){
-				put(ratesDict, charge_cd, rate_Amt);
-				found = true;
-			}
-		}	
-	}*/
+
 	//Query Div_Service_Price table if rates are not found in Account_Rates for existing customer
 	ratesDictValues = values(ratesDict);
 	if(sizeofarray(ratesDictValues) < servicesCodesLen){

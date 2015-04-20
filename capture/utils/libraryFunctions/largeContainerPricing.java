@@ -13,7 +13,9 @@ Updates:	12/4/13 - Zach Schlieder - Updated DivsionKPI_IND table call
 Updates:	12/5/13 - Srikar - Replaced disposalSiteCosts table with Disposal_Sites
 			12/28/13 - Zach Schlieder - Rewrote to match James' code
 			02/11/15 - Gaurav Dawar - #406 - Compactor and rental calculation errors (large container)
-    
+			03/26/15 - Aaron Quintanilla - #102 - Disposal Changes, added calculations for varying unit of measure
+			04/08/15 - Gaurav Dawar - #510 - Compactor Asset Value is a Gross value not per container.
+			04/14/15 - Gaurav Dawar - #102 - Fixed the BMQL for picking up the correct cost for per yard and per load.
 =====================================================================================================
 */
 
@@ -25,6 +27,7 @@ returnDict = dict("string");
 wasteCategory = get(stringDict, "wasteCategory");
 siteName = get(stringDict, "siteName");
 wasteType = get(stringDict, "wasteType");
+unitOfMeasure = get(stringDict, "unitOfMeasure");
 LOB = get(stringDict, "LOB");
 arrayDelimiter = get(stringDict, "arrayDelimiter");
 routeType = get(stringDict, "routeType");
@@ -44,6 +47,7 @@ totalTimePerHaulStr = get(stringDict, "totalTimePerHaul");
 compactorValueConfigStr = get(stringDict, "compactorValueConfig");
 containerType = get(stringDict, "containerType_l");
 newCustomerConfigStr = get(stringDict, "newCustomerConfig");
+containerSizeStr = get(stringDict, "containerSize");
 
 rental_type = "";
 alloc_rentalStr = "0";
@@ -76,6 +80,7 @@ compactorValue = 0.0;
 alloc_rental = 0;
 marketRate = 0.0;
 hasCompactor = 0;
+containerSize = 0;
 newCustomerConfig = 1; //Default to new customer
 
 if(isnumber(alloc_rentalStr) AND rental_type <> ""){
@@ -104,7 +109,10 @@ if(isnumber(totalTimePerHaulStr)){
 	totalTimePerHaul = atof(totalTimePerHaulStr);
 }
 if(isnumber(compactorValueConfigStr)){
-	compactorValueConfig = atof(compactorValueConfigStr);
+	compactorValueConfig = atof(compactorValueConfigStr)/containerQuantity;
+}
+if(isnumber(containerSizeStr)){
+		containerSize = atof(containerSizeStr);
 }
 if(isnumber(newCustomerConfigStr)){
 	newCustomerConfig = atoi(newCustomerConfigStr);
@@ -143,6 +151,8 @@ truckAssetsStr = "";
 truckDepreciationPerMonthStr = "";
 //Disposal_Sites table
 disposalCostPerTonStr = "";
+disposalCostPerYardStr = "";
+disposalCostPerLoadStr = "";
 //industries table
 containerStr = "";
 //miscConfigData table
@@ -341,9 +351,17 @@ bad_debt_factor_str = "";
 
 	//=============================== START - Lookups on the Disposal_Sites table ===============================//
 	//Replaced disposalSiteCosts table with Disposal_Sites
-	disposalSiteCostsRecordSet = bmql("SELECT WasteType, cost, dsp_xfer_priceperton FROM Disposal_Sites WHERE Site_Name = $siteName AND WasteType = $wasteType AND DisposalSite_DivNbr = $division");
+	unitOfMeasureArr = split(unitOfMeasure, " ");
+	unitOfMeasureShort = unitOfMeasureArr[1];
+	disposalSiteCostsRecordSet = bmql("SELECT WasteType, cost, dsp_xfer_priceperton, unit_of_measure FROM Disposal_Sites WHERE Site_Name = $siteName AND WasteType = $wasteType AND DisposalSite_DivNbr = $division AND unit_of_measure = $unitOfMeasureShort");
 	for eachRecord in disposalSiteCostsRecordSet{
-		disposalCostPerTonStr = get(eachRecord, "cost");
+		if(get(eachRecord, "unit_of_measure") == "Ton"){
+			disposalCostPerTonStr = get(eachRecord, "cost");
+		}elif(get(eachRecord, "unit_of_measure") == "Yard"){
+			disposalCostPerYardStr = get(eachRecord, "cost");
+		}elif(get(eachRecord, "unit_of_measure") == "Load"){
+			disposalCostPerLoadStr = get(eachRecord, "cost");
+		}
 		wasteType_db = get(eachRecord, "WasteType");
 		dsp_xfer_price_per_ton_str = get(eachRecord, "dsp_xfer_priceperton");
 		//if wastetype is solid waste, but disp transfer price is 0.0, get the price for 3rd part disposal which is in KPI table
@@ -361,7 +379,17 @@ bad_debt_factor_str = "";
 	if(isnumber(disposalCostPerTonStr)){	//Convert the table result to a float for use in calculations
 			disposalCostPerTon = atof(disposalCostPerTonStr);
 	}
+	disposalCostPerYard = 0.0;
+		if(isnumber(disposalCostPerYardStr)){	
+			disposalCostPerYard = atof(disposalCostPerYardStr);
+	}
+	disposalCostPerLoad = 0.0;
+		if(isnumber(disposalCostPerLoadStr)){	
+			disposalCostPerLoad = atof(disposalCostPerLoadStr);
+	}
 	put(returnDict, "disposalCostPerTon", string(disposalCostPerTon));
+	put(returnDict, "disposalCostPerYard", string(disposalCostPerYard));
+	put(returnDict, "disposalCostPerLoad", string(disposalCostPerLoad));
 	//=============================== END - Lookups on the Disposal_Sites table ===============================//
 	
 	//=============================== START - Lookups on the industries table ===============================//
@@ -575,8 +603,14 @@ put(returnDict, "haul", string(monthlyHaul));
 	//=============================== END - Customer Tons Per Month Calculation ===============================//
 	
 //Final Disposal calculation
-//disposalCostPerTon comes from data table. Commission calculated earlier.
-disposal = (disposalCostPerTon * customerTonsPerMonth); 
+//disposalCost comes from data table. Commission calculated earlier.
+if(unitOfMeasure == "Per Ton"){
+	disposal = (disposalCostPerTon * customerTonsPerMonth); 
+}elif(unitOfMeasure == "Per Yard"){
+	disposal = (disposalCostPerYard * haulsPerMonthPerContainer * containerSize);
+}elif(unitOfMeasure == "Per Load"){
+	disposal = (disposalCostPerLoad * estHaulsPerMonth);
+}
 put(returnDict, "disposal", string(disposal));
 //=============================== END - Disposal Calculation ===============================//
 
