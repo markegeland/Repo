@@ -33,7 +33,7 @@ Updates:
         20150122 - Gaurav Dawar - #361 Added Functionality to hide Comp for Change of owner and Existing Customer Quotes(Except New Site).
         20150416 - John Palubinskas - #516 Fix RTE due to reconfiguration of line items not being handled.  Added modelNameDict to support properly setting the modelCategory.
                                       When reconfiguring containers, you are not guaranteed the the model line is immediately proceeded by the line items.
-
+		20150421 - Gaurav Dawar - #509 - Fixed the issue with hiding of comp with job codes.
 ================================================================================ */
 
 
@@ -839,7 +839,7 @@ queryResponseTwo = false;
 jobCodeQuery = BMQL("SELECT comp_eligible FROM comp_job_codes WHERE job_code = $creatorCode");
 for jobCode in jobCodeQuery{
     queryResponseOne = true;
-    if(get(jobCode,"Comp_Eligible") == "0"){
+    if(get(jobCode,"comp_eligible") == "0"){
         showSmall = false;
         showLarge = false;
     }
