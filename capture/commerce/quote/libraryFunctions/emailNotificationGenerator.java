@@ -27,6 +27,7 @@ Updates:
     20150223 - Mike Boylan      - #145 Add the Compactor Asset Value
     20150413 - John Palubinskas - #449 Handle multiple competitors
     20150223 - Mike Boylan      - #145 Change Compactor Asset Value to Total Compactor Expense
+    20150420 - John Palubinskas - #493 Fix hard-coded email image path
     
 ================================================================================
 */
@@ -340,7 +341,7 @@ emailBody = "<ht" + "ml><head>"
 
 // HEADING AND SALUTATION
 emailBody = emailBody + "<h1>QUOTE APPROVAL REQUIRED</h1>"
-                      + "<img src='https://" + _system_company_name + ".bigmachines.com/bmfsweb/testrepublicservices/image/RP_HorizontalLatest.jpeg'/>"
+                      + "<img src='https://" + lower(_system_company_name) + ".bigmachines.com/bmfsweb/" + lower(_system_company_name) + "/image/logo-1.5-in.png'/>"
                       + "<p>Dear " + approverFullName +",</p>"
                       + "<p>Quote "+ quoteNumber_quote + ", " + siteName_quote + " requires your approval for the following reason(s): </p>"
                       + "<p class='reason-description'>" + reasonsFormatted + "</p>";

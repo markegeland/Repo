@@ -28,6 +28,8 @@ Updates:    20140625 - Andrew - pulled in competitorCode_quote to prevent blank 
             20150402 - John Palubinskas - #449 set transaction/reason codes at the line level
             20150409 - John Palubinskas - #449 rework to consolidate trans/reason codes so for existing you will
                        get the same codes for every line item on the CSA
+            20150420 - John Palubinskas - #532 fix new site new/new getting set as new/competitor
+            20150421 - John Palubinskas - #540 fix in-progress new/new getting set as new/competitor
     
 =====================================================================================================
 */
@@ -43,6 +45,7 @@ newLargeContainer = false;
 newSmallContainer = false;
 serviceChange = false;
 priceAdjustment = false;
+closeContainerGroup = false;
 totalYardsPerMonthNew = 0.0;
 totalYardsPerMonthCurrent = 0.0;
 totalSellPriceNew = 0.0;
@@ -58,7 +61,7 @@ for line in line_process{
     print "----------->  line item: " + docNum;
     // Get config attributes
     competitorCode = getconfigattrvalue(docNum, "competitor");
-    if (isnull(competitorCode)) { competitorCode = ""; }
+    if (isnull(competitorCode)) { competitorCode = "NEW"; }
     else { competitorCode = substring(competitorCode,0,3); }
 
     salesActivity = getconfigattrvalue(docNum, "salesActivity");
@@ -152,6 +155,10 @@ for line in line_process{
                     priceAdjustment = true;
                 }
 
+                if(lower(salesActivity) == "close container group"){
+                    print "Existing Customer - Close Container Group";
+                    closeContainerGroup = true;
+                }
             }
         }
 
@@ -194,9 +201,6 @@ if (processExisting) {
         parentDocNum = line._parent_doc_number;
         print "----------->  line item: " + docNum;
         // Get config attributes
-        competitorCode = getconfigattrvalue(docNum, "competitor");
-        if (isnull(competitorCode)) { competitorCode = ""; }
-        else { competitorCode = substring(competitorCode,0,3); }
 
         salesActivity = getconfigattrvalue(docNum, "salesActivity");
         if (isnull(salesActivity)) { salesActivity = ""; }
@@ -215,14 +219,19 @@ if (processExisting) {
         print "newSmallContainer: " + string(newSmallContainer);
 
         if(salesActivity_quote == "Existing Customer" and line._model_name <> "") {
+            // Only need to get a competitor value on model lines
+            competitorCode = getconfigattrvalue(docNum, "competitor");
+            if (isnull(competitorCode)) { competitorCode = "NEW"; }
+            else { competitorCode = substring(competitorCode,0,3); }
+
             // Any new sites should have all lines coded as New business
             // 01-01 = New - New
-            if(newSite AND competitorCode == ""){
+            if(newSite AND competitorCode == "NEW"){
                 transactionCode = "01";
                 reasonCode = "01";
             }
             // 01-02 = New - From Competitor
-            elif(newSite AND competitorCode <> ""){
+            elif(newSite AND competitorCode <> "NEW"){
                 transactionCode = "01";
                 reasonCode = "02";
             }
@@ -232,49 +241,52 @@ if (processExisting) {
                 // Any time we add a large container to an existing customer it is a Service Increase
                 transactionCode = "02";
                 reasonCode = "58";
+                competitorCode = "";
             }
-            elif (newSmallContainer OR serviceChange) {
+            elif (newSmallContainer OR serviceChange OR closeContainerGroup) {
                 print "in newSmallContainer elif";
                 // If there is no new Large Container, but there is a new Small Container, determine if it is
                 // a Service Increase or Decrease by comparing the total yards per month before and after.
 
-                // 02-58 = Service Increase Perm
-                if(totalYardsPerMonthNew >= totalYardsPerMonthCurrent){ 
-                    transactionCode = "02";
-                    reasonCode = "58";
-                }
                 // 05-58 = Service Decrease Perm
-                else{
+                if((totalYardsPerMonthNew < totalYardsPerMonthCurrent) OR closeContainerGroup){ 
                     transactionCode = "05";
                     reasonCode = "58";
                 }
+                // 02-58 = Service Increase Perm
+                else{
+                    transactionCode = "02";
+                    reasonCode = "58";
+                }
+                competitorCode = "";
             }
             else{
                 if(priceAdjustment 
-                    //AND (find(lower(priceAdjustmentReason), "price increase") <> -1)
                     AND (totalSellPriceNew >= totalSellPriceCurrent))
                 {
                     // 03-62 Price Increase
                     transactionCode = "03";
                     reasonCode = "62";
+                    competitorCode = "";
                 }
                 else{
                     // 06-## Price Decrease
                     transactionCode = "06";
+                    reasonCode = "62";
                     if (lower(priceAdjustmentReason) == "rollback: competitive bid") { reasonCode = "13"; }
-                    if (lower(priceAdjustmentReason) == "rollback of pi")            { reasonCode = "17"; }
-                    if (lower(priceAdjustmentReason) == "rollback of current price") { reasonCode = "62"; }
+                    if (lower(priceAdjustmentReason) == "rollback of pi")            { reasonCode = "17"; competitorCode = "";}
+                    if (lower(priceAdjustmentReason) == "rollback of current price") { reasonCode = "62"; competitorCode = "";}
                 }
             }
         }    
 
-        print "competitorCode: " + competitorCode;
         print "transactionCode: " + transactionCode;
         print "reasonCode: " + reasonCode;
+        print "competitorCode: " + competitorCode;
 
-        returnStr = returnStr + docNum + "~competitorCode_line~" + competitorCode + "|"
-                              + docNum + "~transactionCode_line~" + transactionCode + "|"
-                              + docNum + "~reasonCode_line~" + reasonCode + "|";
+        returnStr = returnStr + docNum + "~transactionCode_line~" + transactionCode + "|"
+                              + docNum + "~reasonCode_line~" + reasonCode + "|"
+                              + docNum + "~competitorCode_line~" + competitorCode + "|";
 
     }
 }
