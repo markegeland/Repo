@@ -2395,7 +2395,7 @@ for line in line_process{
                 if(isnumber(_quote_process_siteAddress_quote_company_name_2)) {
                   siteLongitude = atof(_quote_process_siteAddress_quote_company_name_2);
                 }
-                disposalSiteCostCommercialDict = util.getDispSiteAndCostFromZip(infoproDivision_RO_quote, division_quote, _quote_process_siteAddress_quote_zip, "Solid Waste", "", false);
+                disposalSiteCostCommercialDict = util.getDispSiteAndCostFromZip(infoproDivision_RO_quote, division_quote, _quote_process_siteAddress_quote_zip, wasteType, "", false);
                     print "disposalSiteCostCommercialDict ";
                     print disposalSiteCostCommercialDict;
                 if(containskey(disposalSiteCostCommercialDict, "disposalCost")){

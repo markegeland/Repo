@@ -11,7 +11,7 @@ if(debug) {
 	print "customerZipCode: " + customerZipCode;
 }
 
-containerDisposalRecordSet = bmql("SELECT waste_type, disposal_cd, is_franchise, is_serviceable FROM small_cont_dsp_zip WHERE infopro_div_nbr = $infoproDivisionNumber AND division = $lawsonDivision AND zip = $customerZipCode");
+containerDisposalRecordSet = bmql("SELECT waste_type, disposal_cd, is_franchise, is_serviceable FROM small_cont_dsp_zip WHERE infopro_div_nbr = $infoproDivisionNumber AND division = $lawsonDivision AND zip = $customerZipCode AND waste_type = $wasteType");
 
 if(debug) {
 	print containerDisposalRecordSet;
@@ -51,7 +51,11 @@ print 	disposalCostRecordSet;
 
 if(not(siteFound)) {
 	disposal_cd = "";
-	waste_type = "Solid Waste";
+	if (waste_type == "OCC - Clean" or waste_type == "All in One - Single stream"){
+		waste_type = "Recycling";		
+	}else{
+		waste_type = "Solid Waste";
+	}
 	is_franchise = "0";
 	is_serviceable = "1";
 	defaultRecordSet = bmql("SELECT default_disposal_3p FROM tbl_division_kpi WHERE div_nbr = $lawsonDivision AND waste_type = $waste_type");
