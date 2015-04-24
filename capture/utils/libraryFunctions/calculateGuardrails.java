@@ -755,7 +755,7 @@ if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(g
 				disposalCostPerYard = atof(disposalCostPerYardStr);
 			}
 			if(isnumber(disposalRatePerYardStr)){	
-				disposalRatePerYard = atof(disposalCostPerYardStr); 
+				disposalRatePerYard = atof(disposalRatePerYardStr); 
 			}
 			
 			disposalCostPerLoad = 0.0;
