@@ -36,8 +36,12 @@ htmlServiceComments = "";
 
 for line in line_process{
 	if(line._model_name <> ""){
-		deliveryComments = replace(getconfigattrvalue(line._document_number,"deliveryNotes_s"),"&","and");
-		serviceComments = replace(getconfigattrvalue(line._document_number,"serviceNotes_s"),"&","and");
+		if (find(line._config_attr_info, "deliveryNotes_s") <> -1){
+			deliveryComments = replace(getconfigattrvalue(line._document_number,"deliveryNotes_s"),"&","and");
+		}
+		if (find(line._config_attr_info, "serviceNotes_s") <> -1){
+			serviceComments = replace(getconfigattrvalue(line._document_number,"serviceNotes_s"),"&","and");
+		}
 		written = false; 
 	}elif(written == false){
 		if(deliveryComments <> "" AND NOT isnull(deliveryComments)){
