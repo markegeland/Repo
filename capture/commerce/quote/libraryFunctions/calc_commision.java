@@ -34,6 +34,7 @@ Updates:
         20150416 - John Palubinskas - #516 Fix RTE due to reconfiguration of line items not being handled.  Added modelNameDict to support properly setting the modelCategory.
                                       When reconfiguring containers, you are not guaranteed the the model line is immediately proceeded by the line items.
 		20150421 - Gaurav Dawar - #509 - Fixed the issue with hiding of comp with job codes.
+		20150423 - Gaurav Dawar - #515 - Fixed the issue with below the cost proration and RR comp to be excluded when term is MTM or 12.
 ================================================================================ */
 
 
@@ -397,7 +398,7 @@ for each in modelLoop{
     }
 
     //CALCULATE RATE RESTRICTION
-    if(customerRateRestriction_quote == false){
+    if(customerRateRestriction_quote == false AND initialTerm_quote <> "1" AND initialTerm_quote <> "12"){
         rateRestrictionQuery = BMQL("SELECT comp_pct FROM comp_job_code_rules WHERE job_code = $creatorCode AND variable_id = 'customerRateRestriction_quote' AND lob = $modelLOB");
         for rate in rateRestrictionQuery{
             tempPercent = tempPercent + atof(get(rate,"comp_pct"));
@@ -493,7 +494,7 @@ for each in modelLoop{
         com_base_pct = 0;
         if(priceTier == 0){
             if(smallMonthlyTotalFloor_quote <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
-                com_base_pct = commissionPct[0] + (smallMonthlyTotalProposed_quote*((commissionPct[1]-commissionPct[0])/smallMonthlyTotalFloor_quote));
+                com_base_pct = commissionPct[0]/* + (smallMonthlyTotalProposed_quote*((commissionPct[1]-commissionPct[0])/smallMonthlyTotalFloor_quote))*/;
             }else{ 
                 com_base_pct = commissionPct[0] + 0.0;
             }
@@ -571,7 +572,7 @@ for each in modelLoop{
         com_base_pct = 0;
         if(priceTier == 0){
             if(largeMonthlyTotalFloor_quote <> 0.0){ //Added if statement to check for 0 in denominator, if so use 1.0 instead.
-                com_base_pct = commissionPct[0] + (largeMonthlyTotalProposed_quote*((commissionPct[1]-commissionPct[0])/largeMonthlyTotalFloor_quote));
+                com_base_pct = commissionPct[0]/* + (largeMonthlyTotalProposed_quote*((commissionPct[1]-commissionPct[0])/largeMonthlyTotalFloor_quote))*/;
             }else{ 
                 com_base_pct = commissionPct[0] + 0.0;
             }
