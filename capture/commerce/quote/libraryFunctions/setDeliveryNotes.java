@@ -1,5 +1,29 @@
-/*20150421 - Gaurav Dawar - #539 - Fixed the XML Document pull error
+/* 
+================================================================================
+       Name:  setDeliveryNotes
+     Author:  Aaron Quintanilla
+Create date:  
+Description:  Sets the delivery and service notes quote attributes from config
+        
+  Input:     deliveryNotes_line
+             _config_attr_info
+             _document_number
+             _model_name
+             _part_desc
+                    
+ Output:     quote level attributes
+             deliveryNotes_quote
+             deliveryNotesRichText_quote
+             serviceNotes_quote
+             serviceNotesRichText_quote
+
+Updates:
+    20150421 - Gaurav Dawar - #539 - Fixed the XML Document pull error
+    20150423 - Aaron Quintanilla - #563 - Added check for blank config attributes since AdHoc won't have them
+    
+================================================================================
 */
+
 result = "";
 deliveryComments = "";
 serviceComments = "";
@@ -12,8 +36,12 @@ htmlServiceComments = "";
 
 for line in line_process{
 	if(line._model_name <> ""){
-		deliveryComments = replace(getconfigattrvalue(line._document_number,"deliveryNotes_s"),"&","and");
-		serviceComments = replace(getconfigattrvalue(line._document_number,"serviceNotes_s"),"&","and");
+		if (find(line._config_attr_info, "deliveryNotes_s") <> -1){
+			deliveryComments = replace(getconfigattrvalue(line._document_number,"deliveryNotes_s"),"&","and");
+		}
+		if (find(line._config_attr_info, "serviceNotes_s") <> -1){
+			serviceComments = replace(getconfigattrvalue(line._document_number,"serviceNotes_s"),"&","and");
+		}
 		written = false; 
 	}elif(written == false){
 		if(deliveryComments <> "" AND NOT isnull(deliveryComments)){

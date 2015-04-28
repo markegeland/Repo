@@ -8,6 +8,7 @@
     20150121 - John Palubinskas - cleanup: consolidate a few repeated styles
     20150212 - John Palubinskas - #68 add styles for financial-details-table
     20150224 - John Palubinskas - #25 branding updates
+    20150424 - John Palubinskas - #533 update for input fields, fix intermittently bingMap_html not displaying
 
    ================================================================================================== */
 
@@ -16,8 +17,15 @@
 
 /* @group Header, Login, and Navigation Links */
 
-* {
+html {
+  box-sizing: border-box;
+}
+
+*, 
+*:before, 
+*:after {
     font-family: "Open Sans",Tahoma;
+  box-sizing: inherit;
 }
 
 #header-wrapper{
@@ -124,7 +132,11 @@ a.admin-sidebar-item {
 a.header-item img {
     display: none;
 }
-
+.form-date input{
+    border: 1px solid #00ADEF !important;
+    font-size: 14px !important;
+    height: 23px !important;
+}
 .form-input[name="_siteAddress_quote_state_menu"] {
     width: 85% !important;
 }
@@ -172,6 +184,8 @@ input[id="divisionWAS_ui_line-display"],
 span[id="readonly_1_desiredQuoteTotal_quote"],
 span[id="readonly_1_currentQuoteTotal_quote"] {
     text-align: right !important;
+    font-size: 14px !important;
+    padding: 0px !important;
 }
 span[id="readonly_1_desiredQuoteTotal_quote"],
 span[id="readonly_1_currentQuoteTotal_quote"] {
@@ -919,7 +933,7 @@ a#print_documents,
 a#print_office_documents,
 a#email_documents{
     display: inline-block;
-    width: 150px;
+    width: 180px;
 }
 
 
@@ -994,8 +1008,10 @@ td.red {
 td.first-column {
     text-align: left;
 }
-
-
+ /* force the map to have a height, otherwise is may not display */
+#bingMap_html{
+    height: 500px;
+}
 
 
 
