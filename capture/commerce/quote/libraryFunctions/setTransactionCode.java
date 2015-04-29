@@ -30,6 +30,7 @@ Updates:    20140625 - Andrew - pulled in competitorCode_quote to prevent blank 
                        get the same codes for every line item on the CSA
             20150420 - John Palubinskas - #532 fix new site new/new getting set as new/competitor
             20150421 - John Palubinskas - #540 fix in-progress new/new getting set as new/competitor
+            20150428 - John Palubinskas - #549 fix close container not evaluating service inc/dec correctly
     
 =====================================================================================================
 */
@@ -51,7 +52,7 @@ totalYardsPerMonthCurrent = 0.0;
 totalSellPriceNew = 0.0;
 totalSellPriceCurrent = 0.0;
 
-for line in line_process{
+for line in line_process {
     competitorCode = "";
     transactionCode = "";
     reasonCode = "";
@@ -84,17 +85,17 @@ for line in line_process{
         //-------------------------------------------------------------
 
         // 01-01 = New - New
-        if(salesActivity_quote == "New/New" AND competitorCode == "NEW"){
+        if(salesActivity_quote == "New/New" AND competitorCode == "NEW") {
             transactionCode = "01";
             reasonCode = "01";
         }
         // 01-02 = New - From Competitor
-        if(salesActivity_quote == "New/New" AND competitorCode <> "NEW"){
+        if(salesActivity_quote == "New/New" AND competitorCode <> "NEW") {
             transactionCode = "01";
             reasonCode = "02";
         }
         // 01-11 = New - Change of Owner
-        if(salesActivity_quote == "Change of Owner"){
+        if(salesActivity_quote == "Change of Owner") {
             transactionCode = "01";
             reasonCode = "11";
             competitorCode = "";
@@ -113,24 +114,24 @@ for line in line_process{
         //-------------------------------------------------------------
         // First loop for Existing Customers - Perform Calculations
         //-------------------------------------------------------------
-        elif(salesActivity_quote == "Existing Customer"){
+        elif(salesActivity_quote == "Existing Customer") {
             processExisting = true;
 
             // Adding a new large or small container
             // 02-58 = Service Increase - Permanent
-            if(line._model_name == LARGE_CONTAINER){
+            if(line._model_name == LARGE_CONTAINER) {
                 print "Existing Customer - Large Container Added";
                 newLargeContainer = true;
             }
 
-            if(line._model_name == SMALL_CONTAINER){
+            if(line._model_name == SMALL_CONTAINER) {
                 print "Existing Customer - Small Container Added";
                 newSmallContainer = true;
 
-                if(NOT isnull(line.yardsPerMonth_line)){
+                if(NOT isnull(line.yardsPerMonth_line)) {
                     totalYardsPerMonthNew = totalYardsPerMonthNew + line.yardsPerMonth_line;
                 }
-                if(NOT isnull(line.currentYardsPerMonth_line)){
+                if(NOT isnull(line.currentYardsPerMonth_line)) {
                     totalYardsPerMonthCurrent = totalYardsPerMonthCurrent + line.currentYardsPerMonth_line;
                 }
             }
@@ -138,24 +139,24 @@ for line in line_process{
             // Activity to Existing Container
             if (salesActivity <> "") {
 
-                if(NOT isnull(line.yardsPerMonth_line)){
+                if(NOT isnull(line.yardsPerMonth_line)) {
                     totalYardsPerMonthNew = totalYardsPerMonthNew + line.yardsPerMonth_line;
                 }
-                if(NOT isnull(line.currentYardsPerMonth_line)){
+                if(NOT isnull(line.currentYardsPerMonth_line)) {
                     totalYardsPerMonthCurrent = totalYardsPerMonthCurrent + line.currentYardsPerMonth_line;
                 }
 
-                if(lower(salesActivity) == "service level change"){
+                if(lower(salesActivity) == "service level change") {
                     print "Existing Customer - Service Change";
                     serviceChange = true;
                 }
 
-                if(lower(salesActivity) == "price adjustment"){
+                if(lower(salesActivity) == "price adjustment") {
                     print "Existing Customer - Price Adjustment";
                     priceAdjustment = true;
                 }
 
-                if(lower(salesActivity) == "close container group"){
+                if(lower(salesActivity) == "close container group") {
                     print "Existing Customer - Close Container Group";
                     closeContainerGroup = true;
                 }
@@ -171,7 +172,7 @@ for line in line_process{
     }
     else
     {
-        if(line.rateType_line == "Base"){
+        if(line.rateType_line == "Base") {
             totalSellPriceCurrent = totalSellPriceCurrent + line.currentPrice_line;
             totalSellPriceNew = totalSellPriceNew + line.sellPrice_line;
         }
@@ -249,7 +250,7 @@ if (processExisting) {
                 // a Service Increase or Decrease by comparing the total yards per month before and after.
 
                 // 05-58 = Service Decrease Perm
-                if((totalYardsPerMonthNew < totalYardsPerMonthCurrent) OR closeContainerGroup){ 
+                if(totalYardsPerMonthNew < totalYardsPerMonthCurrent) { 
                     transactionCode = "05";
                     reasonCode = "58";
                 }
@@ -262,8 +263,7 @@ if (processExisting) {
             }
             else{
                 if(priceAdjustment 
-                    AND (totalSellPriceNew >= totalSellPriceCurrent))
-                {
+                    AND (totalSellPriceNew >= totalSellPriceCurrent)) {
                     // 03-62 Price Increase
                     transactionCode = "03";
                     reasonCode = "62";
