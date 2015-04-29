@@ -62,8 +62,8 @@ for line in line_process{
 // strip off the final /n since it leaves gaps in the CSA
 if (allDeliveryComments <> "") { allDeliveryComments = substring(allDeliveryComments ,0,len(allDeliveryComments)-1); }
 if (allServiceComments <> "") { allServiceComments = substring(allServiceComments ,0,len(allServiceComments )-1); }
-if (htmlDeliveryComments <> "") { htmlDeliveryComments = substring(htmlDeliveryComments ,0,len(htmlDeliveryComments)-1); }
-if (htmlServiceComments <> "") { htmlServiceComments = substring(htmlServiceComments ,0,len(htmlServiceComments )-1); }
+if (htmlDeliveryComments <> "") { htmlDeliveryComments = substring(htmlDeliveryComments ,0,len(htmlDeliveryComments)-5); }
+if (htmlServiceComments <> "") { htmlServiceComments = substring(htmlServiceComments ,0,len(htmlServiceComments )-5); }
 
 result = result + "1~deliveryNotes_quote~" + allDeliveryComments + "|";
 result = result + "1~deliveryNotesRichText_quote~" + htmlDeliveryComments + "|";

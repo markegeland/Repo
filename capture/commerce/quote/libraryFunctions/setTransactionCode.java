@@ -244,7 +244,23 @@ if (processExisting) {
                 reasonCode = "58";
                 competitorCode = "";
             }
-            elif (newSmallContainer OR serviceChange OR closeContainerGroup) {
+            elif (newSmallContainer OR closeContainerGroup) {
+                // currentYardsPerMonth_line is not populated, so use sell price instead of yards
+                // should probably populate currentYardsPerMonth_line in post pricing..
+                
+                // 05-58 = Service Decrease Perm
+                if(totalSellPriceNew <= totalSellPriceCurrent) {
+                    transactionCode = "05";
+                    reasonCode = "58";
+                }
+                // 02-58 = Service Increase Perm
+                else{
+                    transactionCode = "02";
+                    reasonCode = "58";
+                }
+                competitorCode = "";
+            }
+            elif (serviceChange) {
                 print "in newSmallContainer elif";
                 // If there is no new Large Container, but there is a new Small Container, determine if it is
                 // a Service Increase or Decrease by comparing the total yards per month before and after.
