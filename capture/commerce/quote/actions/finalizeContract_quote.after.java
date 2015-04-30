@@ -10,7 +10,7 @@ Description:  Runs after the finalizeContract action fires
  Output:  String (documentNumber + "~" + attributeVariableName + "~" + value + "|")
 
 Updates:  20150204 - John Palubinskas - #387 Added saleFinalizedDate_quote functionality.
-
+		  20150429 - Gaurav Dawar - #458 - add the commentsForDeliveryAndExchangeCreditOnOutput function to generate the string for VCD
 ================================================================================
 */
 
@@ -31,6 +31,7 @@ res = res
         + commerce.printing()
         + commerce.setStatus("finalizeContract")
         + commerce.setTransactionCode()
-        + commerce.unconfiguredServicesString();
+        + commerce.unconfiguredServicesString()
+		+ commerce.commentsForDeliveryAndExchangeCreditOnOutput();
 
 return res;

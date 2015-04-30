@@ -35,6 +35,7 @@ Updates:
                                       When reconfiguring containers, you are not guaranteed the the model line is immediately proceeded by the line items.
 		20150421 - Gaurav Dawar - #509 - Fixed the issue with hiding of comp with job codes.
 		20150423 - Gaurav Dawar - #515 - Fixed the issue with below the cost proration and RR comp to be excluded when term is MTM or 12.
+		20150429 - Gaurav Dawar - #575 - Fixed the Compensation Features to Address Frequency (e.g. non On-Call & Disposal UOM)
 ================================================================================ */
 
 
@@ -272,14 +273,38 @@ for line in line_process{
         put(tempQtyDict,line._parent_doc_number,line._price_quantity); 
         if(line._model_name=="Large Containers"){
             showLarge = true;
+			tempTons = 0.0;
             put(modelCategory,line._document_number,"LARGE CONTAINER");
-            tempTons = atof(getconfigattrvalue(line._document_number,"estTonsHaul_l"));
+			if(lower(getconfigattrvalue(line._document_number,"unitOfMeasure"))=="per ton"){
+				tempTons = atof(getconfigattrvalue(line._document_number,"estTonsHaul_l"));
+			}elif(lower(getconfigattrvalue(line._document_number,"unitOfMeasure"))=="per yard"){
+				tempTons = atof(getconfigattrvalue(line._document_number,"equipmentSize_l"));
+			}elif(lower(getconfigattrvalue(line._document_number,"unitOfMeasure"))=="per load"){
+				tempTons = 1.0;
+			}
             put(estTons,line._document_number,tempTons);
             tempHaulsPerMonth = 0.0;
             if(NOT isnull(getconfigattrvalue(line._document_number,"totalEstimatedHaulsMonth_l"))){
-                tempHaulsPerMonth = atof(getconfigattrvalue(line._document_number,"totalEstimatedHaulsMonth_l"));
+				if(getconfigattrvalue(line._document_number,"haulsPerPeriod") == "On-Call"){
+					tempHaulsPerMonth = atof(getconfigattrvalue(line._document_number,"totalEstimatedHaulsMonth_l"));
+				}else{
+					if(getconfigattrvalue(line._document_number,"haulsPerPeriod")<>"EOW" AND getconfigattrvalue(line._document_number,"haulsPerPeriod") <> "Every 4 Weeks"){
+						tempHaulsPerMonth = atof(substring(getconfigattrvalue(line._document_number,"haulsPerPeriod"),0,1))*52/12;
+					}else{
+						if(getconfigattrvalue(line._document_number,"haulsPerPeriod")=="EOW"){
+							tempHaulsPerMonth = 0.5*52/12;
+						}else{
+							tempHaulsPerMonth = 0.25*52/12;
+						}
+					}
+				}
             }
             put(estHaulsPerMonth,line._document_number,tempHaulsPerMonth);
+			print "tempTons";print tempTons;
+			print "tempHaulsPerMonth";print tempHaulsPerMonth;
+			haulsPerPeriod = getconfigattrvalue(line._document_number,"haulsPerPeriod");
+			print "haulsPerPeriod";print haulsPerPeriod;
+			print getconfigattrvalue(line._document_number,"unitOfMeasure");
         }
         elif(line._model_name=="Containers"){
             showSmall = true;

@@ -7,6 +7,7 @@
 //                               is populated.  Issue 864.
 // 20140912 - John Palubinskas - Modified to remove the status Quote Finalized and instead display
 //             					 Proposal/CSA with Customer 
+// 20150429 - Gaurav Dawar - #558 - Fixed the contract status on CSA to be "05" only when renewal term is MTM and rep selects "signed".
 // -----------------------------------------------------------------------------------------------
 res="";
 contractStatusCode = contractStatusSite_quote;
@@ -64,7 +65,7 @@ if(actionName == "next" OR actionName == "previous"){
 	}elif(contractStatus_quote == "Customer Accepted: Did not sign"){
 		contractStatusCode = "02";
 	}
-	if(renewalTerm_quote == "1"){
+	if(renewalTerm_quote == "1" AND contractStatusCode == "01"){
 		contractStatusCode = "05";
 	}
 }elif(actionName == "expire"){ // step- Generate Documets (Quote will go to expired step if it excceds 90 days in this step)
