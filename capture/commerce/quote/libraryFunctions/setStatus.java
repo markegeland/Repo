@@ -8,6 +8,8 @@
 // 20140912 - John Palubinskas - Modified to remove the status Quote Finalized and instead display
 //             					 Proposal/CSA with Customer 
 // 20150429 - Gaurav Dawar - #558 - Fixed the contract status on CSA to be "05" only when renewal term is MTM and rep selects "signed".
+// 20150428 - Mike Boylan - #501 - Used the finalizeContract step in the conditional to prevent 
+// status from changing on actions other than Finalize on the finalize page.
 // -----------------------------------------------------------------------------------------------
 res="";
 contractStatusCode = contractStatusSite_quote;
@@ -81,9 +83,9 @@ if(actionName == "next" OR actionName == "previous"){
 }
 
 // CSA was acted upon, set the final status no matter which action is chosen
-if(contractStatus_quote == "Customer Accepted: Signed" OR contractStatus_quote == "Customer Accepted: Did not sign"){
+if(actionName == "finalizeContract" AND (contractStatus_quote == "Customer Accepted: Signed" OR contractStatus_quote == "Customer Accepted: Did not sign")){
 	res="Customer Accepted";
-}elif(contractStatus_quote == "Customer Rejected"){
+}elif(actionName == "finalizeContract" AND contractStatus_quote == "Customer Rejected"){
 	res="Customer Rejected";
 }elif(contractStatus_quote == "Close Account"){
 	res="Lost Account";
