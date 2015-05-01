@@ -9,6 +9,7 @@
     20150212 - John Palubinskas - #68 add styles for financial-details-table
     20150224 - John Palubinskas - #25 branding updates
     20150424 - John Palubinskas - #533 update for input fields, fix intermittently bingMap_html not displaying
+    20150429 - John Palubinskas - #530 add style to hide line-item edit icon
 
    ================================================================================================== */
 
@@ -281,8 +282,9 @@ label.form-label.cm-reqattr-label {
 .parent-line-item .line-item-edit {
     background-image: url("/bmfsweb/republicservices/image/images/SR_11.png") !important;
 }
-/* @group Error Message Stuff */
-
+.child-line-item .line-item-edit {
+    display: none !important;
+}
 
 /*Config ----- */
 .text-field {
