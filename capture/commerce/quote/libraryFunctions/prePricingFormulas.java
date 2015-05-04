@@ -54,6 +54,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			20150403 - Mike (Republic) - #145 Small Container Pricing - sending model to calculateGuardrails
 			20150405 - Gaurav Dawar - #145 - Fixed InstallationCharge_line for doc engine
             20150412 - John Palubinskas - #449 comment out setting priceType = SMALL_CONTAINER in order to fix looping error on existing cust PI
+            20150430 - Mike Boylan - #508 set cost to zero for Ad-Hoc items
 =====================================================================================================
 */
 
@@ -2303,8 +2304,8 @@ for line in line_process{
 
             //=============================== END - Assign Guardrails to Outputs ===============================//  
         }
-        else{   //For Ad-Hoc parts, the floor, base, target, and stretch are all the value entered by the user
-            floorPrice = line._price_unit_price_each;
+        else{   //For Ad-Hoc parts, the base, target, and stretch are all the value entered by the user
+            floorPrice = 0.0;
             basePrice = line._price_unit_price_each;
             targetPrice = line._price_unit_price_each;
             stretchPrice = line._price_unit_price_each;
