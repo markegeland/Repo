@@ -41,8 +41,9 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              02/10/15 - John (Republic) - #68 remove all references to approvalReasonDisplayWithColorTA as it is handled by approvalReasonDisplay
                                           Moved all rate restriction logic from Printing action to postPricing formulas since it's needed for approvals.
                                           Fix incorrect disposal site being displayed.
-
              03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
+             04/30/15 - Mike (Republic) - #508 Restructuring totals by omitting adhoc fees.  Fixed several existing bugs.  Added variables 
+	                                  for adhoc fees on CSA and Proposal.
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -127,6 +128,8 @@ adHocMonthlyTotalSell = 0.0;
 adHocPerHaulTotalSell = 0.0;
 adHocOneTimeTotalSell = 0.0;
 adHocOneTimeERFandFRF = 0.0;
+adHocMonthlyERFandFRF = 0.0;
+adHocPerHaulERFandFRF = 0.0;
 
 testcount = 0;
 adminRateAlreadyAppliedOnLine = false;
@@ -592,18 +595,20 @@ for line in line_process{
         if(line.rateType_line == "Ad-Hoc") {
 
             billingMethod = line.frequency_line;
-            showOnProposal = getconfigattrvalue(line._parent_doc_number, "isDisplayedOnProposal_adhoc");
+            showOnProposal = line.adHocDisplayOnProposal_line;
 
-            if(showOnProposal == "true") {
+            if(showOnProposal == true) {
                 if(billingMethod == "Monthly") { 
-                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line; 
+                    adHocMonthlyERFandFRF = FRF_CONST + ERF_CONST;
+                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line + adHocMonthlyERFandFRF; 
                 }
                 if(billingMethod == "Per Haul") { 
-                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line;  
+                    adHocPerHaulERFandFRF = FRF_CONST + ERF_CONST;
+                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line + adHocPerHaulERFandFRF;  
                 }
                 if(billingMethod == "One Time") { 
-                    adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
                     adHocOneTimeERFandFRF = FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+                    adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + adHocOneTimeERFandFRF;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
                 }
             }
         }
@@ -668,7 +673,7 @@ if(hasLineItemsOnQuote_quote){
         grandTotalBase = smallMonthlyTotalBase_quote + largeMonthlyTotalBase_quote + erfTotalSellBase + frfTotalSellBase + adminRate_quote;
         grandTotalTarget = smallMonthlyTotalTarget_quote + largeMonthlyTotalTarget_quote + erfTotalSellTarget + frfTotalSellTarget + adminRate_quote;
         grandTotalStretch = smallMonthlyTotalStretch_quote + largeMonthlyTotalStretch_quote + erfTotalSellStretch + frfTotalSellStretch + adminRate_quote;
-        grandTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote + erfTotalSell + frfTotalSell + adminRate_quote + adHocMonthlyTotalSell + adHocPerHaulTotalSell;
+        grandTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote + erfTotalSell + frfTotalSell + adminRate_quote;
     }
     else {
         returnStr = returnStr   + "1~" + "adminRate_quote" + "~" + "0.0" + "|";
@@ -684,6 +689,10 @@ if(hasLineItemsOnQuote_quote){
     }elif((grandTotalSell >= grandTotalStretch)){
         priceBand = "stretch";
     }
+    
+    //Create reporting values for the Proposal
+    grandTotalInclAdHoc = grandTotalSell + adHocMonthlyTotalSell + adHocPerHaulTotalSell;
+    erfAndFrfTotalInclAdHoc = erfAndFrfTotalSell + adHocMonthlyERFandFRF + adHocPerHaulERFandFRF;
     
     //Get Commission Rate from commissionRate table for corresponding price band
     commissionRateRS = bmql("SELECT commissionRate FROM commissionRate WHERE ((priceBand = $priceBand OR priceBand = 'All' OR priceBand = '') AND (ERF = $includeERF_quote OR ERF = 'All') AND (FRF = $includeFRF_quote OR FRF = 'All'))");
@@ -1036,7 +1045,9 @@ returnStr = returnStr   + "1~" + "divisionSalesGroup_quote" + "~" + (divisionSal
                         + "1~" + "smallSolidWasteNetRevenue_quote" + "~" + string(smallMonthlyNetRevenue_SolidWaste) + "|"
                         + "1~" + "smallRecyclingNetRevenue_quote" + "~" + string(smallMonthlyNetRevenue_Recycling) + "|"
                         + "1~" + "largeSolidWasteNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_SolidWaste) + "|"
-                        + "1~" + "largeRecyclingNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_Recycling) + "|";
+                        + "1~" + "largeRecyclingNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_Recycling) + "|"
+                        + "1~" + "grandTotalInclAdHoc_quote" + "~" + string(grandTotalInclAdHoc) + "|"
+                        + "1~" + "erfAndFrfTotalInclAdHoc_quote" + "~" + string(erfAndFrfTotalInclAdHoc) + "|";
 if(_system_current_step_var == "adjustPricing"){                    
     returnStr = returnStr   + "1~" + "level1ApprovalRequired_quote" + "~" + string(level1ApprovalRequired) + "|"
                             + "1~" + "level2ApprovalRequired_quote" + "~" + string(level2ApprovalRequired) + "|"
