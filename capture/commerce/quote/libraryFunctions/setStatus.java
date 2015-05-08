@@ -10,6 +10,10 @@
 // 20150429 - Gaurav Dawar - #558 - Fixed the contract status on CSA to be "05" only when renewal term is MTM and rep selects "signed".
 // 20150428 - Mike Boylan - #501 - Used the finalizeContract step in the conditional to prevent 
 // status from changing on actions other than Finalize on the finalize page.
+// 20150428 - Mike Boylan - #501 - Used the finalizeContract step in the conditional to prevent 
+// status from changing on actions other than Finalize on the finalize page.
+// 20150506 - Mike Boylan - #501 - Oracle did not take into account the state of _system_current_step_var
+// when they provided their solution.  I corrected this.
 // -----------------------------------------------------------------------------------------------
 res="";
 contractStatusCode = contractStatusSite_quote;
@@ -82,10 +86,13 @@ if(actionName == "next" OR actionName == "previous"){
 	res="Superseded";
 }
 
+print "Current Step";
+print _system_current_step_var;
+
 // CSA was acted upon, set the final status no matter which action is chosen
-if(actionName == "finalizeContract" AND (contractStatus_quote == "Customer Accepted: Signed" OR contractStatus_quote == "Customer Accepted: Did not sign")){
+if(_system_current_step_var == "submitted_process" AND (contractStatus_quote == "Customer Accepted: Signed" OR contractStatus_quote == "Customer Accepted: Did not sign")){
 	res="Customer Accepted";
-}elif(actionName == "finalizeContract" AND contractStatus_quote == "Customer Rejected"){
+}elif(_system_current_step_var == "submitted_process" AND contractStatus_quote == "Customer Rejected"){
 	res="Customer Rejected";
 }elif(contractStatus_quote == "Close Account"){
 	res="Lost Account";
