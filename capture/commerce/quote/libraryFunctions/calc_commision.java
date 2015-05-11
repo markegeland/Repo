@@ -290,7 +290,7 @@ for line in line_process{
 			}elif(lower(getconfigattrvalue(line._document_number,"unitOfMeasure"))=="per yard"){
 				tempTons = atof(getconfigattrvalue(line._document_number,"equipmentSize_l"));
 			}elif(lower(getconfigattrvalue(line._document_number,"unitOfMeasure"))=="per load"){
-				tempTons = 1.0*atof(getconfigattrvalue(line._document_number,"quantity"));
+				tempTons = 1.0;
 			}
 			print "quantity";print getconfigattrvalue(line._document_number,"quantity");
             put(estTons,line._document_number,tempTons);
