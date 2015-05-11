@@ -1,13 +1,16 @@
+// 20150501 - John Palubinskas - #518 updated for new start step name
+
 result="";
-if(_system_current_step_var == "start_step"){
+
+if(_system_current_step_var == "startNewQuote"){
 	divisionSalesGroup = "d" + division_quote + "SalesReps";
 	divisionManagerGroup = "d" + division_quote + "Managers";
 	divisionExecManagerGroup = "d" + division_quote + "ExecManagers";
 	
 	result = result + "1~progressStarted_quote~" + getstrdate() + "|"
-				+ "1~" + "divisionSalesGroup_quote" + "~" + (divisionSalesGroup) + "|"
-				+ "1~" + "divisionManagerGroup_quote" + "~" + (divisionManagerGroup) + "|"
-				+ "1~" + "divisionExecManagerGroup_quote" + "~" + (divisionExecManagerGroup) + "|";
+				 	+ "1~divisionSalesGroup_quote" + "~" + (divisionSalesGroup) + "|"
+					+ "1~divisionManagerGroup_quote" + "~" + (divisionManagerGroup) + "|"
+					+ "1~divisionExecManagerGroup_quote" + "~" + (divisionExecManagerGroup) + "|";
 }
 
 // added this code for assigning the default fee values
@@ -84,11 +87,9 @@ if(infoProDivision == ""){
 	//and user has not selected one from it in 1st screen - handler for legacy quotes
 	//result =result + "1~infoProDivision_quote~" + infoProDivision + "|";
 }
-result =result + "1~infoproDivision_RO_quote~" + infoProDivision + "|";
 
-result =result + "1~feesToCharge_quote~" + fees + "|";
-
-
+result = result + "1~infoproDivision_RO_quote~" + infoProDivision + "|";
+result = result + "1~feesToCharge_quote~" + fees + "|";
 result = result + "1~numOfContainersOnThisAccountAndSite_quote~" + string(containerCnt) + "|";
 
 
