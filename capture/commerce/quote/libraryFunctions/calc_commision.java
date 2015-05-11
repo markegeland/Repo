@@ -33,9 +33,10 @@ Updates:
         20150122 - Gaurav Dawar - #361 Added Functionality to hide Comp for Change of owner and Existing Customer Quotes(Except New Site).
         20150416 - John Palubinskas - #516 Fix RTE due to reconfiguration of line items not being handled.  Added modelNameDict to support properly setting the modelCategory.
                                       When reconfiguring containers, you are not guaranteed the the model line is immediately proceeded by the line items.
-		20150421 - Gaurav Dawar - #509 - Fixed the issue with hiding of comp with job codes.
-		20150423 - Gaurav Dawar - #515 - Fixed the issue with below the cost proration and RR comp to be excluded when term is MTM or 12.
-		20150429 - Gaurav Dawar - #575 - Fixed the Compensation Features to Address Frequency (e.g. non On-Call & Disposal UOM)
+	20150421 - Gaurav Dawar - #509 - Fixed the issue with hiding of comp with job codes.
+	20150423 - Gaurav Dawar - #515 - Fixed the issue with below the cost proration and RR comp to be excluded when term is MTM or 12.
+	20150429 - Gaurav Dawar - #575 - Fixed the Compensation Features to Address Frequency (e.g. non On-Call & Disposal UOM)
+	20150511 - Gaurav Dawar - #575 - Fixed the issue quantity on comp.
 ================================================================================ */
 
 
@@ -264,7 +265,16 @@ for line in line_process{
                 put(targetHaul,line._parent_doc_number,line.totalTargetPrice_line+tempTargetFees);
                 put(stretchHaul,line._parent_doc_number,line.totalStretchPrice_line+tempStretchFees);
                 put(proposedHaul,line._parent_doc_number,line.sellPrice_line+tempProposedFees);
-                
+				print "line.totalFloorPrice_line";print line.totalFloorPrice_line;
+				print "tempFloorFees";print tempFloorFees;
+				print "line.totalBasePrice_line";print line.totalBasePrice_line;
+				print "tempBaseFees";print tempBaseFees;
+				print "line.totalTargetPrice_line";print line.totalTargetPrice_line;
+				print "tempTargetFees";print tempTargetFees;
+				print "line.totalStretchPrice_line";print line.totalStretchPrice_line;
+				print "tempStretchFees";print tempStretchFees;
+				print "line.sellPrice_line";print line.sellPrice_line;
+				print "tempProposedFees";print tempProposedFees;                
             }
         }
     }
@@ -280,21 +290,22 @@ for line in line_process{
 			}elif(lower(getconfigattrvalue(line._document_number,"unitOfMeasure"))=="per yard"){
 				tempTons = atof(getconfigattrvalue(line._document_number,"equipmentSize_l"));
 			}elif(lower(getconfigattrvalue(line._document_number,"unitOfMeasure"))=="per load"){
-				tempTons = 1.0;
+				tempTons = 1.0*atof(getconfigattrvalue(line._document_number,"quantity"));
 			}
+			print "quantity";print getconfigattrvalue(line._document_number,"quantity");
             put(estTons,line._document_number,tempTons);
             tempHaulsPerMonth = 0.0;
             if(NOT isnull(getconfigattrvalue(line._document_number,"totalEstimatedHaulsMonth_l"))){
 				if(getconfigattrvalue(line._document_number,"haulsPerPeriod") == "On-Call"){
-					tempHaulsPerMonth = atof(getconfigattrvalue(line._document_number,"totalEstimatedHaulsMonth_l"));
+					tempHaulsPerMonth = atof(getconfigattrvalue(line._document_number,"totalEstimatedHaulsMonth_l"))*atof(getconfigattrvalue(line._document_number,"quantity"));
 				}else{
 					if(getconfigattrvalue(line._document_number,"haulsPerPeriod")<>"EOW" AND getconfigattrvalue(line._document_number,"haulsPerPeriod") <> "Every 4 Weeks"){
-						tempHaulsPerMonth = atof(substring(getconfigattrvalue(line._document_number,"haulsPerPeriod"),0,1))*52/12;
+						tempHaulsPerMonth = (atof(substring(getconfigattrvalue(line._document_number,"haulsPerPeriod"),0,1))*52/12)*atof(getconfigattrvalue(line._document_number,"quantity"));
 					}else{
 						if(getconfigattrvalue(line._document_number,"haulsPerPeriod")=="EOW"){
-							tempHaulsPerMonth = 0.5*52/12;
+							tempHaulsPerMonth = (0.5*52/12)*atof(getconfigattrvalue(line._document_number,"quantity"));
 						}else{
-							tempHaulsPerMonth = 0.25*52/12;
+							tempHaulsPerMonth = (0.25*52/12)*atof(getconfigattrvalue(line._document_number,"quantity"));
 						}
 					}
 				}
@@ -353,22 +364,33 @@ for container in largeContainerCalc{
     floorCalc = get(floorRental,modelDocNumber)+(get(floorDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(floorHaul,modelDocNumber)*tempHaulsPerMonth);
     floorLargeTotal = floorLargeTotal + floorCalc;
     put(floorModelPrice,modelDocNumber,floorCalc);
-
+	Print "floorCalc";print floorCalc;
+	Print "floorLargeTotal";print floorLargeTotal;
     baseCalc = get(baseRental,modelDocNumber)+(get(baseDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(baseHaul,modelDocNumber)*tempHaulsPerMonth);
     baseLargeTotal = baseLargeTotal + baseCalc;
     put(baseModelPrice,modelDocNumber,baseCalc);
-
+	Print "baseCalc";print baseCalc;
+	Print "baseLargeTotal";print baseLargeTotal;
     targetCalc = get(targetRental,modelDocNumber)+(get(targetDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(targetHaul,modelDocNumber)*tempHaulsPerMonth);
     targetLargeTotal = targetLargeTotal + targetCalc;
     put(targetModelPrice,modelDocNumber,targetCalc);
-
+	Print "targetCalc";print targetCalc;
+	Print "targetLargeTotal";print targetLargeTotal;
+	print "targetRental";print get(targetRental,modelDocNumber);
+	print "targetDisposal";print get(targetDisposal,modelDocNumber);
+	print "targetHaul";print get(targetHaul,modelDocNumber);
+	print "tempTons";print tempTons;
+	print "tempHaulsPerMonth";print tempHaulsPerMonth;
     stretchCalc = get(stretchRental,modelDocNumber)+(get(stretchDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(stretchHaul,modelDocNumber)*tempHaulsPerMonth);
     stretchLargeTotal = stretchLargeTotal + stretchCalc;
     put(stretchModelPrice,modelDocNumber,stretchCalc);
-
+	Print "stretchCalc";print stretchCalc;
+	Print "stretchLargeTotal";print stretchLargeTotal;
     proposedCalc = get(proposedRental,modelDocNumber)+(get(proposedDisposal,modelDocNumber)*tempTons*tempHaulsPerMonth)+(get(proposedHaul,modelDocNumber)*tempHaulsPerMonth);
     proposedLargeTotal = proposedLargeTotal + proposedCalc;
     put(proposedModelPrice,modelDocNumber,proposedCalc);
+	Print "proposedCalc";print proposedCalc;
+	Print "proposedLargeTotal";print proposedLargeTotal;
 }
 
 //Loop through tempModelDict to create modelDict
