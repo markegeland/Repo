@@ -5,6 +5,8 @@
  * 
  * 20150304 - John Palubinskas - #25 comment out all coloring of buttons
  * 20150310 - John Palubinskas - #451 fix upgrade issue where button id return_to_quote changed to return_-_quote
+ * 20150508 - John Palubinskas - #518 CRM updates to hide new actions when not coming from SFDC
+ *                                    Also handle clicking Next on the start step.
  *
  */
 require([], function() {
@@ -23,7 +25,26 @@ require([], function() {
 			var spanEle = document.createElement("span");
 			header.appendChild(spanEle);
 		}
-		
+
+		//Added in order to auto-transition from the default startStep to the newly created startNewQuote
+		//The newly created attribute startStepAutoTransition will only exist on the layout during the startStep
+		if($('#field_wrapper_1_startStepAutoTransition').length){
+			$('#delete').closest("table").hide();
+			$('#next').closest("table").hide();
+			$('#panel_573376740').hide();
+			showLoadingDialog();
+			$('#next').closest("table").click();	
+		}
+
+		//Hide certain actions if the quote was started from Capture
+		//Need to hide is when it's a hidden input or a select in the CRM Information tab
+		if(($('input[name=sourceSystem_quote]').val() == "CAPTURE") ||
+		   ($('select[name=sourceSystem_quote]').val() == "CAPTURE"))
+		{
+			$('#return_to_opportunity').closest("table").hide();
+			$('#refresh_contacts').closest("table").hide();
+		}
+
 		/* Make sure to comment all console.log commands - they are not supported in IE8, it sucks :(*/	
 		//Start - used When User returns to commerce from Config(Returns to quote via 'Add To Quote' Action)
 		//Following code will run in Commerce only

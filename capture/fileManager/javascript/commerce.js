@@ -2,6 +2,7 @@
  * @param dependencies {Array} name of modules this code depends on. Can exclude ".js"
  * @param callback {Function} function containing this module's functionality.
  * @version Fri Feb 25 18:44:56 2011
+ *
  */
 require(["return_to_quote_button", "commerce_ids", "excanvas", "jquery_cookie", "highcharts"], function (rtq) {
 	/*
@@ -12,6 +13,7 @@ require(["return_to_quote_button", "commerce_ids", "excanvas", "jquery_cookie", 
     require.ready(function () {
         rtq.set_cookie_in_commerce();
 		
+
 		/* Make sure to comment all console.log commands, IE8 doesn't like them. It sucks :(*/
 		// console.log('in chart');
 		//Chart Rendering begins here 
@@ -501,7 +503,7 @@ require(["return_to_quote_button", "commerce_ids", "excanvas", "jquery_cookie", 
 		}
 		
 		//Show loading mask on Reconfigure
-		$("div[actionid='4654410']").click(function(){showLoadingDialog();	});
+		$("div[actionid='4654410']").click(function(){ showLoadingDialog(); });
 
     });
 });
