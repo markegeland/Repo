@@ -1,37 +1,47 @@
 /*
 ===================================================================================
-Name:   next.before.java
-Author:   
-Create date:  
-Description:  The before formulas logic for the general Next action.  dialog box.  Sets the status and the submitted date.
+       Name: next.before.java
+     Author: ???
+Create date: ???
+Description: The before formulas logic for the general Next action.
         
-Input:   	_system_company_name - String - system being used
-                _system_current_step_var - String - current step 
-                _quote_process_customer_id - customer ID
-	        division_quote - String - Lawson Division
-		salesActivity_quote - String - New, Existing Customer, Change of Owner
-		SiteNumber_quote - customer site number
-		
+      Input: _system_company_name - String - system being used
+             _system_current_step_var - String - current step 
+             _quote_process_customer_id - customer ID
+             division_quote - String - Lawson Division
+             salesActivity_quote - String - New, Existing Customer, Change of Owner
+             SiteNumber_quote - customer site number        
                     
-Output:  	String - Output parsed as HTML by the attribute to display table 
-                of attributes
+     Output: orderManagementEmail_quote
+             quoteAssignedTo_Quote
+             siteContainerGroupsHTMLText_quote
+             siteContainersData_quote
+             reportingStatus_quote
 
-Updates:	04/04/15 - Mike (Republic) - added reporting status
+Updates: 
+  05/08/15 - John Palubinskas - update email to send dev/test approvals to captureSupport instead of spamming gmail.
+                                Clean up setting reportingStatus_quote.
+
 ===================================================================================
 */
 retStr = "";
 status = "";
 orderMgmtEmailStr = "";
 quoteAssignEmailStr = "";
-retStr = retStr +  commerce.setSiteCustomerReadOnlyAttributes()+ commerce.copySiteInfoToBillingInfo() + commerce.settingDefaultsForInitialAndRenewalTermsBasedOnLawsonDivision();
+reportingStatus = reportingStatus_quote;
+
+retStr = retStr + commerce.setSiteCustomerReadOnlyAttributes();
+retStr = retStr + commerce.copySiteInfoToBillingInfo();
+retStr = retStr + commerce.settingDefaultsForInitialAndRenewalTermsBasedOnLawsonDivision();
+retStr = retStr + commerce.feeDefaults();
 
 //Order management email setup
 if(lower(_system_company_name) == "testrepublicservices" OR lower(_system_company_name) == "devrepublicservices"){
-	orderMgmtEmailStr = "approvals.testing@gmail.com";
-	quoteAssignEmailStr = "approvals.testing@gmail.com";
+    orderMgmtEmailStr = "capturesupport@republicservices.com";
+    quoteAssignEmailStr = "capturesupport@republicservices.com";
 }elif(lower(_system_company_name) == "republicservices"){
-	orderMgmtEmailStr = "CSA" + division_quote + "@republicservices.com"; // + "," +"dl_bmi_ops_" + division_quote + "@republicservices.com";
-	quoteAssignEmailStr = "Assign" + division_quote + "@republicservices.com"; 
+    orderMgmtEmailStr = "CSA" + division_quote + "@republicservices.com";
+    quoteAssignEmailStr = "Assign" + division_quote + "@republicservices.com"; 
 }
 
 retStr = retStr + "1~orderManagementEmail_quote~" + orderMgmtEmailStr + "|";
@@ -41,51 +51,50 @@ siteContainershtmlStr = "";
 siteContainerstextStr = "";
 if(salesActivity_quote == "Existing Customer" OR salesActivity_quote == "Change of Owner"){
 
-	containersInputDict = dict("string");
-	put(containersInputDict, "_quote_process_customer_id", _quote_process_customer_id);
-	put(containersInputDict, "SiteNumber_quote", SiteNumber_quote);
-	put(containersInputDict, "containerGroupForTransaction_quote", containerGroupForTransaction_quote);
-	containersOutputDict = util.getContainerGroups(containersInputDict);
-	
-	if(containskey(containersOutputDict, "html")){
-		siteContainershtmlStr = get(containersOutputDict, "html");
-	}
-	if(containskey(containersOutputDict, "text")){
-		siteContainerstextStr = get(containersOutputDict, "text");
-	}
+    containersInputDict = dict("string");
+    put(containersInputDict, "_quote_process_customer_id", _quote_process_customer_id);
+    put(containersInputDict, "SiteNumber_quote", SiteNumber_quote);
+    put(containersInputDict, "containerGroupForTransaction_quote", containerGroupForTransaction_quote);
+    containersOutputDict = util.getContainerGroups(containersInputDict);
+    
+    if(containskey(containersOutputDict, "html")){
+        siteContainershtmlStr = get(containersOutputDict, "html");
+    }
+    if(containskey(containersOutputDict, "text")){
+        siteContainerstextStr = get(containersOutputDict, "text");
+    }
 }
-retStr = retStr + "1" + "~" + "siteContainerGroupsHTMLText_quote" + "~" + siteContainershtmlStr + "|"
-	            + "1" + "~" + "siteContainersData_quote" + "~" + siteContainerstextStr + "|";
+retStr = retStr + "1~siteContainerGroupsHTMLText_quote~" + siteContainershtmlStr + "|"
+                + "1~siteContainersData_quote~" + siteContainerstextStr + "|";
 
 //Set the reportingStatus_quote
 if(_system_current_step_var == "newCustomerAndSite"){
-	retStr = retStr + "1~reportingStatus_quote~Created|";
+    reportingStatus = "Created";
 }
 elif(_system_current_step_var == "newCustomerAndSite_bmClone_3"){
-	retStr = retStr + "1~reportingStatus_quote~Created|";
+    reportingStatus = "Created";
 }
 elif(_system_current_step_var == "newCustomerAndSite_bmClone_1"){
-	retStr = retStr + "1~reportingStatus_quote~Created|";
+    reportingStatus = "Created";
 }
 elif(_system_current_step_var == "newCustomerAndSite_bmClone_2"){
-	retStr = retStr + "1~reportingStatus_quote~Created|";
+    reportingStatus = "Created";
 }
 elif(_system_current_step_var == "newCustomerAndSite_bmClone_4"){
-	retStr = retStr + "1~reportingStatus_quote~Created|";
+    reportingStatus = "Created";
 }
 elif(_system_current_step_var == "selectServices"){
-	retStr = retStr + "1~reportingStatus_quote~Configured|";
+    reportingStatus = "Configured";
 }
 elif(_system_current_step_var == "selectServices_bmClone_1"){
-	retStr = retStr + "1~reportingStatus_quote~Configured|";
+    reportingStatus = "Configured";
 }
 elif(_system_current_step_var == "selectServices_bmClone_2"){
-	retStr = retStr + "1~reportingStatus_quote~Configured|";
+    reportingStatus = "Configured";
 }
 elif(_system_current_step_var == "selectServices_bmClone_3"){
-	retStr = retStr + "1~reportingStatus_quote~Configured|";
+    reportingStatus = "Configured";
 }
-
-retStr = retStr + commerce.feeDefaults();
+retStr = retStr + "1~reportingStatus_quote~" + reportingStatus + "|";
 
 return retStr;

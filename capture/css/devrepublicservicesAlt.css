@@ -10,7 +10,9 @@
     20150224 - John Palubinskas - #25 branding updates
     20150424 - John Palubinskas - #533 update for input fields, fix intermittently bingMap_html not displaying
     20150429 - John Palubinskas - #530 add style to hide line-item edit icon
-    20150504 - Mike Boylan      - #524 add style, bold, font size on contractFinalized
+    20150504 - Mike Boylan      - #524 add style, font size on contractFinalized
+    20150508 - John Palubinskas - #518 add a height to form-approval class
+    20150511 - John Palubinskas - #518 apply margins to readonly_1_newWorkflowImage_quote to remove horizontal scrolling
 
    ================================================================================================== */
 
@@ -138,6 +140,9 @@ a.header-item img {
     border: 1px solid #00ADEF !important;
     font-size: 14px !important;
     height: 23px !important;
+}
+.form-approval input{
+    height: 25px !important;
 }
 .form-input[name="_siteAddress_quote_state_menu"] {
     width: 85% !important;
@@ -775,8 +780,12 @@ div#attribute-compactorContainerLabel.attribute{
     margin-left: 25px !important;
 }
 
+/* Workflow (what step you're on) image */
 #newWorkflowImage_config{
     padding: 1px !important;    
+}
+#readonly_1_newWorkflowImage_quote{
+    margin: 0px -20px -11px -20px;
 }
 
 div.MicrosoftMap.MapTypeId_auto.large.dark {
@@ -1035,25 +1044,18 @@ div#content23261115,
 div#content5715798, 
 div#content23311992, 
 div#content5668209, 
-div#content8568692 {
+div#content8568692,
+div#content5668141 {
     background-color: #FFFFFF !important;
     border: none !important;
 }
 
 /* tab content for newWorkflowImage      - dev,test:5668141, prod: , train:  */
-div#content5715798,   
 div#content5668141 {
-    margin-left: -33px;
-    margin-right: -33px;
-    padding: 1px !important;
+    margin: 0px -10px !important;
+    padding: 0px !important;
 }
 
-/* could not find content      - dev,test: , prod: , train:  */
-div#content5736320 {
-    background-color: #FFFFFF !important;
-    border: none !important;
-    font-size: 10pt !important;
-}       
 
 /* could not find panels      - dev,test: , prod: , train:  */
 div#panel_5736319 > div.panel-tl > div.panel-tr > div.panel-tc > span.panel-heading{
