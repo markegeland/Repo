@@ -17,8 +17,11 @@
 // 20150506 - Mike Boylan      - #501 Oracle did not take into account the state of _system_current_step_var
 //                               when they provided their solution.  I corrected this.
 // 20150506 - John Palubinskas - #518 set opportunityReadOnly_quote = true where newStage = Close or Lost
+// 20150513 - John Palubinskas - #518 refactor actionName = print or email since they're the same functionality
+//                               Also handle when Previous is clicked on the finalizeContrast step.
 // -----------------------------------------------------------------------------------------------
-res="";
+res=status_quote; // keep current status_quote if we don't set a new value
+
 contractStatusCode = contractStatusSite_quote;
 currentStatus=status_quote;
 retStr = "";
@@ -47,7 +50,8 @@ if(actionName == "next" OR actionName == "previous"){
 }elif(actionName == "reject"){ //step-Submitted for approval
     res="Rejected";
     newStage = currentStage;
-}elif(actionName == "print"){ // step - Generate Documents
+}elif(((actionName == "print") OR (actionName == "email")) 
+       AND (_system_current_step_var <> "contractFinalized")){ // step - Generate Documents
     if(chooseProposal_quote == true){
         res="Proposal with Customer";
         if(currentStage == "Configure") { //Only move from Configure to Propose, and not backwards.
@@ -65,31 +69,12 @@ if(actionName == "next" OR actionName == "previous"){
         }
     }elif(chooseProposal_quote == true AND chooseCSA_quote == true){
         res="CSA with Customer";
-        newStage = "Propose";
+        if(currentStage == "Configure") { //Only move from Configure to Propose, and not backwards.
+            newStage = "Propose";
+        } else {
+            newStage = currentStage;
+        }
     }   
-}elif(actionName == "email"){ // step - Generate Documents
-    if(chooseProposal_quote == true AND chooseCSA_quote == true){
-        res="CSA with Customer";
-        if(currentStage == "Configure") { //Only move from Configure to Propose, and not backwards.
-            newStage = "Propose";
-        } else {
-            newStage = currentStage;
-        }
-    }elif(chooseCSA_quote == true){
-        res="CSA with Customer";
-        if(currentStage == "Configure") { //Only move from Configure to Propose, and not backwards.
-            newStage = "Propose";
-        } else {
-            newStage = currentStage;
-        }
-    }elif(chooseProposal_quote == true){
-        res="Proposal with Customer";
-        if(currentStage == "Configure") { //Only move from Configure to Propose, and not backwards.
-            newStage = "Propose";
-        } else {
-            newStage = currentStage;
-        }
-    }
 }elif(actionName == "finalizeContract"){ // step - Generate Documents
     // User clicked Next to get to Finalize step. Do not display Quote Finalized, instead display CSA with Customer
     // until the CSA was acted upon.
@@ -147,7 +132,7 @@ if(actionName == "next" OR actionName == "previous"){
 }
 
 // Finalize Button was Clicked
-if(_system_current_step_var == "submitted_process") {
+if((_system_current_step_var == "submitted_process") AND (actionName <> "previous")) {
     if(contractStatus_quote == "Customer Accepted: Signed" OR 
        contractStatus_quote == "Customer Accepted: Did not sign") {
         res="Customer Accepted";
