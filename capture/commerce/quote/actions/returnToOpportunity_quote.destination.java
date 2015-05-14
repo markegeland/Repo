@@ -1,10 +1,11 @@
+// -----------------------------------------------------------------------------------------------
 //    Name: returnToOpportunity_quote destination function
 //
 // Purpose: Sets the destination URL for the Return to Opportunity button action
 // Created: 5/1/2015 - #518 CRM integration
 //
 // Updates:
-// -----------------------------------------------------------------------------------------------
+// 20150512 - John Palubinskas - #518 update testSFDC url to point to cs7
 //
 // -----------------------------------------------------------------------------------------------
 
@@ -12,7 +13,7 @@ urlString = "";
 
 if(_system_company_name == "testsfdcrepublicservices")
 {
-	urlString = "cs8";
+	urlString = "cs7";
 }
 elif(_system_company_name == "devrepublicservices")
 {

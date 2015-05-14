@@ -946,7 +946,7 @@ label[for="copyEmailSender_quote"]{
 }
 
 a#print_documents,
-a#print_office_documents,
+a#print_office_csa,
 a#email_documents{
     display: inline-block;
     width: 180px;
