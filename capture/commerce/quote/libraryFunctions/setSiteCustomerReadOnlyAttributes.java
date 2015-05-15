@@ -19,6 +19,7 @@ Updates:    20141007 - JPalubinskas - Added contID_readOnly_quote for contID F/O
             20150123 - JPalubinskas - #233 set the fees from the data tables rather than from the
                                       checkboxes since this is for the read only attributes.
                                       Refactored for clarity.
+			20150515 - RN - #291 query divisionFeeRate to determine if admin fee is charged for new customer
         
 =====================================================================================================
 */
@@ -116,8 +117,9 @@ if(_quote_process_siteAddress_quote_phone <> ""){
 
 // The read only values are populated with the division default fee rates for new
 // and overwritten with account level data for existing.
-divisionFeeRateRecordSet = bmql("SELECT fRFRate, eRFRate, adminAmount, erf_on_frf, infopro_div_nbr FROM divisionFeeRate WHERE divisionNumber = $division_quote AND infopro_div_nbr = $infoproDivision_quote");
+divisionFeeRateRecordSet = bmql("SELECT fRFRate, eRFRate, adminAmount, erf_on_frf, infopro_div_nbr FROM divisionFeeRate WHERE divisionNumber = $division_quote AND infopro_div_nbr = $infoProNumberDisplayOnly_quote");
 
+print infoproDivision_quote;
 frfOn = "No";
 erfOn = "No";
 adminOn = "No";
@@ -148,8 +150,15 @@ print "adminOn: " + adminOn;
 //================================ Existing Customer Invoice Information
 
 contID = "O";
-
 if(lower(salesActivity_quote) == "existing customer"){
+
+contID = "O";
+frfOn = "No";
+erfOn = "No";
+adminOn = "No";
+frfRateStr = "0.0";
+erfRateStr = "0.0";
+adminRateStr = "0.0";
 
     // Fees
     accountStatusRS = bmql("SELECT infopro_div_nbr, is_frf_locked, is_erf_locked, is_Admin_Charged, is_frf_charged, is_erf_charged, is_franchise FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote");
@@ -206,7 +215,7 @@ if(lower(salesActivity_quote) == "existing customer"){
 		retStr = retStr + "1~nRD_readOnly_quote~" + NRD + "|";	
 	}
 
-	// Invoice Address
+	// Invoice Address   
 	invoiceAddressStr = "";
 	invoiceAddressArr = string[];
 	if(_quote_process_billTo_address <> ""){
@@ -229,7 +238,7 @@ if(lower(salesActivity_quote) == "existing customer"){
 }
 
 retStr = retStr + "1~fRF_readOnly_quote~" + frfOn + "|"
-                + "1~eRF_readOnly_quote~" + erfOn + "|"
+                + "1~eRFreadOnly_quote~" + erfOn + "|"
                 + "1~admin_readOnly_quote~" + adminOn + "|"
                 + "1~contID_readOnly_quote~" + contID + "|";
 

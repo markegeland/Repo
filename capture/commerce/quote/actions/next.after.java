@@ -1,4 +1,5 @@
 // 20150501 - John Palubinskas - #518 updated for new start step name
+// 20150515 - Ryan Nabor - #219 do not default admin fee if it is not charged
 
 result="";
 
@@ -15,8 +16,17 @@ if(_system_current_step_var == "startNewQuote"){
 
 // added this code for assigning the default fee values
 fees="";
+adminCharged = true;
 containerCnt= 0;
 customerHasAFixedFee = customerHasAFixedFee_quote;
+//Added to set default admin fee for new customers based on divisionFeeRate table
+divFeeRecSet = bmql("Select adminAmount from divisionFeeRate where divisionNumber = $division_quote AND infopro_div_nbr = $infoProNumberDisplayOnly_quote");
+for rec in divFeeRecSet{
+adminAmt = get(rec,"adminAmount");
+	if (adminAmt == "0.0"){
+		adminCharged = false;
+	}
+}
 if(salesActivity_quote == "Existing Customer"){	
 	divisionNbr = atoi(division_quote);
 	numberOfContainersRecSet = bmql("SELECT Container_Grp_Nbr FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id  AND Site_Nbr = $siteNumber_quote");
@@ -71,7 +81,9 @@ if(salesActivity_quote == "Existing Customer"){
 	}
 }
 //For all new customers - all 3 fee would apply unless waived by user
-else{
+elif(adminCharged == false){
+	fees="FRF,ERF"; 
+}else{
 	fees="FRF,ERF,Admin Fee";
 }
 //Populate info pro division for selected division from Division_Mapping table
@@ -94,4 +106,3 @@ result = result + "1~numOfContainersOnThisAccountAndSite_quote~" + string(contai
 
 
 return result + commerce.setStatus("next");
-
