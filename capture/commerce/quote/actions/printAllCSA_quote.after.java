@@ -1,4 +1,6 @@
-/* Updates by Gaurav Dawar - 20150226 - #431 - added Existing Terms being treated as MTM functionality */
+/* Updates by Gaurav Dawar - 20150226 - #431 - added Existing Terms being treated as MTM functionality
+			  Gaurav Dawar - 20150429 - #458 - add the commentsForDeliveryAndExchangeCreditOnOutput function to generate the string for VCD
+*/
 result = "";
 
 initialTermForDocOutput = "";
@@ -27,4 +29,6 @@ if(salesActivity_quote == "Existing Customer" AND renewalTerm_quote == "Existing
 result = result   + "1~initialTermForDocument_quote~"+initialTermForDocOutput+"|"
 		  + "1~renewalTermForDocument_quote~"+renewalTermForDocOutput+"|";
 		  
+result = result + commerce.commentsForDeliveryAndExchangeCreditOnOutput();
+
 return result;

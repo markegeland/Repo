@@ -9,7 +9,7 @@ Input:   		totalCommission: String - Total Commission attributes for floor, base
                     
 Output:  		String - Output parsed as HTML by the attribute to display table of attributes
 
-Updates:	  
+Updates:	  20150505 - Gaurav - #575 - Removed the current price and change in price from the comp table.
     
 =====================================================================================================
 */
@@ -65,13 +65,13 @@ if(NOT(isSalesrep)){
 returnStr = returnStr 	+ "<td align=\"center\"  width=\"10%\" style='border-bottom: thin solid #3D9BCB;color:#000059;'>Floor Price</td>"
 						+ "<td align=\"center\"  width=\"10%\" style='border-bottom: thin solid #3D9BCB;color:#000059;'>Average Price</td>"
 						+ "<td align=\"center\"  width=\"10%\" style='border-bottom: thin solid #3D9BCB;color:#000059;'>Target Price</td>";
-if(isExistingCustomer){
+/*if(isExistingCustomer){
 	returnStr = returnStr + "<td align=\"center\"  width=\"10%\" style='border-bottom: thin solid #3D9BCB;color:#000059;'>Current Price</td>";
-}
+}*/
 returnStr = returnStr 	+ "<td align=\"center\"  width=\"10%\" style='border-bottom: thin solid #3D9BCB;color:#000059;'>Proposed Price</td>";
-if(isExistingCustomer){
+/*if(isExistingCustomer){
 	returnStr = returnStr + "<td align=\"center\"  width=\"20%\" style='border-bottom: thin solid #3D9BCB;color:#000059;'>Change in Price</td>";
-}
+}*/
 returnStr = returnStr   + "</tr>";
  //End of labels row
  //Start of Commission Section

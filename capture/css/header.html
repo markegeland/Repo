@@ -1,0 +1,39 @@
+<link rel="stylesheet" type="text/css" href="jquery.jqplot.css">
+<link rel="stylesheet" type="text/css" href="jquery.jqplot.min.css">
+<link rel='stylesheet' type='text/css' href='https://fonts.googleapis.com/css?family=Open+Sans:300,600,400'>
+<link rel="stylesheet" type="text/css" href="$BASE_PATH$/css/capture.css">
+<script type='text/javascript' src='$BASE_PATH$/javascript/bm-framework.js'></script>
+<script type='text/javascript' src="$BASE_PATH$/javascript/excanvas.js"></script>
+<script type='text/javascript' src="https://ecn.dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=7.0&s=1&onscriptload=tryCreateLocation"></script>
+<style type="text/css">
+    .environment{
+        font-family: sans-serif;
+        font-size: 16px;
+        color: #FF0000;
+        position: fixed;
+        width: 150px;
+        text-align: center;
+        margin: .5% auto;
+        left: 0;
+        right: 0;
+    }
+</style>
+<div>
+<script>
+    document.write('<span class="environment">');
+    if (_BM_HOST_COMPANY == "devrepublicservices") { document.write('Development'); }
+    if (_BM_HOST_COMPANY == "testrepublicservices") { document.write('Test'); }
+    if (_BM_HOST_COMPANY == "testsfdcrepublicservices") { document.write('Test SFDC'); }
+    if (_BM_HOST_COMPANY == "republicservices") { document.write('Production'); }
+    if (_BM_HOST_COMPANY == "trainrepublic") { document.write('Training'); }
+    document.write(' Site</span>');
+
+    var favorite = document.createElement("link");
+    favorite.type = "image/x-icon";
+    favorite.rel = "shortcut icon";
+    favorite.href = "http://republicservices.com/PublishingImages/rsi-favicon.ico";
+    document.getElementsByTagName("head")[0].appendChild(favorite);
+</script>
+</div> 
+
+<div id='header-wrapper'></div>

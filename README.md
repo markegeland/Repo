@@ -10,8 +10,8 @@ Just starting with the Capture repository?  Read on...
 
 ## Developers
 ####Installing Git
-- [Install Git for Windows](http://git-scm.com/download/win) - download will start automatically
-- [Install GitHub Windows Client](https://windows.github.com/) - (*optional*) installs Git Windows GUI
+- [Install Git for Windows](http://git-scm.com/download/win) - download will start automatically.  It includes both the Git Bash shell, and git-gui
+- [Install GitHub Windows Client](https://windows.github.com/) - (*optional*) installs a Windows client for GitHub.  Roger should not use this :smile:
 
 ####Our Source Control Methodology
 We've based the methodology on [this great article](http://nvie.com/posts/a-successful-git-branching-model/), so that's a pretty important read...

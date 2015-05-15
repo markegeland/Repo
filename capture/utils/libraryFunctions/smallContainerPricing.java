@@ -21,6 +21,9 @@ Updates:	11/13/13 - Zach Schlieder - Update divisionKPI table call to handle new
 									- Updated assetCost calculation
 			11/26/13 - Zach Schlieder - Added Wave 2 functionality - added contactTerm for commission calculations
     
+			03/27/2015 - Mike (Republic) - Separated Compactor Rental pricing from Base Container pricing with different margins on new services only
+			04/04/2015 - Gaurav Dawar - #145 - compactor and container cost fix for compactor and container customer owned
+			04/07/2015 - Gaurav Dawar - #145 - compactor asset value to be gross amount not per container and container rental factor to be 0 for compactor customer owned.
 =====================================================================================================
 */
 
@@ -32,9 +35,6 @@ floorValue = 0.0;
 //Variables from Config attributes found in the input string dictionary
 wasteCategory = get(stringDict, "wasteCategory");
 industry = get(stringDict, "industry");
-//siteName = get(stringDict, "siteName");
-//wasteType = get(stringDict, "wasteType");
-//LOB = get(stringDict, "lOBCategoryDerived");
 routeTypeDerived = get(stringDict, "routeTypeDerived");
 accountType = get(stringDict, "accountType");
 //Get float variables from input dictionary in string form
@@ -56,6 +56,12 @@ Pickup_Per_Tot_LiftsStr = get(stringDict, "Pickup_Per_Tot_Lifts");
 periodStr = get(stringDict, "period");
 Pickup_Period_LengthStr = get(stringDict, "Pickup_Period_Length");
 
+//Small Container Compactor
+customerOwnedCompactorStr = get(stringDict, "customerOwnedCompactor");
+compactorValueStr = get(stringDict, "compactorValue");
+modelName = get(stringDict, "model_name");
+
+
 //Convert necessary variables from string to float for use in calculations
 containerQuantity = 0.0;
 containerSize = 0.0;
@@ -73,6 +79,11 @@ salesActivityConfig = "";
 useCurrentPickupsPerDayStr = "";
 useCurrentPickupsPerDay = false;
 currentQuantity = 0.0; //This is existing container quantity
+
+//MPB New variable initiation
+compactorValue = 0.0;
+customerOwnedCompactor = 0;
+containerRentalFactor = 0.0;
 
 //Default Quote attribute
 customerType = "New/New";
@@ -129,6 +140,13 @@ if(NOT(isnull(useCurrentPickupsPerDayStr)) AND useCurrentPickupsPerDayStr == "tr
 	useCurrentPickupsPerDay = true;
 }
 
+if(isnumber(compactorValueStr)){
+	compactorValue = atof(compactorValueStr);
+}
+if(customerOwnedCompactorStr == "true"){
+	customerOwnedCompactor = 1;
+}
+put(returnDict, "customerOwnedCompactor", string(customerOwnedCompactor));
 
 //Get variables from Commerce attributes found in the input string dictionary
 division = get(stringDict, "division_quote");
@@ -225,6 +243,8 @@ default_disposal_3p_float = 0.0;
 	if(compactor == "true"){
 		hasCompactor = 1;
 	}
+	put(returnDict, "hasCompactor", string(hasCompactor));
+
 	if(hasCompactor == 1){
 		additionalConfigInfoRecordSet = bmql("SELECT value FROM miscConfigData WHERE attribute = 'compactorFactor'");
 		
@@ -289,7 +309,6 @@ default_disposal_3p_float = 0.0;
 	//New business rollback & close container group scenarios should use values from Accounts_Status to calculate yardsPerMonth
 	if(cr_new_business == 0 OR salesActivityConfig == "Price adjustment" OR salesActivityConfig == "Close container group"){
 	//Fix for TC-0918, TC-0952, TC-0988 but fails all others - need to discuss with larger audience to handle change of period Vs continuation of period
-	//if(salesActivityConfig == "Price adjustment" OR salesActivityConfig == "Close container group"){
 		//Period can't exceed 1.0 
 		period_modified = period;
 		if(period > 1.0){
@@ -407,12 +426,8 @@ default_disposal_3p_float = 0.0;
 	//=============================== END - Lookups on the divisionKPI table ===============================//
 	
 	//=============================== START - Lookups on the pricePerYard table ===============================//
-	/*if(customerType == "New/New" OR customerType == "New from Competitor"){
-		newCustomerConfig = 1;
-	}*/
 	put(returnDict, "new_cust_cg_flag", string(newCustomerConfig));
 	
-	//pricePerYardRecordSet = bmql("SELECT p_y FROM Div_Waste_PPY WHERE division = $division AND waste_type = $wasteCategory AND equipment_size = $containerSizeStr AND new_customer_cg_flag = $newCustomerConfig");
 	pricePerYardRecordSet = bmql("SELECT p_y, division, equipment_size, waste_type, new_customer_cg_flag FROM Div_Waste_PPY WHERE division = $division AND waste_type = $wasteCategory AND new_customer_cg_flag = $newCustomerConfig");
 	
 	//Moved container size check to result set iteration to handle float values; 4.00 <> 4.0, when column data type is string :(
@@ -504,9 +519,7 @@ default_disposal_3p_float = 0.0;
 	lOBCategoryDerived = "Commercial"; //Default value as Small container belongs to Commercial LOB
 	//=============================== START - Lookups on the Parts database ===============================//
 	partsRecordSet = bmql("SELECT part_number, custom_field2, custom_field4, custom_field5, custom_field18, custom_field10, custom_field15 FROM _parts WHERE custom_field9 = $routeTypeDerived AND custom_field11 = $hasCompactorStr AND  custom_field12 = $lOBCategoryDerived");
-	//AND custom_field10 = $containerSizeStr - removed from query filter as Account_Status table has incorrect container sizes - input to this query
 	
-	//partsRecordSet = bmql("SELECT custom_field2, custom_field4, custom_field5, custom_field18 FROM _parts WHERE part_number = $partNumber");	
 	compactorValueStr = "0.0";
 	compactorLifeStr = "1.0";
 	for eachRecord in partsRecordSet{
@@ -524,13 +537,19 @@ default_disposal_3p_float = 0.0;
 	
 		//containerValue, compactorValue - Found in parts database, based on the partNumber (SKU). Used in calculations of ROI
 		containerValue = 0.0;
-		compactorValue = 0.0;
 		compactorLife = 1.0;
-		if(isnumber(containerValueStr)){	//Convert the table result to a float for use in calculations
+		if(isnumber(containerValueStr) AND isCustomerOwned == 0){	//Convert the table result to a float for use in calculations
 			containerValue = atof(containerValueStr);
 		}
-		if(isnumber(compactorValueStr)){
+		//Default to parts database if no compactorValue is provided
+		if(compactorValue == 0.0 AND isnumber(compactorValueStr)){
 			compactorValue = atof(compactorValueStr);
+		}
+		else{
+			compactorValue = compactorValue/containerQuantity;
+		}
+		if(customerOwnedCompactor==1){
+			compactorValue = 0.0;
 		}
 		if(isnumber(compactorLifeStr)){
 			compactorLife = atof(compactorLifeStr);
@@ -609,37 +628,19 @@ default_disposal_3p_float = 0.0;
 	//=============================== START - Operating Cost Calculation ===============================//
 	//Calculate the third major component of the Cost (Cost = disposalProcessingCost + disposalTripCost + operatingCost + assetCost)
 
-	
-	//Changed order of trips per month & lifts Per Month on 31 March 2014 
-	/*
-	//tripsPerWeek comes from config
-	tripsPerMonth = frequency * (52.0 / 12.0) * allocationFactor; //52 weeks / 12 months
-	put(returnDict, "tripsPerMonth", string(tripsPerMonth));
-
-	//containerQuantity comes from config
-	liftsPerMonth = containerQuantity * tripsPerMonth;
-	put(returnDict, "liftsPerMonth", string(liftsPerMonth));
-	*/
-	
-	//containerQuantity comes from config
 	//containerQuantity comes from config
 	liftsPerMonth = containerQuantity * frequency * (52.0/12.0);
 	//Updated 5 May 2014
-	//if(cr_new_business == 0 AND salesActivityConfig <> "" AND Pickup_Period_Length == 1){
 	if((cr_new_business == 0 OR useCurrentPickupsPerDay) AND salesActivityConfig <> "" AND Pickup_Period_Length == 1){
 	//Fix for TC-0918, TC-0952, TC-0988 but disabled because of failing others
-	//if(salesActivityConfig <> "" AND Pickup_Period_Length == 1){
-		liftsPerMonth = containerQuantity * frequency * period * (52.0/12.0);
+             liftsPerMonth = containerQuantity * frequency * period * (52.0/12.0);
 	}
 	put(returnDict, "liftsPerMonth", string(liftsPerMonth));
 	
 	//tripsPerWeek comes from config
 	tripsPerMonth = frequency * (52.0 / 12.0) * allocationFactor; //52 weeks / 12 months
-	//Updated 5 May 2014
-	//if(cr_new_business == 0 AND salesActivityConfig <> "" AND Pickup_Period_Length == 1){
 	if((cr_new_business == 0 OR useCurrentPickupsPerDay) AND salesActivityConfig <> "" AND Pickup_Period_Length == 1){
 	//Fix for TC-0918, TC-0952, TC-0988 but disabled because of failing others
-	//if(salesActivityConfig <> "" AND Pickup_Period_Length == 1){
 		tripsPerMonth = frequency * period * (52.0 / 12.0) * allocationFactor; //52 weeks / 12 months
 	}
 	put(returnDict, "tripsPerMonth", string(tripsPerMonth));
@@ -706,6 +707,7 @@ default_disposal_3p_float = 0.0;
 			put(returnDict, "lockFactor", string(lockFactor));
 			put(returnDict, "customer_site_lock", string(customer_site_lock));
 		}
+		//MPB Implementation - Comes from the small container division table now
 		if(characteristic == "Compactor Maintenance"){
 			compactor_mainteance_factor = factor;
 			put(returnDict, "compactor_mainteance_factor", string(compactor_mainteance_factor));
@@ -728,11 +730,8 @@ default_disposal_3p_float = 0.0;
                    customer_site_lock * lockFactor +
                      customer_site_enc * enclosureFactor +
                      (containerQuantity * customer_site_rollOut * (rolloutFactor + ((rollOutSequence - 1) * rollOutFactorExtraFeet))) + 
-                     //customer_site_sign_papers * site_fac_sign_paper + //these are related to large container
-                     //customer_site_other_obs * site_fac_other + //do we use others anytime
                      onsiteTimeInMins + compactor_additional_site_time));
 			 
-	//siteTime = tripMinutesPerMonth + secondLiftMinutesPerMonth + additionalSiteMinutesPerMonth;
 	put(returnDict, "siteTime", string(siteTime));
 	 
 	if(scoutRoute == "true"){
@@ -779,19 +778,36 @@ default_disposal_3p_float = 0.0;
 	if(compactorLife > 0){
 		compactor_depr = compactorValue/compactorLife;
 	}
-	compactor_maint_per_container = hasCompactor * compactorValue * compactor_mainteance_factor / 12;
-	total_compactor_depr_maint = (compactor_depr + compactor_maint_per_container) * containerQuantity * (1-isCustomerOwned);
-	
+
+	//Split maintenance into container and compactor if new with compactor
+	if(hasCompactor == 1 AND modelName <> "Service Change"){
+		compactor_maint_per_container = hasCompactor * (1-customerOwnedCompactor) * compactorValue * compactor_mainteance_factor / 12;
+		total_compactor_depr_maint = (compactor_depr + compactor_maint_per_container) * containerQuantity * (1-customerOwnedCompactor);
+	}
+	//Maintain original pricing fromula if not a new service with a compactor
+	else{
+		compactor_maint_per_container = hasCompactor * (1-isCustomerOwned) * compactorValue * compactor_mainteance_factor / 12;
+		total_compactor_depr_maint = (compactor_depr + compactor_maint_per_container) * containerQuantity * (1-isCustomerOwned);
+	}
+
 	put(returnDict, "compactor_depr", string(compactor_depr));	
 	put(returnDict, "compactor_maint", string(compactor_maint_per_container));	
 	put(returnDict, "compactor_depr_maint", string(total_compactor_depr_maint));	
 	
 	//Final Asset Cost calculation
 	//containerMaintPerLift comes from a data table, liftsPerMonth calculated earlier
-	//assetCost = (containerMaintPerLift * liftsPerMonth) + totalContainerDepreciation + totalTruckDepreciation;
-	assetCost = totalContainerDepreciation + total_compactor_depr_maint + totalTruckDepreciation + (containerMaintPerLift * liftsPerMonth* (1-isCustomerOwned));
-	put(returnDict, "assetCost", string(assetCost));
+	containerAssetCost = 0.0;
+	//Calculate total asset cost
+	assetCost = totalContainerDepreciation + total_compactor_depr_maint + totalTruckDepreciation + (containerMaintPerLift * liftsPerMonth * (1-isCustomerOwned));
+		put(returnDict, "assetCost", string(assetCost));
 	//print "--assetCost--"; print assetCost;
+	
+	//Calculate asset cost for container only for new services with a compactor
+	if(hasCompactor == 1 AND modelName <> "Service Change"){
+		containerAssetCost = (totalContainerDepreciation + totalTruckDepreciation + (containerMaintPerLift * liftsPerMonth * (1-isCustomerOwned))) * hasCompactor;
+	//compactorAssetCost is total_compactor_depr_maint
+	}
+
 	//=============================== END - Asset Cost Calculation ===============================//
 	
 	//Final Cost calculation
@@ -816,7 +832,6 @@ workingCapital = (averageDaysAcctsReceivable / 30.0) * averageMonthlyRevenue;
 put(returnDict, "workingCapital", string(workingCapital));
 
 //truckAssets comes from a data table, customerSharePct calculated earlier
-//truckAllocatedValue = truckAssets * customerSharePct;
 //Updated 30 April 2014
 truckAllocatedValue = truckAssets/2.0 * customerSharePct;
 
@@ -842,23 +857,57 @@ if(contractTerm < 12.0){
 commission = (averageMonthlyRevenue * 0.75) / contractTerm;
 put(returnDict, "commission", string(commission));
 
+containerROI = 0.0;
+compactorROI = 0.0;
+
 //Final ROI calculation
 //containerValue comes from data table
-//ROI = ((containerValue * containerQuantity + workingCapital + truckAllocatedValue) * floorROI / 12.0) + commission;
- ROI = ((truckAllocatedValue + ((containerValue * (1 - isCustomerOwned) + compactorValue * (1 - isCustomerOwned)) * containerQuantity) + workingCapital) * floorROI / 12) + commission;
- 
+//Calculate the total ROI
+ROI = ((truckAllocatedValue + ((containerValue * (1 - isCustomerOwned) + compactorValue * (1 - isCustomerOwned)) * containerQuantity) + workingCapital) * floorROI / 12) + commission;
+
+//Calculate ROI separately for compactors and containers 
+if(hasCompactor == 1 AND modelName <> "Service Change"){
+	containerROI = ((truckAllocatedValue + (containerValue * (1 - isCustomerOwned) * containerQuantity) + workingCapital) * floorROI / 12) + commission;
+	compactorROI = compactorValue * containerQuantity * hasCompactor * floorROI / 12;
+}
+
 put(returnDict, "ROI", string(ROI));
+put(returnDict, "compactorROI", string(compactorROI));
+put(returnDict, "containerROI", string(compactorROI));
 
 //=============================== END - ROI Calculation ===============================//
 				 
-//Final Floor calculation
-floor = cost + ROI;
+costToServeContainer = 0.0;
+costToServeCompactor = 0.0;
+
+if(hasCompactor == 1 AND modelName <> "Service Change"){
+	containerCost = disposalProcessingCost + disposalTripCost + operatingCost + containerAssetCost;
+	costToServeContainer = containerCost + containerROI;
+
+	costToServeCompactor = total_compactor_depr_maint + compactorROI;
+
+	containerRentalFactor = ((containerValue * containerQuantity * floorROI / 12) + totalContainerDepreciation) * (1 - customerOwnedCompactor)/ costToServeContainer; 
+
+	floor = costToServeContainer;
+}
+else{
+	//Final Floor calculation
+	floor = cost + ROI;
+}
+
+
 put(returnDict, "J10", string(floor));
 put(returnDict, "J11", string(cost));
 put(returnDict, "J12", string(ROI));
 
 put(returnDict, "floor", string(floor));
 put(returnDict, "costToServeMonth", string(floor));
+
+//MPB New variables
+put(returnDict, "costToServeCompactor", string(costToServeCompactor));
+put(returnDict, "containerRentalFactor", string(containerRentalFactor));
+put(returnDict, "costToServeContainer", string(costToServeContainer));
+
 //============= END - Floor Calculation ==========================//
 
 //=============================== START - Financial Summary Cost Calculation ===============================//
@@ -980,11 +1029,17 @@ oh_gen_admin = general_admin_per_lift * liftsPerMonth;
 //Overhead cost summation
 cost_overhead = oh_royalties + oh_supervisor + oh_insurance + oh_facility + oh_other_depr + oh_bad_debt + oh_other_opex + oh_marketing + oh_sales + oh_gen_admin;
 
-//Final Financial Summary cost
-//cts_month_incl_oh :=cost_disp_xfer_proc + cost_disposal_trip + cost_oper_site_time + cost_assets + cost_roi + cost_overhead - commission
-cts_month_incl_oh = cost_disp_xfer_proc + disposalTripCost + operatingCost + assetCost + ROI + cost_overhead - commission;
+//Cost per Month including Overhead
+//Calulate without compactor costs if this is a new service.
+if(hasCompactor == 1 AND modelName <> "Service Change"){
+	cts_month_incl_oh = cost_disp_xfer_proc + disposalTripCost + operatingCost + containerAssetCost + containerROI + cost_overhead - commission;
+}
+//Otherwise calculate with all costs
+else{
+	cts_month_incl_oh = cost_disp_xfer_proc + disposalTripCost + operatingCost + assetCost + ROI + cost_overhead - commission;
+}
 
 //print "--cts_month_incl_oh--"; print cts_month_incl_oh;
-//=============================== END - Financial Summary Cost Calculation ===============================//
 put(returnDict, "cts_month_incl_oh", string(cts_month_incl_oh));
+
 return returnDict;

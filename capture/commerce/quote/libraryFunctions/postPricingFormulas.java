@@ -41,6 +41,10 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              02/10/15 - John (Republic) - #68 remove all references to approvalReasonDisplayWithColorTA as it is handled by approvalReasonDisplay
                                           Moved all rate restriction logic from Printing action to postPricing formulas since it's needed for approvals.
                                           Fix incorrect disposal site being displayed.
+             03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
+             04/30/15 - Mike (Republic) - #508 Restructuring totals by omitting adhoc fees.  Fixed several existing bugs.  Added variables 
+	                                  for adhoc fees on CSA and Proposal.
+             05/08/15 - Mike (Republic) - #508 Restructuring totals for multiple container groups of additional items.
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -84,6 +88,8 @@ largeMonthlyNetRevenue_SolidWaste = 0.0; //Only solid waste - large
 largeMonthlyNetRevenue_Recycling = 0.0; //Only Recycling - small
 
 smallMonthlyPriceIncludingFees = 0.0; //Both Solid waste and recycling combined - small
+smallMonthlyBaseIncludingFees = 0.0; //Both Solid waste and recycling combined - small
+smallMonthlyRentalIncludingFees = 0.0; //Both Solid waste and recycling combined - small
 smallMonthlyRevenue_SolidWaste = 0.0; //Only solid waste - small
 smallMonthlyRevenue_Recycling = 0.0; //Only Recycling - small 
 smallMonthlyNetRevenue_SolidWaste = 0.0; //Only solid waste - small
@@ -95,8 +101,6 @@ SMALL_CONTAINER = "Containers";
 SERVICE_CHANGE = "Service Change";
 firstModelDataStr = "";
 delimer = "$$";
-
-
 
 //Calculation of One time delivery credit and amount
 totalOneTimePrice = 0.0;
@@ -121,10 +125,13 @@ installationERFandFRFTotal = 0.0;
 oneTimeERFandFRFTotal = 0.0;
 
 //AdHoc Variables
-adHocMonthlyTotalSell = 0.0;
-adHocPerHaulTotalSell = 0.0;
-adHocOneTimeTotalSell = 0.0;
-adHocOneTimeERFandFRF = 0.0;
+adHocMonthlyTotalSell   = 0.0;
+adHocPerHaulTotalSell   = 0.0;
+adHocOneTimeTotalSell   = 0.0;
+adHocOneTimeERFandFRF   = 0.0;
+adHocMonthlyERFandFRF   = 0.0;
+grandTotalInclAdHoc     = 0.0;
+erfAndFrfTotalInclAdHoc = 0.0;
 
 testcount = 0;
 adminRateAlreadyAppliedOnLine = false;
@@ -136,6 +143,7 @@ ModelDescString = "";
 ModelSiteString = "";
 ModelSiteArray = string[];
 ModelDescDict = dict("string");
+
 
 //=============================== END - Variable Initialization ===============================//
 
@@ -250,6 +258,24 @@ for line in line_process{
         
         //Calculate Monthly Total ERF Fees - Calculate these only for Core/ Base line item
         if(line.rateType_line == "Base" AND line.isPartLineItem_line){ //if  the line item is smallcontainer base or largecontainer rental, the fee values on line item grid can be directly used as there is no multiplication factor of estimatedLifts/esthaulspermonth or disposal tons per haul that need to be applied on these line items
+
+            if(isERFWaived_quote == 0){
+                erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
+                erfTotalSellBase = erfTotalSellBase + erfAmountBase;
+                erfTotalSellTarget = erfTotalSellTarget + erfAmountTarget;
+                erfTotalSellStretch = erfTotalSellStretch + erfAmountStretch;
+                erfTotalSell = erfTotalSell + erfAmountSell;
+            }
+            
+            if(isFRFWaived_quote == 0){
+                frfTotalSellTarget = frfTotalSellTarget + frfAmountTarget;
+                frfTotalSellFloor = frfTotalSellFloor + frfAmountFloor;
+                frfTotalSellBase = frfTotalSellBase + frfAmountBase;
+                frfTotalSellStretch = frfTotalSellStretch + frfAmountStretch;
+                frfTotalSell = frfTotalSell + frfAmountSell;
+            }
+
+	}elif(line.rateType_line == "Compactor Rental" AND line.isPartLineItem_line){ 
 
             if(isERFWaived_quote == 0){
                 erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
@@ -551,6 +577,16 @@ for line in line_process{
         }
         elif(line.rateType_line == "Base" AND line.isPartLineItem_line){
             smallMonthlyPriceIncludingFees = smallMonthlyPriceIncludingFees + totalPrice;
+            smallMonthlyBaseIncludingFees = smallMonthlyBaseIncludingFees + totalPrice;
+            if(lower(line.wasteCategory_line) == "solid waste"){
+                smallMonthlyRevenue_SolidWaste = smallMonthlyRevenue_SolidWaste + totalPrice; //totalPrice includes fee except adminRate, but admin should be added only once at quote level, hence only shown in totalRevenue but not smallContainerRevenue
+            }elif(lower(line.wasteCategory_line) == "recycling"){
+                smallMonthlyRevenue_Recycling = smallMonthlyRevenue_Recycling + totalPrice;//totalPrice includes fee except adminRate, but admin should be added only once at quote level, hence only shown in totalRevenue but not smallContainerRevenue
+            }
+        }
+        elif(line.rateType_line == "Compactor Rental" AND line.isPartLineItem_line){
+            smallMonthlyPriceIncludingFees = smallMonthlyPriceIncludingFees + totalPrice;
+            smallMonthlyRentalIncludingFees = smallMonthlyRentalIncludingFees + totalPrice;
             if(lower(line.wasteCategory_line) == "solid waste"){
                 smallMonthlyRevenue_SolidWaste = smallMonthlyRevenue_SolidWaste + totalPrice; //totalPrice includes fee except adminRate, but admin should be added only once at quote level, hence only shown in totalRevenue but not smallContainerRevenue
             }elif(lower(line.wasteCategory_line) == "recycling"){
@@ -562,19 +598,30 @@ for line in line_process{
         if(line.rateType_line == "Ad-Hoc") {
 
             billingMethod = line.frequency_line;
-            showOnProposal = getconfigattrvalue(line._parent_doc_number, "isDisplayedOnProposal_adhoc");
+            showOnProposal = line.adHocDisplayOnProposal_line;
 
-            if(showOnProposal == "true") {
+	    //MPB
+	    print "Show On Proposal";
+	    print showOnProposal;
+
+            if(showOnProposal == true) {
                 if(billingMethod == "Monthly") { 
-                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line; 
+                    adHocMonthlyERFandFRF = adHocMonthlyERFandFRF + FRF_CONST + ERF_CONST;
+                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;
                 }
                 if(billingMethod == "Per Haul") { 
-                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line;  
+                    adHocMonthlyERFandFRF = adHocMonthlyERFandFRF + FRF_CONST + ERF_CONST;
+                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;  
                 }
                 if(billingMethod == "One Time") { 
+                    adHocOneTimeERFandFRF = adHocOneTimeERFandFRF + FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
                     adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
-                    adHocOneTimeERFandFRF = FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
                 }
+		//MPB
+		print "Billing Method";
+		print billingMethod;
+		print "Monthly ERF and FRF";
+		print adHocMonthlyERFandFRF;
             }
         }
     }
@@ -638,7 +685,7 @@ if(hasLineItemsOnQuote_quote){
         grandTotalBase = smallMonthlyTotalBase_quote + largeMonthlyTotalBase_quote + erfTotalSellBase + frfTotalSellBase + adminRate_quote;
         grandTotalTarget = smallMonthlyTotalTarget_quote + largeMonthlyTotalTarget_quote + erfTotalSellTarget + frfTotalSellTarget + adminRate_quote;
         grandTotalStretch = smallMonthlyTotalStretch_quote + largeMonthlyTotalStretch_quote + erfTotalSellStretch + frfTotalSellStretch + adminRate_quote;
-        grandTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote + erfTotalSell + frfTotalSell + adminRate_quote + adHocMonthlyTotalSell + adHocPerHaulTotalSell;
+        grandTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote + erfTotalSell + frfTotalSell + adminRate_quote;
     }
     else {
         returnStr = returnStr   + "1~" + "adminRate_quote" + "~" + "0.0" + "|";
@@ -655,6 +702,18 @@ if(hasLineItemsOnQuote_quote){
         priceBand = "stretch";
     }
     
+    //Create reporting values for the Proposal
+    grandTotalInclAdHoc = grandTotalSell + adHocMonthlyTotalSell + adHocPerHaulTotalSell;
+    erfAndFrfTotalInclAdHoc = erfAndFrfTotalSell + adHocMonthlyERFandFRF;
+    
+    //MPB
+    print "ERF and FRF Total Sell";
+    print erfAndFrfTotalSell;
+    print "Ad Hoc Monthly ERF and FRF";
+    print adHocMonthlyERFandFRF;
+    print "ERF and FRF Including Ad Hoc";
+    print erfAndFrfTotalInclAdHoc;
+
     //Get Commission Rate from commissionRate table for corresponding price band
     commissionRateRS = bmql("SELECT commissionRate FROM commissionRate WHERE ((priceBand = $priceBand OR priceBand = 'All' OR priceBand = '') AND (ERF = $includeERF_quote OR ERF = 'All') AND (FRF = $includeFRF_quote OR FRF = 'All'))");
     for eachRecord in commissionRateRS{
@@ -885,22 +944,6 @@ if(_system_current_step_var == "adjustPricing"){
     print level2NotifierArr;
 
     //Get the notifier (Non-Approver) logins from User Hierarchy table, if not already found
-    /*
-    if((level1NotifierRequired OR  level2NotifierRequired) AND (sizeofarray(level1NotifierArr) ==0 AND sizeofarray(level2NotifierArr) == 0)){
-        //Get the list of approvers from User_Hierarchy
-        userHierarchyRecordSet = bmql("SELECT Level_1_Approver,Level_2_Approver,Level_3_Approver FROM User_Hierarchy WHERE User_Login = $userLoginLower OR User_Login = $userLoginUpper OR User_Login = $_system_user_login AND Home_Division_Nbr = $division_quote");
-        for eachRec in userHierarchyRecordSet{
-            //Add approvers to Notifiers array
-            if(level1NotifierRequired){
-                append(level1NotifierArr,get(eachRec, "Level_1_Approver") );
-            }
-            if(level2NotifierRequired){
-                append(level2NotifierArr,get(eachRec, "Level_2_Approver") );
-            }
-        }
-    }
-    */
-
     //Generate email id's for Notifiers (Non-approvers)
     notifiersArray = string[];
     if((sizeofarray(level1NotifierArr) > 0 OR sizeofarray(level2NotifierArr) > 0) AND (level2NotifierRequired OR level1NotifierRequired)){
@@ -1011,6 +1054,8 @@ returnStr = returnStr   + "1~" + "divisionSalesGroup_quote" + "~" + (divisionSal
                         + "1~" + "largeMonthlyDisposalPriceInclFees_quote" + "~" + string(largeMonthlyDisposalPriceInclFees) + "|"
                         + "1~" + "largeMonthlyRentalPriceInclFees_quote" + "~" + string(largeMonthlyRentalPriceInclFees) + "|"
                         + "1~" + "largeMonthlyTotalPriceInclFees_quote" + "~" + string(largeMonthlyTotalPriceInclFees) + "|"
+                        + "1~" + "smallMonthlyBasePriceInclFees_quote" + "~" + string(smallMonthlyBaseIncludingFees) + "|"
+                        + "1~" + "smallMonthlyRentalPriceInclFees_quote" + "~" + string(smallMonthlyRentalIncludingFees) + "|"
                         + "1~" + "smallMonthlyTotalPriceInclFees_quote" + "~" + string(smallMonthlyPriceIncludingFees) + "|"
                         + "1~" + "totalMonthlyAmtInclFees_quote" + "~" + string(totalMonthlyAmount) + "|"
                         + "1~" + "smallSolidWasteRevenue_quote" + "~" + string(smallMonthlyRevenue_SolidWaste) + "|"
@@ -1020,7 +1065,9 @@ returnStr = returnStr   + "1~" + "divisionSalesGroup_quote" + "~" + (divisionSal
                         + "1~" + "smallSolidWasteNetRevenue_quote" + "~" + string(smallMonthlyNetRevenue_SolidWaste) + "|"
                         + "1~" + "smallRecyclingNetRevenue_quote" + "~" + string(smallMonthlyNetRevenue_Recycling) + "|"
                         + "1~" + "largeSolidWasteNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_SolidWaste) + "|"
-                        + "1~" + "largeRecyclingNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_Recycling) + "|";
+                        + "1~" + "largeRecyclingNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_Recycling) + "|"
+                        + "1~" + "grandTotalInclAdHoc_quote" + "~" + string(grandTotalInclAdHoc) + "|"
+                        + "1~" + "erfAndFrfTotalInclAdHoc_quote" + "~" + string(erfAndFrfTotalInclAdHoc) + "|";
 if(_system_current_step_var == "adjustPricing"){                    
     returnStr = returnStr   + "1~" + "level1ApprovalRequired_quote" + "~" + string(level1ApprovalRequired) + "|"
                             + "1~" + "level2ApprovalRequired_quote" + "~" + string(level2ApprovalRequired) + "|"

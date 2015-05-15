@@ -1,4 +1,6 @@
-if(lower(salesActivity_quote) == "new/new" OR lower(salesActivity_quote) == "new from competitor"){
-	return true;
+// 20150325 - John Palubinskas - #449 remove check for new from compeitior
+
+if(lower(salesActivity_quote) == "new/new"){
+  return true;
 }
 return false;
