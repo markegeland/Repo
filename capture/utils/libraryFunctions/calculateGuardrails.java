@@ -30,6 +30,7 @@ Updates:
 		04/03/15 - Gaurav Dawar - #145 - Fixed the guardrail calculation for haul and rental.
 		04/09/15 - Gaurav Dawar - #102 - Changed the data table for guardrail spread for large container disposal
 		05/21/15 - Gaurav Dawar - #595 - Applied the 5% spread to Disposal moving to Haul line in case of FlatRate + Overage
+		05/21/15 - Gaurav Dawar - #550 - Fixed the formulas for svc margins.
 		
 =====================================================================================================
 */
@@ -1279,7 +1280,7 @@ put(returnDict, "competitive_bid_base", string(competitive_bid));
 temp = curr_margin_percent + svc_base_marg_prem;
 costToServeBaseAdj = 0.0;
 if(temp <> 1.0 AND revenue > 0){
-	costToServeBaseAdj = (costToServeMonth / (1 - curr_margin_percent + svc_base_marg_prem));
+	costToServeBaseAdj = (costToServeMonth / (1 - (curr_margin_percent + svc_base_marg_prem)));
 }
 
 tempArray = float[];
@@ -1430,7 +1431,7 @@ if(baseMargin <> -1.0){
 	if(targetMargin <> 1.0){
 		costToServeTargetAdj1 = 0.0;
 		if(revenue > 0 AND temp <> 1.0){
-			costToServeTargetAdj1 = (costToServeMonth / (1 - curr_margin_percent + svc_targ_marg_prem));
+			costToServeTargetAdj1 = (costToServeMonth / (1 - (curr_margin_percent + svc_targ_marg_prem)));
 		}
 		append(tempArray, (((costToServeMonth / (1 - targetMargin)) - costToServeTargetAdj1) * svc_gap_recovery_pct));
 	}
@@ -1528,7 +1529,7 @@ if(baseMargin <> -1.0){
 	if(stretchMargin <> 1.0){
 		costToServeStretchFeeAdj1 = 0.0;
 		if(revenue > 0 AND temp <> 1.0){
-			costToServeStretchFeeAdj1 = (costToServeMonth / (1 - curr_margin_percent + svc_str_marg_prem));
+			costToServeStretchFeeAdj1 = (costToServeMonth / (1 - (curr_margin_percent + svc_str_marg_prem)));
 		}
 		append(priceAdjArray, ((costToServeMonth / (1 - stretchMargin)) - costToServeStretchFeeAdj1) * svc_gap_recovery_pct);
 	}
