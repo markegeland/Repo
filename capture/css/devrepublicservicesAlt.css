@@ -13,6 +13,7 @@
     20150504 - Mike Boylan      - #524 add style, font size on contractFinalized
     20150508 - John Palubinskas - #518 add a height to form-approval class
     20150511 - John Palubinskas - #518 apply margins to readonly_1_newWorkflowImage_quote to remove horizontal scrolling
+    20150520 - John Palubinskas - #518 hide start step auto transition panel
 
    ================================================================================================== */
 
@@ -1067,4 +1068,13 @@ div#panel_5718984 > div.panel-tl > div.panel-tr > div.panel-tc > span.panel-head
 div#panel_4654776 > div.panel-tl > div.panel-tr > div.panel-tc > span.panel-heading{
     padding: 10px 105px 10px  !important;
 }
+
+/* hide the Start Step Auto Transition panel */
+#content573520164,  /* dev  */
+#content1230040104  /* test */
+{
+    visibility: hidden;
+}
+
+
 /* @end - Dynamic Content Styles */
