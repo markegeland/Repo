@@ -1,4 +1,5 @@
-/*
+/* updated
+
 ================================================================================
 Name:   		Calculate Guardrails
 Author:  		Zach Schlieder
@@ -27,6 +28,7 @@ Updates:
 		03/27/15 - Aaron Quintanilla - #104 - Added disposal logic for new waste types and units of measure
 		04/01/15 - Gaurav Dawar - #474 - comp rental floor multiplied by quantity to reflect no. of units for rental.
 		04/03/15 - Gaurav Dawar - #145 - Fixed the guardrail calculation for haul and rental.
+		04/09/15 - Gaurav Dawar - #102 - Changed the data table for guardrail spread for large container disposal
 		
 =====================================================================================================
 */
@@ -89,6 +91,7 @@ customerOwnedCompactorStr = "";
 costToServeContainerStr = "";
 containerRentalFactorStr = "";
 modelName = "";
+
 if(containskey(stringDict, "erfOnFrfRate")){
 	erfOnFrfRateStr = get(stringDict, "erfOnFrfRate");
 }
@@ -330,6 +333,7 @@ if(containskey(stringDict, "containerRentalFactor")){
 if(containskey(stringDict, "model_name")){ 	 	
 	modelName = get(stringDict, "model_name"); 	 	
 }
+
 //Convert necessary variables from string to integer for use in calculations
 frfFlag = 0;
 erfFlag = 0;
@@ -1956,13 +1960,13 @@ if(priceType == "Large Containers"){
 	put(returnDict, "haulStretchPeakRate", string(haulStretch));
 	/* Peak Rate adjustment Ends*/
 	
-	//Pull Disposal Spread Percentages from divLrgGuardrailSprd
-	spreadRecs = bmql("SELECT division, floorAvg_spread, avgTarget_spread FROM divLrgGuardrailSprd WHERE division = $division OR division = '0' ORDER BY division DESC");
+	//Pull Disposal Spread Percentages from Div_Lg_Cont_Factors
+	spreadRecs = bmql("SELECT Division, Dsp_Floor_Avg, Dsp_Avg_Target FROM Div_Lg_Cont_Factors WHERE Division = $division OR Division = '0' ORDER BY Division DESC");
 	floorAvgSpread = 1.0;
 	avgTargetSpread = 1.0;
 	for rec in spreadRecs{
-		floorAvgSpread = 1.0 + getfloat(rec, "floorAvg_spread")/100.0;
-		avgTargetSpread = 1.0 + getfloat(rec, "avgTarget_spread")/100.0 + getfloat(rec, "floorAvg_spread")/100.0;
+		floorAvgSpread = 1.0 + getfloat(rec, "Dsp_Floor_Avg");
+		avgTargetSpread = 1.0 + getfloat(rec, "Dsp_Avg_Target") + getfloat(rec, "Dsp_Floor_Avg");
 		break;
 	}
 	//Moved as part of SR 3-9437035701

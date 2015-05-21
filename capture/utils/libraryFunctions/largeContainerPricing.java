@@ -16,6 +16,7 @@ Updates:	12/5/13 - Srikar - Replaced disposalSiteCosts table with Disposal_Sites
 			03/26/15 - Aaron Quintanilla - #102 - Disposal Changes, added calculations for varying unit of measure
 			04/08/15 - Gaurav Dawar - #510 - Compactor Asset Value is a Gross value not per container.
 			04/14/15 - Gaurav Dawar - #102 - Fixed the BMQL for picking up the correct cost for per yard and per load.
+			05/22/15 - Aaron Quintanilla - #526 - Account for unit of measure in cost_dsp_xfer_per_haul and cost_dsp_xfer_per_month
 =====================================================================================================
 */
 
@@ -657,10 +658,24 @@ dsp_xfer_price_per_ton = 0.0;
 if(isnumber(dsp_xfer_price_per_ton_str)){
 	dsp_xfer_price_per_ton = atof(dsp_xfer_price_per_ton_str);
 }
-cost_dsp_xfer_per_haul = dsp_xfer_price_per_ton * estTonsPerHaul;
+
+
+// Using a rate factor to account for different units of measure
+rateFactor = 0.0;
+if(unitOfMeasure == "Per Ton"){
+	rateFactor = estHaulsPerMonth * estTonsPerHaul;
+}elif(unitOfMeasure == "Per Load"){
+	rateFactor = estHaulsPerMonth;
+}elif(unitOfMeasure == "Per Yard"){
+	rateFactor = containerSize * estHaulsPerMonth;			
+}
+
+//'dsp_xfer_price_per_ton' holds the per unit measure, (Not always 'ton' should be updated), this multiplied by the rate factor with hauls per month removed gives an accurate account of disposal per haul costs.
+cost_dsp_xfer_per_haul = dsp_xfer_price_per_ton * rateFactor / estHaulsPerMonth;
 put(returnDict, "cost_dsp_xfer_per_haul", string(cost_dsp_xfer_per_haul));
 
-cost_dsp_xfer_per_month = cost_dsp_xfer_per_haul * estHaulsPerMonth;
+//'dsp_xfer_price_per_ton' holds the per unit measure, (Not always 'ton' should be updated), this multiplied by the rate factor gives an accurate account of disposal monthly costs.
+cost_dsp_xfer_per_month = dsp_xfer_price_per_ton * rateFactor;
 put(returnDict, "cost_dsp_xfer_per_month", string(cost_dsp_xfer_per_month));
 
 //Overhead Cost Calculations
