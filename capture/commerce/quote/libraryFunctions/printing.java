@@ -13,12 +13,12 @@ Updates:    20141106 Added logic to set the after year 1-4 dates based on the ef
             20150117 Julie Felberg - #69 Added logic to set the print versions of the rate restrictions
             20150122 Gaurav Dawar - #352 - correcting the calculations for Delivery for it to flow through infopro
             20150210 John Palubinskas - #68 moved rate restriction logic to postPricingFormulas
-			20150226 Gaurav Dawar - #431 - Added Existing Terms to be used as MTM functionality.
-			20150326 Gaurav Dawar - #59 - Not auto updating the close date to be a day less than effective date for change of Owner.
-			20140327 Mike (Republic) - #145 - Small Container Compactor - Broke small containers out into Base and Compactor Rental.
+            20150226 Gaurav Dawar - #431 - Added Existing Terms to be used as MTM functionality.
+            20150326 Gaurav Dawar - #59 - Not auto updating the close date to be a day less than effective date for change of Owner.
+            20140327 Mike (Republic) - #145 - Small Container Compactor - Broke small containers out into Base and Compactor Rental.
             20150402 John Palubinskas - #449 removed reason code setting since it is done in setTransactionCode function
             20150403 Mike (Republic) - #145 Small Container Pricing - fixed Base price return
-            20150410 Mike (Republic) - #145 Small Container Pricing - Zeroed out Compactor Rental and Installation when compactor is turned off.
+            20150520 John Palubinskas - #526 clear out any previously set line level rates on the model to handle when we reconfigure.
 =====================================================================================================
 */
 
@@ -72,7 +72,6 @@ for line in line_process{
     //Model Line Items
     docNum = line._document_number;
     if(line._model_variable_name <> ""){
-		//serviceType = ""; //Moved to quote attributes 
         equipmentType = "";
         equipmentSize = "";
         frequency = "";
@@ -112,7 +111,7 @@ for line in line_process{
             landfillCode = disposalPolygon; //disposalPolygon is a quote attribute for small containers set in Pre-formula pricing library
             
             //Container Group
-            containerGroup = ""; //for existing if it’s price change, make the container group what the user selects for both lines.  And for service changes make the old what the user selects and the new blank.
+            containerGroup = ""; //for existing if itâ€™s price change, make the container group what the user selects for both lines.  And for service changes make the old what the user selects and the new blank.
             
         }
         //Attributes that are specifically created for large container configurator
@@ -141,7 +140,7 @@ for line in line_process{
             
             estTonsHaul = getconfigattrvalue(docNum, "estTonsHaul_l");
             
-            if(isnumber(estTonsHaul)){
+            if(isnumber(estTonsHaul) AND getconfigattrvalue(docNum, "unitOfMeasure") == "Per Ton"){
                 put(disposalTonsDict, docNum, atof(estTonsHaul));
             }
             
@@ -237,7 +236,12 @@ for line in line_process{
                   + docNum + "~existingContainerGroup_line~" + oldContainerGroup + "|"
                   + docNum + "~quantity_line~" + quantity + "|"
                   + docNum + "~estimatedLifts_line~" + estimatedLifts + "|"
-                  + docNum + "~landFillCode_line~" + landfillCode + "|";
+                  + docNum + "~landFillCode_line~" + landfillCode + "|"
+                  // clear these rates if we're reconfiguring
+                  + docNum + "~haulRate_line~0.0|"
+                  + docNum + "~disposalRate_line~0.0|"
+                  + docNum + "~rentalRate_line~0.0|"
+                  + docNum + "~installationCharge_line~0.0|";
     }else{
         if(findinarray(parentDocArr, line._parent_doc_number) == -1){
             append(parentDocArr, line._parent_doc_number);
@@ -245,9 +249,9 @@ for line in line_process{
         
         if(line.rateType_line == "Base"){
             // If the line is of type Base then assign the value to the Model sell price
-			res = res + line._parent_doc_number + "~sellPrice_line~" + string(line.sellPrice_line) + "|"; 
-	}
-	elif(line.rateType_line == "Compactor Rental"){
+            res = res + line._parent_doc_number + "~sellPrice_line~" + string(line.sellPrice_line) + "|"; 
+        }
+        elif(line.rateType_line == "Compactor Rental"){
                 put(compactorRentalDict, line._parent_doc_number,line.sellPrice_line );
         }
         elif( line.rateType_line == "Haul"){
@@ -265,14 +269,6 @@ for line in line_process{
             }
         }
         elif( line.rateType_line == "Disposal"){
-            // If the line is of type Disposal then populate Disposal rate
-            /*
-            if(containskey(disposalPriceDict,line._parent_doc_number)){
-                put(disposalPriceDict, line._parent_doc_number,get(disposalPriceDict,line._parent_doc_number)+ line.sellPrice_line );
-            }
-            else{
-                put(disposalPriceDict, line._parent_doc_number,line.sellPrice_line );
-            }*/
             put(disposalPriceDict, line._parent_doc_number,line.sellPrice_line);
         }
         elif( line.rateType_line == "Overage"){
@@ -322,11 +318,11 @@ for line in line_process{
         }   
         elif(line.rateType_line == "Installation"){
                 put(installationPriceDict, line._parent_doc_number,line.installationCharge_line);
-	}
+        }
     }
 }
-print haulPriceDict;
-print disposalPriceDict;
+//print haulPriceDict;
+//print disposalPriceDict;
 
 for eachDocNum in parentDocArr{
     print eachDocNum;
@@ -336,26 +332,33 @@ for eachDocNum in parentDocArr{
         print get(haulPriceDict, eachDocNum) ;
         res = res + eachDocNum + "~haulRate_line~" + string(get(haulPriceDict, eachDocNum) )+ "|"; 
     }
+    
     if(containskey(disposalPriceDict, eachDocNum)){
         disposalRate = get(disposalPriceDict, eachDocNum);
         if(get(billingTypeDict, eachDocNum) == "Haul + Minimum Tonnage"){
             disposalTons = get(minimumTonsDict, eachDocNum);
         }
         else{
-            disposalTons = get(disposalTonsDict, eachDocNum);
+            disposalTons = 0;
+            if (containskey(disposalTonsDict, eachDocNum)){
+                disposalTons = get(disposalTonsDict, eachDocNum);
+            }
         }
         if(disposalRate > 0.0){
             totalDisposalTons = totalDisposalTons + disposalTons;   
         }
         res = res + eachDocNum + "~disposalRate_line~" + string(disposalRate)+ "|"; 
     }
+    
     if(containskey(overagePriceDict, eachDocNum)){
         res = res + eachDocNum + "~overageRate_line~" + string(get(overagePriceDict, eachDocNum)) + "|";
     }
+    
     if(containskey(flatPriceDict, eachDocNum)){
         res = res + eachDocNum + "~flatRate_line~" + string(get(flatPriceDict, eachDocNum) )+ "|"; 
         res = res + eachDocNum + "~haulRate_line~" + string(get(flatPriceDict, eachDocNum) )+ "|"; //Case 180936 fix
     }
+    
     if(containskey(rentalPriceDict, eachDocNum)){
         rentalRate = get(rentalPriceDict, eachDocNum);
         res = res + eachDocNum + "~rentalRate_line~" + string(rentalRate)+ "|"; 
@@ -367,24 +370,31 @@ for eachDocNum in parentDocArr{
         }
         res = res + eachDocNum + "~monthlyRentalRate_line~" + string(rentalRate)+ "|"; 
     }
+    else{
+        res = res + eachDocNum + "~monthlyRentalRate_line~0.0|"; 
+    }
+    
     if(containskey(compactorRentalDict, eachDocNum)){
         compactorRentalRate = get(compactorRentalDict, eachDocNum);
-	res = res + eachDocNum + "~smallRentalPrice_line~" + string(compactorRentalRate) + "|"; 
+        res = res + eachDocNum + "~smallRentalPrice_line~" + string(compactorRentalRate) + "|"; 
     }
     else{
-	res = res + eachDocNum + "~smallRentalPrice_line~" + "0.0" + "|"; 
+        res = res + eachDocNum + "~smallRentalPrice_line~0.0|"; 
     }
+    
     if(containskey(installationPriceDict, eachDocNum)){
         installationRate = get(installationPriceDict, eachDocNum);
-	res = res + eachDocNum + "~installationCharge_line~" + string(InstallationRate) + "|"; 
+        res = res + eachDocNum + "~installationCharge_line~" + string(InstallationRate) + "|"; 
     }
     else{
-	res = res + eachDocNum + "~installationCharge_line~" + "0.0" + "|"; 
+        res = res + eachDocNum + "~installationCharge_line~0.0|"; 
     }
+    
     if(containskey(deliveryPriceDict, eachDocNum)){
         deliveryRate = get(deliveryPriceDict, eachDocNum);
         res = res + eachDocNum + "~deliveryRate_line~" + string(deliveryRate)+ "|"; 
     }
+
     if(containskey(haulsPerMonthDict, eachDocNum)){
         res = res + eachDocNum + "~estHaulsPerMonth_line~" + string(get(haulsPerMonthDict, eachDocNum)) + "|";
     }
