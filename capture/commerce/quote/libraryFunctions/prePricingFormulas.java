@@ -2305,7 +2305,6 @@ for line in line_process{
             //=============================== END - Assign Guardrails to Outputs ===============================//  
         }
         else{   //For Ad-Hoc parts, the base, target, and stretch are all the value entered by the user
-
             floorPrice = 0.0;
             basePrice = line._price_unit_price_each;
             targetPrice = line._price_unit_price_each;

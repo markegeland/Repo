@@ -44,7 +44,10 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
              04/30/15 - Mike (Republic) - #508 Restructuring totals by omitting adhoc fees.  Fixed several existing bugs.  Added variables 
 	                                  for adhoc fees on CSA and Proposal.
+			05/08/15 - Mike (Republic) - #508 Restructuring totals for multiple container groups of additional items.
 			05/14/15 - 	Aaron Q ( Oracle) - Changed disposal fee calculations to account for unit of measure
+
+             
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -144,7 +147,6 @@ ModelDescString = "";
 ModelSiteString = "";
 ModelSiteArray = string[];
 ModelDescDict = dict("string");
-
 
 //=============================== END - Variable Initialization ===============================//
 print "Erf Rate Quote " + string(erfRate_quote);
@@ -622,19 +624,28 @@ for line in line_process{
             billingMethod = line.frequency_line;
             showOnProposal = line.adHocDisplayOnProposal_line;
 
+			//MPB
+	    print "Show On Proposal";
+	    print showOnProposal;
+
             if(showOnProposal == true) {
                 if(billingMethod == "Monthly") { 
-                    adHocMonthlyERFandFRF = FRF_CONST + ERF_CONST;
-                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line + adHocMonthlyERFandFRF; 
+                    adHocMonthlyERFandFRF = adHocMonthlyERFandFRF + FRF_CONST + ERF_CONST;
+                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;
                 }
                 if(billingMethod == "Per Haul") { 
-                    adHocPerHaulERFandFRF = FRF_CONST + ERF_CONST;
-                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line + adHocPerHaulERFandFRF;  
+                    adHocMonthlyERFandFRF = adHocMonthlyERFandFRF + FRF_CONST + ERF_CONST;
+                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;  
                 }
                 if(billingMethod == "One Time") { 
-                    adHocOneTimeERFandFRF = FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
-                    adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + adHocOneTimeERFandFRF;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+                    adHocOneTimeERFandFRF = adHocOneTimeERFandFRF + FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+                    adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
                 }
+		//MPB
+		print "Billing Method";
+		print billingMethod;
+		print "Monthly ERF and FRF";
+		print adHocMonthlyERFandFRF;
             }
         }
     }
@@ -717,8 +728,16 @@ if(hasLineItemsOnQuote_quote){
     
     //Create reporting values for the Proposal
     grandTotalInclAdHoc = grandTotalSell + adHocMonthlyTotalSell + adHocPerHaulTotalSell;
-    erfAndFrfTotalInclAdHoc = erfAndFrfTotalSell + adHocMonthlyERFandFRF + adHocPerHaulERFandFRF;
+    erfAndFrfTotalInclAdHoc = erfAndFrfTotalSell + adHocMonthlyERFandFRF;
     
+    //MPB
+    print "ERF and FRF Total Sell";
+    print erfAndFrfTotalSell;
+    print "Ad Hoc Monthly ERF and FRF";
+    print adHocMonthlyERFandFRF;
+    print "ERF and FRF Including Ad Hoc";
+    print erfAndFrfTotalInclAdHoc;
+
     //Get Commission Rate from commissionRate table for corresponding price band
     commissionRateRS = bmql("SELECT commissionRate FROM commissionRate WHERE ((priceBand = $priceBand OR priceBand = 'All' OR priceBand = '') AND (ERF = $includeERF_quote OR ERF = 'All') AND (FRF = $includeFRF_quote OR FRF = 'All'))");
     for eachRecord in commissionRateRS{
