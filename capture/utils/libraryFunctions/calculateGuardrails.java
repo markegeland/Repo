@@ -1,4 +1,5 @@
-/*
+/* updated
+
 ================================================================================
 Name:   		Calculate Guardrails
 Author:  		Zach Schlieder
@@ -27,6 +28,9 @@ Updates:
 		03/27/15 - Aaron Quintanilla - #104 - Added disposal logic for new waste types and units of measure
 		04/01/15 - Gaurav Dawar - #474 - comp rental floor multiplied by quantity to reflect no. of units for rental.
 		04/03/15 - Gaurav Dawar - #145 - Fixed the guardrail calculation for haul and rental.
+		04/09/15 - Gaurav Dawar - #102 - Changed the data table for guardrail spread for large container disposal
+		05/21/15 - Gaurav Dawar - #595 - Applied the 5% spread to Disposal moving to Haul line in case of FlatRate + Overage
+		05/21/15 - Gaurav Dawar - #550 - Fixed the formulas for svc margins.
 		
 =====================================================================================================
 */
@@ -89,6 +93,7 @@ customerOwnedCompactorStr = "";
 costToServeContainerStr = "";
 containerRentalFactorStr = "";
 modelName = "";
+
 if(containskey(stringDict, "erfOnFrfRate")){
 	erfOnFrfRateStr = get(stringDict, "erfOnFrfRate");
 }
@@ -330,6 +335,7 @@ if(containskey(stringDict, "containerRentalFactor")){
 if(containskey(stringDict, "model_name")){ 	 	
 	modelName = get(stringDict, "model_name"); 	 	
 }
+
 //Convert necessary variables from string to integer for use in calculations
 frfFlag = 0;
 erfFlag = 0;
@@ -755,7 +761,7 @@ if(isExistingCustomer AND get(stringDict, "feesToCharge") <> "" AND NOT(isnull(g
 				disposalCostPerYard = atof(disposalCostPerYardStr);
 			}
 			if(isnumber(disposalRatePerYardStr)){	
-				disposalRatePerYard = atof(disposalCostPerYardStr); 
+				disposalRatePerYard = atof(disposalRatePerYardStr); 
 			}
 			
 			disposalCostPerLoad = 0.0;
@@ -1274,7 +1280,7 @@ put(returnDict, "competitive_bid_base", string(competitive_bid));
 temp = curr_margin_percent + svc_base_marg_prem;
 costToServeBaseAdj = 0.0;
 if(temp <> 1.0 AND revenue > 0){
-	costToServeBaseAdj = (costToServeMonth / (1 - curr_margin_percent + svc_base_marg_prem));
+	costToServeBaseAdj = (costToServeMonth / (1 - (curr_margin_percent + svc_base_marg_prem)));
 }
 
 tempArray = float[];
@@ -1425,7 +1431,7 @@ if(baseMargin <> -1.0){
 	if(targetMargin <> 1.0){
 		costToServeTargetAdj1 = 0.0;
 		if(revenue > 0 AND temp <> 1.0){
-			costToServeTargetAdj1 = (costToServeMonth / (1 - curr_margin_percent + svc_targ_marg_prem));
+			costToServeTargetAdj1 = (costToServeMonth / (1 - (curr_margin_percent + svc_targ_marg_prem)));
 		}
 		append(tempArray, (((costToServeMonth / (1 - targetMargin)) - costToServeTargetAdj1) * svc_gap_recovery_pct));
 	}
@@ -1523,7 +1529,7 @@ if(baseMargin <> -1.0){
 	if(stretchMargin <> 1.0){
 		costToServeStretchFeeAdj1 = 0.0;
 		if(revenue > 0 AND temp <> 1.0){
-			costToServeStretchFeeAdj1 = (costToServeMonth / (1 - curr_margin_percent + svc_str_marg_prem));
+			costToServeStretchFeeAdj1 = (costToServeMonth / (1 - (curr_margin_percent + svc_str_marg_prem)));
 		}
 		append(priceAdjArray, ((costToServeMonth / (1 - stretchMargin)) - costToServeStretchFeeAdj1) * svc_gap_recovery_pct);
 	}
@@ -1956,6 +1962,15 @@ if(priceType == "Large Containers"){
 	put(returnDict, "haulStretchPeakRate", string(haulStretch));
 	/* Peak Rate adjustment Ends*/
 	
+	//Pull Disposal Spread Percentages from Div_Lg_Cont_Factors
+	spreadRecs = bmql("SELECT Division, Dsp_Floor_Avg, Dsp_Avg_Target FROM Div_Lg_Cont_Factors WHERE Division = $division OR Division = '0' ORDER BY Division DESC");
+	floorAvgSpread = 1.0;
+	avgTargetSpread = 1.0;
+	for rec in spreadRecs{
+		floorAvgSpread = 1.0 + getfloat(rec, "Dsp_Floor_Avg");
+		avgTargetSpread = 1.0 + getfloat(rec, "Dsp_Avg_Target") + getfloat(rec, "Dsp_Floor_Avg");
+		break;
+	}
 	//Moved as part of SR 3-9437035701
 	if( feePct <> -1.0){
 		//Removed ceiling before rounding, sorted calculations by unitOfMeasure
@@ -1963,53 +1978,53 @@ if(priceType == "Large Containers"){
 			disposalFloor = (allocatedDisposalFlag * disposalCostPerTon); 
 				
 			disposalBase = (disposalRatePerTon * allocatedDisposalFlag);
-			disposalTarget = (disposalRatePerTon * allocatedDisposalFlag);
-			disposalStretch = (disposalRatePerTon * allocatedDisposalFlag);
+			disposalTarget = (disposalRatePerTon * allocatedDisposalFlag * floorAvgSpread);
+			disposalStretch = (disposalRatePerTon * allocatedDisposalFlag * avgTargetSpread);
 			//Calculation of monthly estimates for each guardrail
 			estimatedMonthlyDisposalFloor = disposalCostPerTon * haulsPerMonth * tonsPerHaul; 
 			estimatedMonthlyDisposalBase = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
-			estimatedMonthlyDisposalTarget = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
-			estimatedMonthlyDisposalStretch = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
+			estimatedMonthlyDisposalTarget = disposalRatePerTon * haulsPerMonth * tonsPerHaul * floorAvgSpread;
+			estimatedMonthlyDisposalStretch = disposalRatePerTon * haulsPerMonth * tonsPerHaul * avgTargetSpread;
 			
 			//Calculation of per haul estimates for each guardrail
 			estimatedPerHaulDisposalFloor = disposalCostPerTon * tonsPerHaul; 
 			estimatedPerHaulDisposalBase = disposalRatePerTon * tonsPerHaul;
-			estimatedPerHaulDisposalTarget = disposalRatePerTon * tonsPerHaul;
-			estimatedPerHaulDisposalStretch = disposalRatePerTon * tonsPerHaul;			
+			estimatedPerHaulDisposalTarget = disposalRatePerTon * tonsPerHaul * floorAvgSpread;
+			estimatedPerHaulDisposalStretch = disposalRatePerTon * tonsPerHaul * avgTargetSpread;			
 		}elif(unitOfMeasure == "Per Yard"){
 			disposalFloor = (allocatedDisposalFlag * disposalCostPerYard); 
 				
 			disposalBase = (disposalRatePerYard * allocatedDisposalFlag);
-			disposalTarget = (disposalRatePerYard * allocatedDisposalFlag);
-			disposalStretch = (disposalRatePerYard * allocatedDisposalFlag);
+			disposalTarget = (disposalRatePerYard * allocatedDisposalFlag * floorAvgSpread);
+			disposalStretch = (disposalRatePerYard * allocatedDisposalFlag * avgTargetSpread);
 			//Calculation of monthly estimates for each guardrail
 			estimatedMonthlyDisposalFloor = disposalCostPerYard * haulsPerMonth * containerSizeFloat; 
 			estimatedMonthlyDisposalBase = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
-			estimatedMonthlyDisposalTarget = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
-			estimatedMonthlyDisposalStretch = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
+			estimatedMonthlyDisposalTarget = disposalRatePerYard * haulsPerMonth * containerSizeFloat * floorAvgSpread;
+			estimatedMonthlyDisposalStretch = disposalRatePerYard * haulsPerMonth * containerSizeFloat * avgTargetSpread;
 			
 			//Calculation of per haul estimates for each guardrail
 			estimatedPerHaulDisposalFloor = disposalCostPerYard * containerSizeFloat; 
 			estimatedPerHaulDisposalBase = disposalRatePerYard * containerSizeFloat;
-			estimatedPerHaulDisposalTarget = disposalRatePerYard * containerSizeFloat;
-			estimatedPerHaulDisposalStretch = disposalRatePerYard * containerSizeFloat;
+			estimatedPerHaulDisposalTarget = disposalRatePerYard * containerSizeFloat * floorAvgSpread;
+			estimatedPerHaulDisposalStretch = disposalRatePerYard * containerSizeFloat * avgTargetSpread;
 		}elif(unitOfMeasure == "Per Load"){
 			disposalFloor = (allocatedDisposalFlag * disposalCostPerLoad); 
 				
 			disposalBase = (disposalRatePerLoad * allocatedDisposalFlag);
-			disposalTarget = (disposalRatePerLoad * allocatedDisposalFlag);
-			disposalStretch = (disposalRatePerLoad * allocatedDisposalFlag);
+			disposalTarget = (disposalRatePerLoad * allocatedDisposalFlag * floorAvgSpread);
+			disposalStretch = (disposalRatePerLoad * allocatedDisposalFlag * avgTargetSpread);
 			//Calculation of monthly estimates for each guardrail
 			estimatedMonthlyDisposalFloor = disposalCostPerLoad * haulsPerMonth; 
 			estimatedMonthlyDisposalBase = disposalRatePerLoad * haulsPerMonth;
-			estimatedMonthlyDisposalTarget = disposalRatePerLoad * haulsPerMonth;
-			estimatedMonthlyDisposalStretch = disposalRatePerLoad * haulsPerMonth;
+			estimatedMonthlyDisposalTarget = disposalRatePerLoad * haulsPerMonth * floorAvgSpread;
+			estimatedMonthlyDisposalStretch = disposalRatePerLoad * haulsPerMonth * avgTargetSpread;
 			
 			//Calculation of per haul estimates for each guardrail
 			estimatedPerHaulDisposalFloor = disposalCostPerLoad; 
 			estimatedPerHaulDisposalBase = disposalRatePerLoad;
-			estimatedPerHaulDisposalTarget = disposalRatePerLoad;
-			estimatedPerHaulDisposalStretch = disposalRatePerLoad;
+			estimatedPerHaulDisposalTarget = disposalRatePerLoad * floorAvgSpread;
+			estimatedPerHaulDisposalStretch = disposalRatePerLoad * avgTargetSpread;
 		}
 		
 	}
@@ -2226,8 +2241,8 @@ if(priceType == "Large Containers"){
 		put(returnDict, "overagedisposalPerTonFeeAdj", string(overagedisposalPerTonFeeAdj));
 		
 		overageBase = overagedisposalPerTonFeeAdj * (1 + ((1-frfFlag) * haulbaseFRFPremium));
-		overageTarget = overagedisposalPerTonFeeAdj * (1 + ((1-frfFlag) * haultargetFRFPremium));
-		overageStretch = overagedisposalPerTonFeeAdj * (1 + ((1 - frfFlag) * haulstretchFRFPremium));
+		overageTarget = overagedisposalPerTonFeeAdj * (1 + ((1-frfFlag) * haultargetFRFPremium))* floorAvgSpread;
+		overageStretch = overagedisposalPerTonFeeAdj * (1 + ((1 - frfFlag) * haulstretchFRFPremium))* avgTargetSpread;
 		
 		//Round Disposal Base, Target, Stretch - Should we round even if Rental is not selected?
 		if(rounding_ind_dsp > 0){

@@ -41,8 +41,13 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              02/10/15 - John (Republic) - #68 remove all references to approvalReasonDisplayWithColorTA as it is handled by approvalReasonDisplay
                                           Moved all rate restriction logic from Printing action to postPricing formulas since it's needed for approvals.
                                           Fix incorrect disposal site being displayed.
-
              03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
+             04/30/15 - Mike (Republic) - #508 Restructuring totals by omitting adhoc fees.  Fixed several existing bugs.  Added variables 
+	                                  for adhoc fees on CSA and Proposal.
+			05/08/15 - Mike (Republic) - #508 Restructuring totals for multiple container groups of additional items.
+			05/14/15 - 	Aaron Q ( Oracle) - Changed disposal fee calculations to account for unit of measure
+
+             
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -123,10 +128,14 @@ installationERFandFRFTotal = 0.0;
 oneTimeERFandFRFTotal = 0.0;
 
 //AdHoc Variables
-adHocMonthlyTotalSell = 0.0;
-adHocPerHaulTotalSell = 0.0;
-adHocOneTimeTotalSell = 0.0;
-adHocOneTimeERFandFRF = 0.0;
+adHocMonthlyTotalSell   = 0.0;
+adHocPerHaulTotalSell   = 0.0;
+adHocOneTimeTotalSell   = 0.0;
+adHocOneTimeERFandFRF   = 0.0;
+adHocMonthlyERFandFRF   = 0.0;
+adHocPerHaulERFandFRF   = 0.0;
+grandTotalInclAdHoc     = 0.0;
+erfAndFrfTotalInclAdHoc = 0.0;
 
 testcount = 0;
 adminRateAlreadyAppliedOnLine = false;
@@ -140,7 +149,8 @@ ModelSiteArray = string[];
 ModelDescDict = dict("string");
 
 //=============================== END - Variable Initialization ===============================//
-
+print "Erf Rate Quote " + string(erfRate_quote);
+print "FRF Rate Quote " + string(frfRate_quote);
 
 for line in line_process{
     if(line._parent_doc_number <> ""){ //Only part line items
@@ -307,22 +317,41 @@ for line in line_process{
 
         }elif(line.rateType_line == "Disposal" AND line.isPartLineItem_line){
 
-            // Disposal includes estTonsPerHaul in calculation
+            // Disposal includes rate factor to account for different units of measure
+			rateFactor = 0.0;
+			containerSize = "";
+			containerSizeFloat = 0.0; print line.billingType_line;
+			if(line.billingType_line == "Per Ton"){
+				rateFactor = estLiftsPerMonth * estTonsPerHaul;
+			}elif(line.billingType_line == "Per Load"){
+				rateFactor = estLiftsPerMonth;
+			}elif(line.billingType_line == "Per Yard"){
+				if(NOT isnull(getconfigattrvalue(line._parent_doc_number, "equipmentSize_l"))){
+                        containerSize=getconfigattrvalue(line._parent_doc_number, "equipmentSize_l");
+				}
+				if(isnumber(containerSize)){
+					containerSizeFloat = atof(containerSize);
+				}
+				rateFactor = containerSizeFloat * estLiftsPerMonth;
+				
+			} print "rateFactor " + string(rateFactor);
+			
             if(isERFWaived_quote == 0){
-                erfTotalSellFloor = erfTotalSellFloor + (erfAmountFloor * estLiftsPerMonth * estTonsPerHaul);
-                erfTotalSellBase = erfTotalSellBase + (erfAmountBase * estLiftsPerMonth * estTonsPerHaul);
-                erfTotalSellTarget = erfTotalSellTarget + (erfAmountTarget * estLiftsPerMonth * estTonsPerHaul);
-                erfTotalSellStretch = erfTotalSellStretch + (erfAmountStretch * estLiftsPerMonth * estTonsPerHaul);
-                erfTotalSell = erfTotalSell + (erfAmountSell * estLiftsPerMonth * estTonsPerHaul);
+                erfTotalSellFloor = erfTotalSellFloor + (erfAmountFloor * rateFactor);
+                erfTotalSellBase = erfTotalSellBase + (erfAmountBase * rateFactor);
+                erfTotalSellTarget = erfTotalSellTarget + (erfAmountTarget * rateFactor);
+                erfTotalSellStretch = erfTotalSellStretch + (erfAmountStretch * rateFactor);
+                erfTotalSell = erfTotalSell + (erfAmountSell * rateFactor);
             }
             
             if(isFRFWaived_quote == 0){
-                frfTotalSellTarget = frfTotalSellTarget + (frfAmountTarget * estLiftsPerMonth * estTonsPerHaul);
-                frfTotalSellFloor = frfTotalSellFloor + (frfAmountFloor * estLiftsPerMonth * estTonsPerHaul);
-                frfTotalSellBase = frfTotalSellBase + (frfAmountBase * estLiftsPerMonth * estTonsPerHaul);
-                frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * estLiftsPerMonth * estTonsPerHaul);
-                frfTotalSell = frfTotalSell + (frfAmountSell * estLiftsPerMonth * estTonsPerHaul);
+                frfTotalSellTarget = frfTotalSellTarget + (frfAmountTarget * rateFactor);
+                frfTotalSellFloor = frfTotalSellFloor + (frfAmountFloor * rateFactor);
+                frfTotalSellBase = frfTotalSellBase + (frfAmountBase * rateFactor);
+                frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * rateFactor);
+                frfTotalSell = frfTotalSell + (frfAmountSell * rateFactor);
             }
+			print "ERF Total Disp " + string(erfTotalSell) + " ERF Amount: " + string(erfAmountSell); print "FRF Total Disp " + string(frfTotalSell) + " FRF Amount: " + string(frfAmountSell);
 
         }elif(line.rateType_line == "Rental" AND line.isPartLineItem_line){ 
 
@@ -357,7 +386,8 @@ for line in line_process{
                     frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * 365/12);
                     frfTotalSell = frfTotalSell + (frfAmountSell * 365/12);
                 }   
-            }
+            } 			print "ERF Total Rent " + string(erfTotalSell); print "FRF Total Rent " + string(frfTotalSell);
+
         }
         
         //Calculate Total Price of the line item; Price + FRF + ERF
@@ -592,19 +622,30 @@ for line in line_process{
         if(line.rateType_line == "Ad-Hoc") {
 
             billingMethod = line.frequency_line;
-            showOnProposal = getconfigattrvalue(line._parent_doc_number, "isDisplayedOnProposal_adhoc");
+            showOnProposal = line.adHocDisplayOnProposal_line;
 
-            if(showOnProposal == "true") {
+			//MPB
+	    print "Show On Proposal";
+	    print showOnProposal;
+
+            if(showOnProposal == true) {
                 if(billingMethod == "Monthly") { 
-                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line; 
+                    adHocMonthlyERFandFRF = adHocMonthlyERFandFRF + FRF_CONST + ERF_CONST;
+                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;
                 }
                 if(billingMethod == "Per Haul") { 
-                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line;  
+                    adHocMonthlyERFandFRF = adHocMonthlyERFandFRF + FRF_CONST + ERF_CONST;
+                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;  
                 }
                 if(billingMethod == "One Time") { 
+                    adHocOneTimeERFandFRF = adHocOneTimeERFandFRF + FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
                     adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
-                    adHocOneTimeERFandFRF = FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
                 }
+		//MPB
+		print "Billing Method";
+		print billingMethod;
+		print "Monthly ERF and FRF";
+		print adHocMonthlyERFandFRF;
             }
         }
     }
@@ -668,7 +709,7 @@ if(hasLineItemsOnQuote_quote){
         grandTotalBase = smallMonthlyTotalBase_quote + largeMonthlyTotalBase_quote + erfTotalSellBase + frfTotalSellBase + adminRate_quote;
         grandTotalTarget = smallMonthlyTotalTarget_quote + largeMonthlyTotalTarget_quote + erfTotalSellTarget + frfTotalSellTarget + adminRate_quote;
         grandTotalStretch = smallMonthlyTotalStretch_quote + largeMonthlyTotalStretch_quote + erfTotalSellStretch + frfTotalSellStretch + adminRate_quote;
-        grandTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote + erfTotalSell + frfTotalSell + adminRate_quote + adHocMonthlyTotalSell + adHocPerHaulTotalSell;
+        grandTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote + erfTotalSell + frfTotalSell + adminRate_quote;
     }
     else {
         returnStr = returnStr   + "1~" + "adminRate_quote" + "~" + "0.0" + "|";
@@ -685,6 +726,18 @@ if(hasLineItemsOnQuote_quote){
         priceBand = "stretch";
     }
     
+    //Create reporting values for the Proposal
+    grandTotalInclAdHoc = grandTotalSell + adHocMonthlyTotalSell + adHocPerHaulTotalSell;
+    erfAndFrfTotalInclAdHoc = erfAndFrfTotalSell + adHocMonthlyERFandFRF;
+    
+    //MPB
+    print "ERF and FRF Total Sell";
+    print erfAndFrfTotalSell;
+    print "Ad Hoc Monthly ERF and FRF";
+    print adHocMonthlyERFandFRF;
+    print "ERF and FRF Including Ad Hoc";
+    print erfAndFrfTotalInclAdHoc;
+
     //Get Commission Rate from commissionRate table for corresponding price band
     commissionRateRS = bmql("SELECT commissionRate FROM commissionRate WHERE ((priceBand = $priceBand OR priceBand = 'All' OR priceBand = '') AND (ERF = $includeERF_quote OR ERF = 'All') AND (FRF = $includeFRF_quote OR FRF = 'All'))");
     for eachRecord in commissionRateRS{
@@ -1036,7 +1089,9 @@ returnStr = returnStr   + "1~" + "divisionSalesGroup_quote" + "~" + (divisionSal
                         + "1~" + "smallSolidWasteNetRevenue_quote" + "~" + string(smallMonthlyNetRevenue_SolidWaste) + "|"
                         + "1~" + "smallRecyclingNetRevenue_quote" + "~" + string(smallMonthlyNetRevenue_Recycling) + "|"
                         + "1~" + "largeSolidWasteNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_SolidWaste) + "|"
-                        + "1~" + "largeRecyclingNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_Recycling) + "|";
+                        + "1~" + "largeRecyclingNetRevenue_quote" + "~" + string(largeMonthlyNetRevenue_Recycling) + "|"
+                        + "1~" + "grandTotalInclAdHoc_quote" + "~" + string(grandTotalInclAdHoc) + "|"
+                        + "1~" + "erfAndFrfTotalInclAdHoc_quote" + "~" + string(erfAndFrfTotalInclAdHoc) + "|";
 if(_system_current_step_var == "adjustPricing"){                    
     returnStr = returnStr   + "1~" + "level1ApprovalRequired_quote" + "~" + string(level1ApprovalRequired) + "|"
                             + "1~" + "level2ApprovalRequired_quote" + "~" + string(level2ApprovalRequired) + "|"

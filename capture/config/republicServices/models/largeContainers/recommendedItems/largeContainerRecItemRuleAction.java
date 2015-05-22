@@ -72,7 +72,8 @@ for eachRec in partsRecordSet{
 			if(eachRate == "Haul"){
 				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, "Per Haul");
 			}elif(eachRate == "Disposal"){
-				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, "Per Ton");
+
+				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, unitOfMeasure);
 			}
 			
 			retStr = retStr + thisPartStr; 
@@ -83,7 +84,10 @@ for eachRec in partsRecordSet{
 		//retStr = retStr  + partNum + "~" + string(qty) + "~" + "rateType" + VALUE_DELIM + "Disposal" + "~" +disposalRate + "~" + "identifier2|^|";
 	}
 	elif(billingType_l == "Flat Rate + Overage"){
-		rateTypeArray = string[]{"Haul", "Overage"};
+		rateTypeArray = string[]{"Haul"};
+		if ( unitOfMeasure == "Per Ton" ) {
+		append(rateTypeArray, "Overage");
+		}
 		thisPart =  partNum + "~" + string(qty) + "~" + commentStr + "~" + PRICE_STR + "~" + "identifier|^|";
 		
 		thisPartStr = "";
@@ -93,7 +97,8 @@ for eachRec in partsRecordSet{
 			if(eachRate == "Haul"){
 				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, "Per Haul");
 			}elif(eachRate == "Overage"){
-				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, unitOfMeasure);
+
+				thisPartStr = replace(thisPartStr, OCCURRENCE_STR, "Per Ton");
 			}
 			
 			retStr = retStr + thisPartStr; 
