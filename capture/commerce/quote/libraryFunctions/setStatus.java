@@ -19,6 +19,7 @@
 // 20150506 - John Palubinskas - #518 set opportunityReadOnly_quote = true where newStage = Close or Lost
 // 20150513 - John Palubinskas - #518 refactor actionName = print or email since they're the same functionality
 //                               Also handle when Previous is clicked on the finalizeContrast step.
+// 20150526 - Gaurav Dawar	   - #481 Added "Customer Accepted: Third party Agreement" to the conditionals.
 // -----------------------------------------------------------------------------------------------
 res=status_quote; // keep current status_quote if we don't set a new value
 
@@ -101,8 +102,12 @@ if(actionName == "next" OR actionName == "previous"){
         contractStatusCode = "02";
         newStage = "Close";
         opportunityReadOnly = true;
+    }elif(contractStatus_quote == "Customer Accepted: Signed third party agreement"){
+        contractStatusCode = "08";
+        newStage = "Close";
+        opportunityReadOnly = true;
     }
-    if(renewalTerm_quote == "1" AND contractStatusCode == "01"){
+	if(renewalTerm_quote == "1" AND contractStatusCode == "01"){
         contractStatusCode = "05";
     }
     /*20150430 - Rob Brozyna - ActionName "finalizeContract" is used both in finalizeQuote_quote action, 
@@ -134,7 +139,8 @@ if(actionName == "next" OR actionName == "previous"){
 // Finalize Button was Clicked
 if((_system_current_step_var == "submitted_process") AND (actionName <> "previous")) {
     if(contractStatus_quote == "Customer Accepted: Signed" OR 
-       contractStatus_quote == "Customer Accepted: Did not sign") {
+       contractStatus_quote == "Customer Accepted: Did not sign" OR
+	   contractStatus_quote == "Customer Accepted: Signed third party agreement") {
         res="Customer Accepted";
     }elif(contractStatus_quote == "Customer Rejected") {
         res="Customer Rejected";
