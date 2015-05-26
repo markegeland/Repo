@@ -1,4 +1,5 @@
 // 20150402 John Palubinskas - #449 updated for reason code storing just code instead of full description
+// 20150526 Gaurav Dawar - #481 Added "Customer Accepted: Third party Agreement" to the conditionals.
 
 SIGNED = "Customer Accepted: Signed";
 NOT_SIGNED = "Customer Accepted: Did not sign";
@@ -6,7 +7,7 @@ REJECTED = "Customer Rejected";
 
 retStr = "";
 
-if(contractStatus_quote == SIGNED){
+if(contractStatus_quote == SIGNED OR contractStatus_quote == "Customer Accepted: Signed third party agreement"){
     retStr = "Customer Accepted - Signed";
 }elif(contractStatus_quote == NOT_SIGNED){
     retStr = "Customer Accepted - Not Signed";
