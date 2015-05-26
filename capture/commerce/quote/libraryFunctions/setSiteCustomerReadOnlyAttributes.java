@@ -20,6 +20,7 @@ Updates:    20141007 - JPalubinskas - Added contID_readOnly_quote for contID F/O
                                       checkboxes since this is for the read only attributes.
                                       Refactored for clarity.
 			20150515 - RN - #291 query divisionFeeRate to determine if admin fee is charged for new customer
+			20150526 - Gaurav Dawar	- #573 - Fixed Fee percentage in the header and CSA.
         
 =====================================================================================================
 */
@@ -161,7 +162,7 @@ erfRateStr = "0.0";
 adminRateStr = "0.0";
 
     // Fees
-    accountStatusRS = bmql("SELECT infopro_div_nbr, is_frf_locked, is_erf_locked, is_Admin_Charged, is_frf_charged, is_erf_charged, is_franchise FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote");
+    accountStatusRS = bmql("SELECT infopro_div_nbr, is_frf_locked, is_erf_locked, is_Admin_Charged, is_frf_charged, is_erf_charged, is_franchise, frf_rate_pct, erf_rate_pct FROM Account_Status WHERE infopro_acct_nbr = $_quote_process_customer_id AND Site_Nbr = $siteNumber_quote");
     print accountStatusRS;
 
     // handle when no results are returned
@@ -170,12 +171,20 @@ adminRateStr = "0.0";
     is_erf_charged = 0;
     is_frf_charged = 0;
     is_franchise = 0;
+	is_frf_locked = 0;
+	is_erf_locked = 0;
+	frf_rate_pct = 0.0;
+	erf_rate_pct = 0.0;
 
     for record in accountStatusRS{
         adminCharged = getint(record, "is_Admin_Charged");
         is_erf_charged = getint(record, "is_erf_charged");
         is_frf_charged = getint(record, "is_frf_charged");
         is_franchise = getint(record, "is_franchise");
+		is_frf_locked = getint(record, "is_frf_locked");
+		is_erf_locked = getint(record, "is_erf_locked");
+		frf_rate_pct = getfloat(record, "frf_rate_pct");
+		erf_rate_pct = getfloat(record, "erf_rate_pct");
         
         if(adminCharged == 1){
             adminOn = "Yes";
@@ -241,6 +250,20 @@ retStr = retStr + "1~fRF_readOnly_quote~" + frfOn + "|"
                 + "1~eRFreadOnly_quote~" + erfOn + "|"
                 + "1~admin_readOnly_quote~" + adminOn + "|"
                 + "1~contID_readOnly_quote~" + contID + "|";
+				
+if(lower(salesActivity_quote) == "existing customer"){
+//     ERF
+     
+    if(is_erf_locked == 1){
+        erfPct = string(erf_rate_pct) + "%";
+        retStr = retStr + "1~eRFreadOnly_quote~" + "Yes - Fixed " + erfPct + "|";
+    }
+     //FRF
+    if(is_frf_locked == 1){
+        frfPct = string(frf_rate_pct) + "%";
+        retStr = retStr + "1~fRF_readOnly_quote~" + "Yes - Fixed " + frfPct + "|";    
+    }
+}
 
 return retStr;
 
