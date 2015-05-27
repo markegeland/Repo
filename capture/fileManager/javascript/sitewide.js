@@ -8,6 +8,7 @@
  * 20150508 John Palubinskas - #518 CRM updates to hide new actions when not coming from SFDC.
  *                             Also handle clicking Next on the start step.
  * 20150520 John Palubinskas - #518 remove call to hide CRM panel.  Moved to CSS.
+ * 20150522 John Palubinskas - #622 handle hiding SFDC buttons on existing quotes that do not have sourceSystem_quote populated
  *
  */
 require([], function() {
@@ -38,8 +39,10 @@ require([], function() {
 
         //Hide certain actions if the quote was started from Capture
         //Need to hide is when it's a hidden input or a select in the CRM Information tab
-        if(($('input[name=sourceSystem_quote]').val() == "CAPTURE") ||
-           ($('select[name=sourceSystem_quote]').val() == "CAPTURE"))
+        if(($('input[name=sourceSystem_quote]').val() == "CAPTURE")  ||
+           ($('select[name=sourceSystem_quote]').val() == "CAPTURE") ||
+           ($('input[name=sourceSystem_quote]').val() == "")  ||
+           ($('select[name=sourceSystem_quote]').val() == ""))
         {
             $('#return_to_opportunity').closest("table").hide();
             $('#refresh_contacts').closest("table").hide();
