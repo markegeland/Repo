@@ -5,6 +5,7 @@
  *   Please be sure to add detailed comments describing what you are overriding.
  * 
  *   20141028 - John Palubinskas - initial development to hide the Trash folder on the Quote List (commerce_namager.jsp)
+ *   20150527 - John Palubinskas - #609 add the environment style (previously in header.html)
  * 
  * 
  */
@@ -14,6 +15,7 @@ tr[id='-2'].dropTarget
 {
 	display: none;
 }
+
 /* The line item grid has a warning above it that would display if we allow paging...but we don't.  It is set to visibility: hidden, 
    but that leaves a large gap between the Services header and the line-item grid. 
    <ul id="line-item-grid-pagination-warning" class="error-text" style="visibility: hidden;"> */
@@ -21,3 +23,17 @@ tr[id='-2'].dropTarget
 {
 	display: none;
 }
+
+/* This is for showing what environment we're working in; e.g. Dev, Test, etc... */
+#environment
+{
+    position: relative;
+    width: 200px;
+    margin-bottom: -22px;
+    font-family: "Open Sans";
+    font-size: 16px;
+    color: #C87600;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 1);
+    padding-left: 8px;
+}
+

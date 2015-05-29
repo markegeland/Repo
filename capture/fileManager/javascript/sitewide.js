@@ -3,12 +3,13 @@
  * @param callback {Function} function containing this module's functionality.
  * @version Fri Feb 25 18:44:56 2011
  * 
- * 20150304 John Palubinskas - #25 comment out all coloring of buttons
+ * 20150304 John Palubinskas - #25  comment out all coloring of buttons
  * 20150310 John Palubinskas - #451 fix upgrade issue where button id return_to_quote changed to return_-_quote
  * 20150508 John Palubinskas - #518 CRM updates to hide new actions when not coming from SFDC.
- *                             Also handle clicking Next on the start step.
+ *                                  Also handle clicking Next on the start step.
  * 20150520 John Palubinskas - #518 remove call to hide CRM panel.  Moved to CSS.
  * 20150522 John Palubinskas - #622 handle hiding SFDC buttons on existing quotes that do not have sourceSystem_quote populated
+ * 20150527 John Palubinskas - #609 Needed to refactor the document.form calls to handle undefined properly
  *
  */
 require([], function() {
@@ -19,8 +20,6 @@ require([], function() {
   //this function runs when the page loads
   require.ready(function() {
     
-        var formName = document.forms[0].name;
-        
         //header-wrapper element exists on all pages
         var header = document.getElementById("header-wrapper");
         if(typeof(header) != "undefined" && header != null){
@@ -69,7 +68,7 @@ require([], function() {
         }
         
         //Hide Next Action in Select Services step when there are no products on the quote
-        if(typeof(formName) !== "undefined" && formName == "bmDocForm"){
+        if(typeof(document.forms[0]) !== "undefined" && document.forms[0].name == "bmDocForm"){
             //Remove tabindex property on address fields to follow attribute ordering
             $('input,select').removeAttr("tabindex");
         
@@ -141,7 +140,7 @@ require([], function() {
         
         
         //Updating Button Labels for Config
-        if(typeof(formName) != "undefined" && formName != null && formName == "configurationForm"){
+        if(typeof(document.forms[0]) != "undefined" && document.forms[0].name != null && document.forms[0].name == "configurationForm"){
             var return_to_quote = document.getElementById("return_-_quote");
             if(typeof(return_to_quote) !== "undefined" && return_to_quote !== null){
                 $("#return_-_quote").html("Previous");
