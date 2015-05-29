@@ -1,3 +1,6 @@
+/*
+20150529 - Gaurav Dawar - #444 - Fixed the number of lifts per period issue
+*/
 quote_process_customer_id = "";
 SiteNumber_quote = "";
 containerGroupForTransaction_quote = "";
@@ -67,7 +70,7 @@ if(quote_process_customer_id <> "" AND SiteNumber_quote <> "" ){
 				frequency = "Every 4 weeks";
 			}
 			elif(pickupPeriodLength == "1"){
-				frequencyFloat = pickupPerTotLifts/(containerCnt * period);
+				frequencyFloat = pickupPerTotLifts/(containerCnt/* * period*/);
 				frequencyInt = integer(frequencyFloat);
 				if(frequencyInt == 1){
 					frequency = "1 X Week";
