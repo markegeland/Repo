@@ -1,61 +1,69 @@
-//Latitude>37.552329674363136</Latitude><Longitude>-122.26170524954796<
+/* 
+========================================================================================================
+       Name: getGeoCodesFromAddress
+     Author: ???
+Create date: ???
+Description: Util function to call the Bing Maps API and return the XML response
+             containing the address lat/long info.
+
+Updates
+20150521 John Palubinskas - #615 add additional character replacement for when we get punctuation in the
+                            site address, so it won't blow up on the Bing API call.
+========================================================================================================
+*/
+
 res = "";
-DELIM = "^_^";
-siteNumber = "";
 siteStreet = "";
 siteCity = "";
 siteState = "";
 zipcode = "";
-system_supplier_company = ""; //bigmachines site name
+system_supplier_company = ""; // environment site name
 KEY = "";
 locationURL = "";
 
-if(containskey(addressDict, "siteNumber")){
-	siteNumber = get(addressDict, "siteNumber");
-}
+if(containskey(addressDict, "siteStreet")) { siteStreet = get(addressDict, "siteStreet"); }
+if(containskey(addressDict, "siteCity"))   {   siteCity = get(addressDict, "siteCity");   }
+if(containskey(addressDict, "siteState"))  {  siteState = get(addressDict, "siteState");  }
+if(containskey(addressDict, "zipcode"))    {    zipcode = get(addressDict, "zipcode");    }
+if(containskey(addressDict, "system_supplier_company")){ 
+    system_supplier_company = get(addressDict, "system_supplier_company"); }
 
-if(containskey(addressDict, "siteStreet")){
-	siteStreet = get(addressDict, "siteStreet");
-}
+if(system_supplier_company == ""){ system_supplier_company = "testrepublicservices"; }
 
-if(containskey(addressDict, "siteCity")){
-	siteCity = get(addressDict, "siteCity");
-}
-
-if(containskey(addressDict, "siteState")){
-	siteState = get(addressDict, "siteState");
-}
-
-if(containskey(addressDict, "zipcode")){
-	zipcode = get(addressDict, "zipcode");
-}
-
-if(containskey(addressDict, "system_supplier_company")){
-	system_supplier_company = get(addressDict, "system_supplier_company");
-}
-if(system_supplier_company == ""){
-	system_supplier_company = "testrepublicservices";
-}
 //Get the Key & URL from maps table
 resultset = bmql("SELECT url, key FROM maps WHERE site = $system_supplier_company AND type = 'location'");
 for result in resultset{
-	KEY = get(result, "key");
-	locationURL = get(result, "url");
+    KEY = get(result, "key");
+    locationURL = get(result, "url");
 }
 
-streetLocal = replace(siteStreet, " ", "%20");
-cityLocal = replace(siteCity, " ", "%20");
+// URL encode characters: space # . , -
+siteStreet = replace(siteStreet, " ", "%20");
+siteStreet = replace(siteStreet, "#", "%23");
+siteStreet = replace(siteStreet, ".", "%2E");
+siteStreet = replace(siteStreet, ",", "%2C");
+siteStreet = replace(siteStreet, "-", "%2D");
+siteCity = replace(siteCity, " ", "%20");
+siteCity = replace(siteCity, "#", "%23");
+siteCity = replace(siteCity, ".", "%2E");
+siteCity = replace(siteCity, ",", "%2C");
+siteCity = replace(siteCity, "-", "%2D");
 
-/*url = urldatabyget("http://dev.virtualearth.net/REST/v1/Locations/US/WA/98052/Redmond/1 Microsoft Way", "o=xml&key=AtYrIUXwKFjWY299MSA3DeLhe0nGq0vqNLD0-aZ2HYsI4weX03JfnIK29joVGL3w", "n/a");
-return url;*/
-//http://dev.virtualearth.net/REST/v1/Locations/US/WA/98052/Redmond/1%20Microsoft%20Way?o=xml&key=BingMapsKey
-//locationURL = locationURL + siteState + "/" + zipcode + "/" + cityLocal + "/" + siteNumber + "%20" + streetLocal;
-if(zipcode == ""){
-	locationURL = locationURL + siteState + "/" + cityLocal + "/" + streetLocal;
-}else{
-	locationURL = locationURL + siteState + "/" + zipcode + "/" + cityLocal + "/" + streetLocal;
+//http://dev.virtualearth.net/REST/v1/Locations?query=locationQuery&includeNeighborhood=includeNeighborhood&include=includeValue&maxResults=maxResults&key=BingMapsKey
+trailingParameters = "&inclnb=0&maxRes=1&o=xml&key=" + KEY;
+
+if (siteState == "PR") { // try more specific encoding for Puerto Rico addresses
+    // I solved it for some addresses by stating that the country (or CountryRegion) was PR and not US.  
+    // Also don't code the state (or AdminDistrict) as PR
+    // country / adminDistrict (state) / locality (city) / postalCode / addressLine
+    locationURL = locationURL + "/PR/-/" + siteCity + "/" + zipcode + "/" + siteStreet + "/";
 }
-print locationURL+"?o=xml&key="+KEY;
+else {
+    locationURL = locationURL + "?q=" + siteStreet + "%20" + siteCity + "%20" + siteState + "%20" + zipcode;
+}
 
-outputXML = urldatabyget(locationURL, "o=xml&key="+KEY, "n/a");
+
+print locationURL + trailingParameters;
+
+outputXML = urldatabyget(locationURL, trailingParameters, "n/a");
 return outputXML;
