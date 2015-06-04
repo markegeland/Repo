@@ -20,6 +20,7 @@
 // 20150513 - John Palubinskas - #518 refactor actionName = print or email since they're the same functionality
 //                               Also handle when Previous is clicked on the finalizeContrast step.
 // 20150526 - Gaurav Dawar	   - #481 Added "Customer Accepted: Third party Agreement" to the conditionals.
+// 20150603 - John Palubinskas - #608 Set opp stage to "Propose" when finalizeContract step is entered without CSA or Proposal being printed
 // -----------------------------------------------------------------------------------------------
 res=status_quote; // keep current status_quote if we don't set a new value
 
@@ -44,13 +45,13 @@ if(actionName == "next" OR actionName == "previous"){
     newStage = currentStage;
 }elif(actionName == "submit"){ //step-Submitted for approval
     res="Approved";
-    newStage = currentStage;
+    newStage = "Configure";
 }elif(actionName == "revise"){ //step-Submitted for approval
     res="Revision in Progress";
-    newStage = currentStage;
+    newStage = "Configure";
 }elif(actionName == "reject"){ //step-Submitted for approval
     res="Rejected";
-    newStage = currentStage;
+    newStage = "Configure";
 }elif(((actionName == "print") OR (actionName == "email")) 
        AND (_system_current_step_var <> "contractFinalized")){ // step - Generate Documents
     if(chooseProposal_quote == true){
@@ -91,7 +92,7 @@ if(actionName == "next" OR actionName == "previous"){
     }
     else {
         res="Work in Progress";
-        newStage = "Configure";
+        newStage = "Propose";
     }
     // Set contractStatusCode
     if(contractStatus_quote == "Customer Accepted: Signed"){
