@@ -55,6 +55,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
 			20150405 - Gaurav Dawar - #145 - Fixed InstallationCharge_line for doc engine
             20150412 - John Palubinskas - #449 comment out setting priceType = SMALL_CONTAINER in order to fix looping error on existing cust PI
             20150430 - Mike Boylan - #508 set cost to zero for Ad-Hoc items
+			20150604 - Gaurav Dawar - #444 updated the liftsPerContainer_line with the correct value.
 =====================================================================================================
 */
 
@@ -888,7 +889,7 @@ for line in line_process{
             }
             frequencyAttribute = getconfigattrvalue(line._parent_doc_number, "liftsPerContainer_sc");
             if(frequencyAttribute == "No Change"){
-                frequencyAttribute = getconfigattrvalue(line._parent_doc_number, "liftsPerContainer_readOnly");
+                frequencyAttribute = getconfigattrvalue(line._parent_doc_number, "liftsPerContainer_curr_readonly");
             }
         }
         //End all common config attributes
