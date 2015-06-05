@@ -1,5 +1,6 @@
 /*
 20150529 - Gaurav Dawar - #444 - Fixed the number of lifts per period issue
+20150602 - Gaurav Dawar - #444 - Fixed the number of lifts per period issue for lifts higher than 7 per week.
 */
 quote_process_customer_id = "";
 SiteNumber_quote = "";
@@ -72,6 +73,9 @@ if(quote_process_customer_id <> "" AND SiteNumber_quote <> "" ){
 			elif(pickupPeriodLength == "1"){
 				frequencyFloat = pickupPerTotLifts/(containerCnt/* * period*/);
 				frequencyInt = integer(frequencyFloat);
+				frequency = string(frequencyInt) + " X Week";
+				/*GD = string(frequencyInt) + " X Week";
+				print "GD";print GD;
 				if(frequencyInt == 1){
 					frequency = "1 X Week";
 				}
@@ -92,7 +96,7 @@ if(quote_process_customer_id <> "" AND SiteNumber_quote <> "" ){
 				}
 				elif(frequencyInt == 7){
 					frequency = "7 X Week";
-				}
+				}*/
 			}
 		}
 		
