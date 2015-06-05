@@ -2,7 +2,8 @@
 // Author - Gaurav Dawar
 // 20150320 - GD - #468 - Removed 4960 from the list
 // 20150406 - John Palubinskas - #449 add call to setTransactionCode
-
+// 20150406 - Ryan Nabor - #461 add call to setCommerceLineAttributesFromConfig
+// 20150605 - GD - #646 - Added divisions 4384 & 4972
 
 // This Piece of code is created to remove the default CSAVersion="California" for 
 // the divisions which has multiple CSAversions.
@@ -36,6 +37,8 @@ if(    (division_quote == "4091")
     OR (division_quote == "3895") 
     OR (division_quote == "3893") 
     OR (division_quote == "3840") 
+    OR (division_quote == "4384") 
+    OR (division_quote == "4972") 
     AND (cSAVersion_quote == "California")){ 
     ret = "1~cSAVersion_quote~|"; 
 } 
@@ -43,5 +46,7 @@ if(    (division_quote == "4091")
 ret = ret + commerce.setStatus("submit");
 ret = ret + commerce.postPricingFormulas("");
 ret = ret + commerce.setTransactionCode();
+//ret = ret + commerce.attributesInXML();
+ret = ret + commerce.setCommerceLineAttributesFromConfig();
 
 return ret;
