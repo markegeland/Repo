@@ -13,7 +13,8 @@ Description: Used to redirect the user when they finalize the quote back to SFDC
      Output: String with the redirection URL
 
 Updates:    
-20150512 - JPalubinskas - #518 updated the Capture redirect to always use the same Process ID
+20150512 John Palubinskas - #518 updated the Capture redirect to always use the same Process ID
+20150604 John Palubinskas - #653 change to pull return URL from new integration salesforce data table
         
 =====================================================================================================
 */
@@ -21,33 +22,24 @@ urlString = "";
 totalURL = "";
 
 if (sourceSystem_quote == "SFDC") {
-	if(_system_company_name == "testsfdcrepublicservices")
-	{
-		urlString = "cs8";
-	}
-	elif(_system_company_name == "devrepublicservices")
-	{
-		urlString = "cs8";
-	}
-	elif(_system_company_name == "testrepublicservices")
-	{
-		//TODO
-		urlString = "";
-	}
-	elif(_system_company_name == "republicservices")
-	{
-		//TODO
-		urlString = "";
-	}
-	
-	totalURL = "https://" + urlString + ".salesforce.com/" + crmOpportunityId_quote;
+    returnLinkRS = bmql("SELECT value FROM salesforce WHERE type = 'returnLink' AND key = $_system_company_name");
+
+    for record in returnLinkRS{
+        urlString = get(record, "value");
+        break;
+    }
+
+    if (urlString == "") {
+        urlString = "https://test.salesforce.com/";
+    }
+
+    totalURL = urlString + crmOpportunityId_quote;
 }
 elif (sourceSystem_quote == "CAPTURE") {
-	// Note that the process ID is identical in all environments since they have all originated from 
-	// the same site.
-	urlString = "4653759";
-	
-	totalURL = "https://" + _system_company_name + ".bigmachines.com/commerce/buyside/commerce_manager.jsp?bm_cm_process_id=" + urlString + "&from_hp=true&_bm_trail_refresh_=true";
+    // Note that the process ID is identical in all environments since they have all originated from the same site.
+    urlString = "4653759";
+    
+    totalURL = "https://" + _system_company_name + ".bigmachines.com/commerce/buyside/commerce_manager.jsp?bm_cm_process_id=" + urlString + "&from_hp=true&_bm_trail_refresh_=true";
 }
 
 return totalURL;

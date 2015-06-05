@@ -6,28 +6,21 @@
 //
 // Updates:
 // 20150512 - John Palubinskas - #518 update testSFDC url to point to cs7
+// 20150604 - John Palubinskas - #653 change to pull return URL from new integration salesforce data table
 //
 // -----------------------------------------------------------------------------------------------
 
 urlString = "";
 
-if(_system_company_name == "testsfdcrepublicservices")
-{
-	urlString = "cs7";
-}
-elif(_system_company_name == "devrepublicservices")
-{
-	urlString = "cs8";
-}
-elif(_system_company_name == "testrepublicservices")
-{
-	//TODO
-	urlString = "";
-}
-elif(_system_company_name == "republicservices")
-{
-	//TODO
-	urlString = "";
+returnLinkRS = bmql("SELECT value FROM salesforce WHERE type = 'returnLink' AND key = $_system_company_name");
+
+for record in returnLinkRS{
+	urlString = get(record, "value");
+	break;
 }
 
-return "https://" + urlString + ".salesforce.com/" + crmOpportunityId_quote;
+if (urlString == "") {
+	urlString = "https://test.salesforce.com/";
+}
+
+return urlString + crmOpportunityId_quote;
