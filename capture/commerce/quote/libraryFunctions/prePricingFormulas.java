@@ -56,6 +56,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150412 - John Palubinskas - #449 comment out setting priceType = SMALL_CONTAINER in order to fix looping error on existing cust PI
             20150430 - Mike Boylan - #508 set cost to zero for Ad-Hoc items
 			20150604 - Gaurav Dawar - #444 updated the liftsPerContainer_line with the correct value.
+			20150605 - Aaron Quintanilla - #643 Updating dsp_xfer_priceperton_small and disposalSiteCostCommercial to be per model not per quote
 =====================================================================================================
 */
 
@@ -76,6 +77,8 @@ industrialExists = false;
 commercialExists = false;
 disposalSiteCostCommercial = 0.0;
 dsp_xfer_priceperton_small = 0.0;
+disposalSiteCostCommercialPerModelDict = dict("float"); //Key: model document number; value: Disposal Site Cost for Small Container
+dsp_xfer_priceperton_smallDict = dict("float"); //Key: model document number; value: dsp_xfer_price_per_ton for Small Container 
 priceTypeDict = dict("string"); //Key: document number, value: Model Name
 modelNameDict = dict("string"); //Key: model document number; value: Model Name
 allocationDaysDict = dict("string[]"); //Key: waste type, value: allocation days
@@ -1239,8 +1242,16 @@ for line in line_process{
             put(stringDict, "region_quote", region_quote); //get this based on division selected rather than home division
             put(stringDict, "partNumber", line._part_number);
             put(stringDict, "initialTerm_quote", string(initialTerm));
-            put(stringDict, "disposalCostPerTon", string(disposalSiteCostCommercial));
-            put(stringDict, "dsp_xfer_price_per_ton", string(dsp_xfer_priceperton_small));
+			if(containskey(disposalSiteCostCommercialPerModelDict, line._parent_doc_number)){
+				put(stringDict, "disposalCostPerTon", string(get(disposalSiteCostCommercialPerModelDict,line._parent_doc_number)));
+			}else{
+				put(stringDict, "disposalCostPerTon", string(disposalSiteCostCommercial));
+			}
+			if(containskey(dsp_xfer_priceperton_smallDict, line._parent_doc_number)){
+				put(stringDict, "dsp_xfer_price_per_ton", string(get(dsp_xfer_priceperton_smallDict, line._parent_doc_number)));
+			}else{
+				put(stringDict, "dsp_xfer_price_per_ton", string(dsp_xfer_priceperton_small));
+			}
             put(stringDict, "allocationFactor", string(allocationFactor));
             put(stringDict, "industry", industry_quote);
             put(stringDict, "additionalSmallContainerSiteTime", getconfigattrvalue(line._parent_doc_number, "additionalSmallContainerSiteTime_s"));
@@ -1422,8 +1433,16 @@ for line in line_process{
             put(currentStringDict, "region_quote", region_quote); //get this based on division selected rather than home division
             put(currentStringDict, "partNumber", line._part_number);
             put(currentStringDict, "initialTerm_quote", contract_term); //Use Contract term from customer account here to support legacy contract terms
-            put(currentStringDict, "disposalCostPerTon", string(disposalSiteCostCommercial));
-            put(currentStringDict, "dsp_xfer_price_per_ton", string(dsp_xfer_priceperton_small));
+            if(containskey(disposalSiteCostCommercialPerModelDict, line._parent_doc_number)){
+				put(currentStringDict, "disposalCostPerTon", string(get(disposalSiteCostCommercialPerModelDict,line._parent_doc_number)));
+			}else{
+				put(currentStringDict, "disposalCostPerTon", string(disposalSiteCostCommercial));
+			}
+			if(containskey(dsp_xfer_priceperton_smallDict, line._parent_doc_number)){
+				put(currentStringDict, "dsp_xfer_price_per_ton", string(get(dsp_xfer_priceperton_smallDict, line._parent_doc_number)));
+			}else{
+				put(currentStringDict, "dsp_xfer_price_per_ton", string(dsp_xfer_priceperton_small));
+			}
             put(currentStringDict, "allocationFactor", string(allocationFactor));
             put(currentStringDict, "industry", industry_quote);
             put(currentStringDict, "additionalSmallContainerSiteTime", getconfigattrvalue(line._parent_doc_number, "additionalSmallContainerSiteTime_s"));
@@ -1624,8 +1643,16 @@ for line in line_process{
             put(stringDict, "region_quote", region_quote); //get this based on division selected rather than home division
             put(stringDict, "partNumber", line._part_number);
             put(stringDict, "initialTerm_quote", string(initialTerm));
-            put(stringDict, "disposalCostPerTon", string(disposalSiteCostCommercial));
-            put(stringDict, "dsp_xfer_price_per_ton", string(dsp_xfer_priceperton_small));
+            if(containskey(disposalSiteCostCommercialPerModelDict, line._parent_doc_number)){
+				put(stringDict, "disposalCostPerTon", string(get(disposalSiteCostCommercialPerModelDict,line._parent_doc_number)));
+			}else{
+				put(stringDict, "disposalCostPerTon", string(disposalSiteCostCommercial));
+			}
+			if(containskey(dsp_xfer_priceperton_smallDict, line._parent_doc_number)){
+				put(stringDict, "dsp_xfer_price_per_ton", string(get(dsp_xfer_priceperton_smallDict, line._parent_doc_number)));
+			}else{
+				put(stringDict, "dsp_xfer_price_per_ton", string(dsp_xfer_priceperton_small));
+			}
             put(stringDict, "allocationFactor", string(allocationFactor));
             put(stringDict, "industry", industry_quote);
             put(stringDict, "additionalSmallContainerSiteTime", getconfigattrvalue(line._parent_doc_number, "additionalSmallContainerSiteTime_s"));
@@ -2382,7 +2409,7 @@ for line in line_process{
                 containerCode = routeTypeDerived;
             }
             //disposalSitecost for Small containers/commercial is a quote level value so needs to be calculated only once.
-            if(disposalSiteCostCommercial == 0.0){
+            if(NOT(containskey(disposalSiteCostCommercialPerModelDict, line._document_number))){
                 disposalSiteCostCommercialDict = dict("string");
                 disposalSiteCostCommercialStr = "";
                 dsp_xfer_priceperton_str = "";
@@ -2405,6 +2432,7 @@ for line in line_process{
                 }
                 if(disposalSiteCostCommercialStr <> "" AND isnumber(disposalSiteCostCommercialStr)){
                     disposalSiteCostCommercial = atof(disposalSiteCostCommercialStr);
+					put(disposalSiteCostCommercialPerModelDict, line._document_number ,atof(disposalSiteCostCommercialStr));
                 }
                 returnStr = returnStr + "1~disposalSiteCostCommercial_quote~"+ string(disposalSiteCostCommercial )+ "|";
                 if(containskey(disposalSiteCostCommercialDict, "disposal_cd")){
@@ -2416,6 +2444,7 @@ for line in line_process{
                 }
                 if(dsp_xfer_priceperton_str <> "" AND isnumber(dsp_xfer_priceperton_str)){
                     dsp_xfer_priceperton_small = atof(dsp_xfer_priceperton_str);
+					put(dsp_xfer_priceperton_smallDict, line._document_number , atof(dsp_xfer_priceperton_str));
                 }
                 if(containskey(disposalSiteCostCommercialDict, "is_serviceable")) {
                     is_serviceable = get(disposalSiteCostCommercialDict, "is_serviceable");
