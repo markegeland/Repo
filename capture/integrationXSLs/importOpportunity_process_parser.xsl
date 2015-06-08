@@ -17,7 +17,7 @@
 					<closeDate><xsl:value-of select="$month"/>/<xsl:value-of select="$day"/>/<xsl:value-of select="$year"/></closeDate>
 					
 					<!--Capture Screen 1-->
-					<area_quote><xsl:value-of select="//sf:FS_Area__c"/></area_quote>
+					<area_quote><xsl:value-of select="substring(//sf:FS_Area__c,1,3)"/></area_quote>
 					<division_quote><xsl:value-of select="//sf:Lawson_Division__r/sf:Name"/></division_quote>
 					<salesActivity_quote>
 						<xsl:choose>
