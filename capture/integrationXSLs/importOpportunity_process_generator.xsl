@@ -25,12 +25,13 @@
 							
 							<!--Capture Screen 1-->
 							FS_Area__c,
-							Lawson_Division__r.Name,
+							InfoPro_Lawson_Division__r.Lawson_Division__r.Name,
+							InfoPro_Number__c,
 							Sales_Activity__c,
 							
 							<!--Capture Screen 2-->
 							Industry__c,
-							NAICS_Code__c,
+							NAICSCode__r.NAICS_Code_No__c,
 							SPW_Segment__c,
 							Type,
 							
