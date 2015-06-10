@@ -19,6 +19,7 @@
 					<!--Capture Screen 1-->
 					<area_quote><xsl:value-of select="substring(//sf:FS_Area__c,1,3)"/></area_quote>
 					<division_quote><xsl:value-of select="//sf:Lawson_Division__r/sf:Name"/></division_quote>
+					<infoProNumberDisplayOnly_quote><xsl:value-of select="//sf:InfoPro_Number__c"/></infoProNumberDisplayOnly_quote>
 					<salesActivity_quote>
 						<xsl:choose>
 							<xsl:when test="//sf:Sales_Activity__c = 'New'">New/New</xsl:when>
