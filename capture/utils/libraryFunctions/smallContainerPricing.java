@@ -24,6 +24,7 @@ Updates:	11/13/13 - Zach Schlieder - Update divisionKPI table call to handle new
 			03/27/2015 - Mike (Republic) - Separated Compactor Rental pricing from Base Container pricing with different margins on new services only
 			04/04/2015 - Gaurav Dawar - #145 - compactor and container cost fix for compactor and container customer owned
 			04/07/2015 - Gaurav Dawar - #145 - compactor asset value to be gross amount not per container and container rental factor to be 0 for compactor customer owned.
+			06/11/2015 - Gaurav Dawar - #650 - Operating cost fix for financial summary
 =====================================================================================================
 */
 
@@ -1032,11 +1033,11 @@ cost_overhead = oh_royalties + oh_supervisor + oh_insurance + oh_facility + oh_o
 //Cost per Month including Overhead
 //Calulate without compactor costs if this is a new service.
 if(hasCompactor == 1 AND modelName <> "Service Change"){
-	cts_month_incl_oh = cost_disp_xfer_proc + disposalTripCost + operatingCost + containerAssetCost + containerROI + cost_overhead - commission;
+	cts_month_incl_oh = cost_disp_xfer_proc + disposalTripCost + operatingCost + assetCost + ROI + cost_overhead - commission;
 }
 //Otherwise calculate with all costs
 else{
-	cts_month_incl_oh = cost_disp_xfer_proc + disposalTripCost + operatingCost + assetCost + ROI + cost_overhead - commission;
+	cts_month_incl_oh = cost_disp_xfer_proc + disposalTripCost + operatingCost + containerAssetCost + containerROI + cost_overhead - commission;
 }
 
 //print "--cts_month_incl_oh--"; print cts_month_incl_oh;
