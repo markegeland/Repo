@@ -25,6 +25,7 @@ Updates:	11/13/13 - Zach Schlieder - Update divisionKPI table call to handle new
 			04/04/2015 - Gaurav Dawar - #145 - compactor and container cost fix for compactor and container customer owned
 			04/07/2015 - Gaurav Dawar - #145 - compactor asset value to be gross amount not per container and container rental factor to be 0 for compactor customer owned.
 			06/11/2015 - Gaurav Dawar - #650 - Operating cost fix for financial summary
+			06/12/2015 - Aaron Quintanilla - #643 - cost_disp_xfer_proc and disposalCostPerTon being set to 0.00 for Recycing removed
 =====================================================================================================
 */
 
@@ -593,11 +594,11 @@ default_disposal_3p_float = 0.0;
 	//Final Disposal Processing Cost calculation
 	//disposalCostPerTon comes from data table
 	disposalCostPerTon = 0.0;
-	if(wasteCategory <> "Recycling"){
+	//if(wasteCategory <> "Recycling"){
 		if(containskey(stringDict,"disposalCostPerTon") AND isnumber(get(stringDict, "disposalCostPerTon"))){
 			disposalCostPerTon = atof(get(stringDict, "disposalCostPerTon"));
 		}
-	}
+	//}
 	disposalProcessingCost = disposalCostPerTon * customerTonsPerMonth;
 	put(returnDict, "disposalProcessingCost", string(disposalProcessingCost));
 	//=============================== END - Disposal Processing Cost Calculation ===============================//
@@ -819,6 +820,11 @@ default_disposal_3p_float = 0.0;
 	put(returnDict, "J16", string(operatingCost));
 	put(returnDict, "J17", string(assetCost));
 	put(returnDict, "cost", string(cost));
+	
+		print "disposalProcessingCost -- " + string(disposalProcessingCost);
+		print "disposalTripCost -- " + string(disposalTripCost);
+		print "operatingCost -- " + string(operatingCost);
+		print "assetCost -- " + string(assetCost);
 
 //=============================== END - Cost Calculation ===============================//
 
@@ -903,6 +909,7 @@ put(returnDict, "J12", string(ROI));
 
 put(returnDict, "floor", string(floor));
 put(returnDict, "costToServeMonth", string(floor));
+print "FLOOR --- " + string(floor);
 
 //MPB New variables
 put(returnDict, "costToServeCompactor", string(costToServeCompactor));
@@ -934,9 +941,9 @@ if(containskey(stringDict, "dsp_xfer_price_per_ton")){
 }
 /*print "--dsp_xfer_price_per_ton--"; print dsp_xfer_price_per_ton;
 print "--customerTonsPerMonth--"; print customerTonsPerMonth;*/
-if(wasteCategory == "Recycling"){
+/*if(wasteCategory == "Recycling"){ print dsp_xfer_price_per_ton;
 	dsp_xfer_price_per_ton = 0.0;
-}
+}*/
 if(wasteCategory == "Solid Waste" AND dsp_xfer_price_per_ton == 0.0){ //if waste is SW and the transfer price from DisposalSites_Comm table is 0.0, then get the 3rd party column in KPI table
 	dsp_xfer_price_per_ton = default_disposal_3p_float;
 }
@@ -1040,7 +1047,6 @@ else{
 	cts_month_incl_oh = cost_disp_xfer_proc + disposalTripCost + operatingCost + containerAssetCost + containerROI + cost_overhead - commission;
 }
 
-//print "--cts_month_incl_oh--"; print cts_month_incl_oh;
 put(returnDict, "cts_month_incl_oh", string(cts_month_incl_oh));
 
 return returnDict;
