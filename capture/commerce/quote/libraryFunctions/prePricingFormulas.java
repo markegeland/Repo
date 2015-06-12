@@ -57,6 +57,7 @@ Updates:    20130913 - ??? - Added functionality to run large container pricing
             20150430 - Mike Boylan - #508 set cost to zero for Ad-Hoc items
 			20150604 - Gaurav Dawar - #444 updated the liftsPerContainer_line with the correct value.
 			20150605 - Aaron Quintanilla - #643 Updating dsp_xfer_priceperton_small and disposalSiteCostCommercial to be per model not per quote
+			20150611 - Rob Brozyna - #607 added logic to set sfdcRunUpserts_quote
 =====================================================================================================
 */
 
@@ -142,6 +143,7 @@ hasDelivery = false;
 competitorCode = "";
 competitorFactor = 1.0;
 competitorFactorStr = "";
+sfdcRunUpserts = false;
 
 /*These dictionaries are declared only for debugging purposes*/
 pricingDebugInputDict = dict("string");
@@ -348,6 +350,7 @@ for line in line_process{
                 put(priceTypeDict, docNum, modelName);  
             }			
         }
+		sfdcRunUpserts = true;
     }
     //Model loop
     else{
@@ -2547,7 +2550,8 @@ returnStr = returnStr + "1~" + "industrialExists_quote" + "~" + string(industria
                       + "1~" + "isERFAndFRFChargedOnAdmin_quote" + "~" + isERFAndFRFChargedOnAdmin + "|"
                       + "1~" + "hiddenExisitingTerm" + "~" + string(diffMthDoc) + "|" 
 					  + "1~" + "contractLength_quote" + "~" + string(diffMthRnd) + "|" 
-                      + "1~" + "existingTermFlag_quote" + "~" + string(lessThan90Days) + "|";
+                      + "1~" + "existingTermFlag_quote" + "~" + string(lessThan90Days) + "|"
+					  + "1~" + "sfdcRunUpserts_quote" + "~" + string(sfdcRunUpserts);
 
 //============================= Start - Set direct cost attributes ======================================//
 returnStr = returnStr + "1~" + "smallSolidWasteCost_quote" + "~" + string(smallSWCost) + "|"
