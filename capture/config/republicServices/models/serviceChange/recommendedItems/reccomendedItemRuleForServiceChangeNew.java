@@ -4,6 +4,7 @@ tempSize = "";
 tempWaste = "";
 tempCode = "";
 tempLifts = "";
+lob = "";
 lobCategoryDerived = "";
 VALUE_DELIM = "^_^";
 ATTR_DELIM = "@_@";
@@ -85,9 +86,9 @@ TempCodeRO = containerCode_readOnly;
 TempCodeSC = "";
 //Handle Container Code
 if(ContainerCodes_SC == "No Change"){
-	tempCodeSC = containerCode_readOnly;
+	TempCodeSC = containerCode_readOnly;
 }else{
-	tempCodeSC = ContainerCodes_SC;
+	TempCodeSC = ContainerCodes_SC;
 }
 //Handle Lifts Per Container
 if(liftsPerContainer_sc == "No Change"){
@@ -96,23 +97,17 @@ if(liftsPerContainer_sc == "No Change"){
 	tempLifts = liftsPerContainer_sc;
 }
 
-//Set LOB Category Derived 
-containerSizeFloat = 0.0;
-containerCategory = "";
-
-if(isnumber(tempSize)){
-	containerSizeFloat = atof(tempSize);
-	if(containerSizeFloat <= 10){	//Indicates small container
-		containerCategory = "Small Container";
-	}
-	elif(containerSizeFloat > 10){	//Indicates large container. Not currently used.
-		containerCategory = "Large Container";
-	} print containerCategory;
-	lobRecordSet = bmql("SELECT LOB_Category_Derived FROM LOB_Category WHERE chooseContainer = $containerCategory AND wasteType = $tempWaste");
-	print lobRecordSet;
-	for record in lobRecordSet{
-		lobCategoryDerived = get(record, "LOB_Category_Derived");
-	}	
+//Set LOB Category Derived
+containerSizeFloat = atof(tempSize);
+lobRecordSet = BMQL("SELECT recycling_flag FROM waste_type_map WHERE waste_type = $tempWaste");
+for record in lobRecordSet{
+	lob = get(record, "recycling_flag");
+}
+if(lob == "1"){
+	lobCategoryDerived = "Commercial Recycling";
+}
+if(lob == "0"){
+	lobCategoryDerived = "Commercial";
 }
 
 print tempSize;
@@ -128,7 +123,7 @@ containerSizeArray = split(tempSize, ".");
 }
 print tempSize;
 //Form Return String
-partsRecordSet = bmql("SELECT part_number, custom_field10 FROM _parts WHERE custom_field9 = $tempCodeSC AND custom_field11 = $compactorFlag AND custom_field12 = $lobCategoryDerived AND custom_field13 = 'Y'");
+partsRecordSet = bmql("SELECT part_number, custom_field10 FROM _parts WHERE custom_field9 = $TempCodeSC AND custom_field11 = $compactorFlag AND custom_field12 = $lobCategoryDerived AND custom_field13 = 'Y'");
 PartReplacementSet = bmql("SELECT part_number, custom_field10 FROM _parts WHERE custom_field9 = $tempCodeRO AND custom_field11 = $compactorFlag AND custom_field12 = $lobCategoryDerived AND custom_field13 = 'Y'");
 index = 0;
 for eachRec in partsRecordSet{
@@ -144,7 +139,7 @@ for eachRec in partsRecordSet{
 			for eachRep in PartReplacementSet{
 				CF10 = getFloat(eachRep, "custom_field10");
 				if(CF10 == atof(containerSize_readOnly)){
-					if(containerSize_sc <> "No Change" AND atof(containerSize_sc) <> atof(containerSize_readOnly) AND isCustomerOwned == false){
+					if(containerSize_sc <> "No Change" AND atof(containerSize_sc) <> atof(containerSize_readOnly) AND (isCustomerOwned == false AND isContainerOwned_readOnly == "0")){
 						retStr = retStr  + get(eachRep, "part_number") + "~" + string(quantity_readOnly) + "~" + "rateType" + VALUE_DELIM + "Removal" + ATTR_DELIM + "Occurrence" + VALUE_DELIM + "One-Time" + ATTR_DELIM + "ServiceCode" + VALUE_DELIM + "REM" + "~" + "0.0" + "~" + "REM" + string(index) + "|^|";
 					}
 				}
@@ -155,7 +150,7 @@ for eachRec in partsRecordSet{
 				tempQty = quantity_sc - quantity_readOnly;
 				retStr = retStr  + partNum + "~" + string(tempQty) + "~" + "rateType" + VALUE_DELIM + "Delivery" + ATTR_DELIM + "Occurrence" + VALUE_DELIM + "One-Time" + ATTR_DELIM + "ServiceCode" + VALUE_DELIM + "DEL" + "~" + "~" + "DEL" + string(index) + "|^|";	
 			}
-			elif(quantity_sc < quantity_readOnly){
+			elif(quantity_sc < quantity_readOnly AND (isCustomerOwned == false AND isContainerOwned_readOnly == "0")){
 				tempQty = quantity_readOnly - quantity_sc;
 				retStr = retStr  + partNum + "~" + string(tempQty) + "~" + "rateType" + VALUE_DELIM + "Removal" + ATTR_DELIM + "Occurrence" + VALUE_DELIM + "One-Time" + ATTR_DELIM + "ServiceCode" + VALUE_DELIM + "REM" + "~" + "~" + "REM" + string(index) + "|^|";	
 			}
@@ -163,8 +158,5 @@ for eachRec in partsRecordSet{
 	}
 	index = index + 1;
 }
-
-//lp_cs = makeurlparam({'name': "aquintanilla", 'log':" Return String:  "+ retStr + " This is at runtime"});
-//cslog=urldatabypost("http://resources.bigmachines.com/cgi-bin/cs_log_Master.cgi", lp_cs, "");
 
 return retStr;

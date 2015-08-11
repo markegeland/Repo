@@ -57,8 +57,9 @@ totalDeliveryCredit = 0.0;
 
 //Service Close Date to be 1 less than effective date
 closeDateStr = "";
-if(chooseCSA_quote AND effectiveServiceDate_quote <> ""){ /*This condition added on 06/27/2014 because effectiveService Date can be empty if CSA is not chosen and 
-if it is empty and and csa is not chosen, but proposal is chosen, then error should not pop up*/
+closeDate = minusdays(getdate(),1);
+/*if(chooseCSA_quote AND effectiveServiceDate_quote <> ""){ //This condition added on 06/27/2014 because effectiveService Date can be empty if CSA is not chosen and 
+//if it is empty and and csa is not chosen, but proposal is chosen, then error should not pop up
     closeDate = minusdays(strtojavadate(effectiveServiceDate_quote,"yyyy-MM-dd"), 1); 
     if(NOT(isnull(closeDate))){
         closeDateStr = datetostr(closeDate, "yyyy-MM-dd");
@@ -66,7 +67,21 @@ if it is empty and and csa is not chosen, but proposal is chosen, then error sho
 }
 if(salesActivity_quote == "Change of Owner"){
     closeDateStr = serviceCloseDate_quote;
+}*/
+
+if(salesActivity_quote <> "Change of Owner"){
+	for line in line_process{
+		if(line. _parent_doc_number == ""){
+			closeDate =  minusdays(strtodate(substring(line.effectiveServiceDate_line,0,10), "%Y-%m-%d"), 1); 
+			if(NOT(isnull(closeDate))){
+				closeDateStr = datetostr(closeDate);
+			}print closeDateStr;
+			res = res + line._document_number + "~oldOwnerCloseDate_line~" + closeDateStr + "|";
+		}
+	}
 }
+
+
 
 for line in line_process{
     //Model Line Items
@@ -155,7 +170,7 @@ for line in line_process{
             landfillCode = getconfigattrvalue(docNum, "landfillCode_l");
             
             //Container Group
-            containerGroup = "";//for existing if it’s price change, make the container group what the user selects for both lines.  And for service changes make the old what the user selects and the new blank.
+            containerGroup = "";//for existing if itâ€™s price change, make the container group what the user selects for both lines.  And for service changes make the old what the user selects and the new blank.
             
         }
         //Attributes that are specifically created for the Service Change configurator
@@ -173,7 +188,7 @@ for line in line_process{
             //Add space after the numeral for Service Change attributes
             equipmentSize = equipmentSize + " ";
             salesActivity = getconfigattrvalue(docNum, "salesActivity");
-            //for existing if it’s price change, make the container group what the user selects for both lines.  And for service changes make the old what the user selects and the new blank.
+            //for existing if itâ€™s price change, make the container group what the user selects for both lines.  And for service changes make the old what the user selects and the new blank.
             if(salesActivity == "Close container group"){
                 closeContainerExists = true;
                 oldContainerGroup = getconfigattrvalue(docNum, "containerGroup_readOnly");
@@ -318,11 +333,11 @@ for line in line_process{
         }   
         elif(line.rateType_line == "Installation"){
                 put(installationPriceDict, line._parent_doc_number,line.installationCharge_line);
-        }
+    }
     }
 }
-//print haulPriceDict;
-//print disposalPriceDict;
+print haulPriceDict;
+print disposalPriceDict;
 
 for eachDocNum in parentDocArr{
     print eachDocNum;
@@ -419,7 +434,7 @@ for result in resultset{
 }
 dBAName = join(dBANameArr, ", ");
 finalDBAName = legalEntity + " DBA " + dBAName;
-
+/*
 //Front TC Content & Rear TC Content
 CSAName = "";
 Front_TC = "";
@@ -455,6 +470,61 @@ if(CSAName <> ""){
     }
 }
 
+
+*/
+Front_TC_perm = "";
+Rear_TC_perm = "";
+Front_TC_temp = "";
+Rear_TC_temp = "";
+for line in line_process{
+	if(line._parent_doc_number == ""){
+		CSAName = "";
+		accTypeLine = line.accountType_line;
+		regionArr = string[];
+		CSAComboResultSet = recordset();
+		CSARegionRecSet = bmql("SELECT Region FROM CSACombo WHERE Division = $division_quote AND AccountType = $accTypeLine");
+		for eachRec in CSARegionRecSet{
+			region_db = get(eachRec, "Region");
+			if(region_db <> ""){
+				if(findinarray(regionArr, region_db) == -1){
+					append(regionArr, region_db);
+				}
+			}   
+		}
+		if(isempty(regionArr)){
+			//print "here--?";
+			CSAComboResultSet = bmql("SELECT CSAName FROM CSACombo WHERE Division = $division_quote AND Region IS null AND AccountType = $accTypeLine");
+		}else{
+			if(line.accountType_line == "Temporary"){
+				CSAComboResultSet = bmql("SELECT CSAName FROM CSACombo WHERE Division = $division_quote AND Region = $cSAVersionTemp_quote AND AccountType = $accTypeLine");
+				print "temp table";print CSAComboResultSet;
+			}else{
+				CSAComboResultSet = bmql("SELECT CSAName FROM CSACombo WHERE Division = $division_quote AND Region = $csaVersion_quote AND AccountType = $accTypeLine");
+				print "perm table";print CSAComboResultSet;
+			}
+		}
+		for record in CSAComboResultSet{
+			CSAName = get(record, "CSAName");
+			break;
+		}
+		if(CSAName <> ""){
+			TermsBasedOnCSARS = bmql("SELECT Front_T_C, Rear_T_C FROM TermsBasedOnCSA WHERE CSAName = $CSAName");
+			for record in TermsBasedOnCSARS{
+				if(line.accountType_line == "Temporary"){
+					Front_TC_temp = get(record, "Front_T_C");
+					Rear_TC_temp = get(record, "Rear_T_C");
+				}else{
+					Front_TC_perm = get(record, "Front_T_C");
+					Rear_TC_perm = get(record, "Rear_T_C");
+				}
+			}
+		}
+	}
+}
+print "Front_TC_perm";print Front_TC_perm;
+print "Rear_TC_perm";print Rear_TC_perm;
+print "Front_TC_temp";print Front_TC_temp;
+print "Rear_TC_temp";print Rear_TC_temp;
 
 initialTermForDocOutput = "";
 renewalTermForDocOutput =  "";
@@ -492,8 +562,6 @@ if (adHocOneTimeExists_quote == true){
 
 
 res = res + "1~dBAName_TextArea_quote~"                + finalDBAName + "|"
-          + "1~frontTCContent_quote~"                  + Front_TC + "|"
-          + "1~rearTCContent_quote~"                   + Rear_TC + "|"
           + "1~displayDeliveryCreditsModelWise_quote~" + string(displayDeliveryCreditsModelWise) + "|"
           + "1~totalDisposalTons_quote~"               + string(totalDisposalTons) + "|"
           + "1~totalDeliveryCredit_quote~"             + string(totalDeliveryCredit) + "|"
@@ -501,7 +569,14 @@ res = res + "1~dBAName_TextArea_quote~"                + finalDBAName + "|"
           + "1~renewalTermForDocument_quote~"          + renewalTermForDocOutput + "|"
           + "1~supportPhone_quote~"                    + supportPhone + "|"
           + "1~closedContainerExists_quote~"           + string(closeContainerExists) +"|"
-          + "1~serviceCloseDate_quote~"                + closeDateStr + "|"
           + "1~oneTimeLinesExist_quote~"               + string(oneTimeLinesExist) + "|";
-     
+
+if(Front_TC_perm <> ""){		  
+	res = res + "1~frontTCContent_quote~" + Front_TC_perm + "|"
+			  + "1~rearTCContent_quote~"  + Rear_TC_perm + "|";
+}
+if(Front_TC_temp <> ""){
+	res = res + "1~frontTempTCContent_quote~" + Front_TC_temp + "|"
+			  + "1~rearTempTCContent_quote~"  + Rear_TC_temp + "|";
+}
 return res;

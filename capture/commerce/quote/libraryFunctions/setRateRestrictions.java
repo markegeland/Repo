@@ -40,12 +40,39 @@ for rate in rateArray{
     i = i + 1;
 }
 
+dateFormat="%Y-%m-%d";
+formattedEffectiveServiceDate = getdate();
+counter = 0;
+
+for line in line_process{
+	counter = counter + 1;
+	if(counter==1){
+		formattedEffectiveServiceDate = strtodate(substring(line.effectiveServiceDate_line,0,10), dateFormat);
+		print formattedEffectiveServiceDate;
+	}
+	else{		
+		if(line. _parent_doc_number == ""){
+			print line. _parent_doc_number;
+			print formattedEffectiveServiceDate;
+			print strtodate(substring(line.effectiveServiceDate_line,0,10), dateFormat);
+			if(comparedates(formattedEffectiveServiceDate,strtodate(substring(line.effectiveServiceDate_line,0,10), dateFormat)) <> -1){
+				formattedEffectiveServiceDate = strtodate(substring(line.effectiveServiceDate_line,0,10), dateFormat);
+			}
+		}
+	}
+}
+formattedEffectiveDateStr = datetostr(formattedEffectiveServiceDate);print formattedEffectiveDateStr;
+effectiveYear = atoi(substring(formattedEffectiveDateStr, 6, 10));print effectiveYear;
+afterYear1Date = substring(formattedEffectiveDateStr, 0, 5) + "/" + string(effectiveYear + 1);print afterYear1Date;
+afterYear2Date = substring(formattedEffectiveDateStr, 0, 5) + "/" + string(effectiveYear + 2);print afterYear2Date;
+afterYear3Date = substring(formattedEffectiveDateStr, 0, 5) + "/" + string(effectiveYear + 3);print afterYear3Date;
+afterYear4Date = substring(formattedEffectiveDateStr, 0, 5) + "/" + string(effectiveYear + 4);print afterYear4Date;
 // Format for dates for rate restrictions after year 1 is MM/YYYY
-effectiveYear = atoi(substring(effectiveServiceDate_quote, 0, 4));
-afterYear1Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(effectiveYear + 1);
+/*effectiveYear = atoi(substring(effectiveServiceDate_quote, 0, 4));
+afterYear1Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(effectiveYear + 1);print afterYear1Date;
 afterYear2Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(effectiveYear + 2);
 afterYear3Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(effectiveYear + 3);
-afterYear4Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(effectiveYear + 4);
+afterYear4Date = substring(effectiveServiceDate_quote, 5, 7) + "/" + string(effectiveYear + 4);*/
 
 res = res + "1~year1RatePrint_quote~" + rateArray[0] + "|"
           + "1~year2RatePrint_quote~" + rateArray[1] + "|"

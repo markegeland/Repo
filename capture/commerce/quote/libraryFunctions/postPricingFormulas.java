@@ -44,10 +44,6 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
              04/30/15 - Mike (Republic) - #508 Restructuring totals by omitting adhoc fees.  Fixed several existing bugs.  Added variables 
 	                                  for adhoc fees on CSA and Proposal.
-			05/08/15 - Mike (Republic) - #508 Restructuring totals for multiple container groups of additional items.
-			05/14/15 - 	Aaron Q ( Oracle) - Changed disposal fee calculations to account for unit of measure
-
-             
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -148,29 +144,30 @@ ModelSiteString = "";
 ModelSiteArray = string[];
 ModelDescDict = dict("string");
 
+
 //=============================== END - Variable Initialization ===============================//
 print "Erf Rate Quote " + string(erfRate_quote);
 print "FRF Rate Quote " + string(frfRate_quote);
 
 for line in line_process{
-    if(line._parent_doc_number <> ""){ //Only part line items
 	
+    if(line._parent_doc_number <> ""){ //Only part line items
+		print "GD2 " + line.accountType_line;
 		modelDescString = "";
-		//Check if it is a large container
-		if(line.billingType_line == "Per Haul"){
-			append(ModelDescArray, line._parent_doc_number);
-			ModelSiteString = getconfigattrvalue(line._parent_doc_number, "site_disposalSite");
-			ModelSiteArray = split(ModelSiteString, "$,$");
-            siteIndex = getconfigattrvalue(line._parent_doc_number, "alternateSite_l");
-            if(isnumber(siteIndex) AND (atoi(siteIndex) > 0)){
-                ModelDescString = "Disposal Site: " + ModelSiteArray[atoi(siteIndex) - 1] + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + " min";
-                put(ModelDescDict, line._parent_doc_number, ModelDescString);
-            }
-            else{
-                put(ModelDescDict, line._parent_doc_number, "");
-            }
-		}
-			
+		//Check if it is a large container		
+		append(ModelDescArray, line._parent_doc_number);
+		ModelSiteString = getconfigattrvalue(line._parent_doc_number, "site_disposalSite");
+		ModelSiteArray = split(ModelSiteString, "$,$");
+        siteIndex = getconfigattrvalue(line._parent_doc_number, "alternateSite_l");
+        if(isnumber(siteIndex) AND (atoi(siteIndex) > 0)){
+            ModelDescString = "Disposal Site: " + ModelSiteArray[atoi(siteIndex) - 1] + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + " min, Account Type: " + line.accountType_line;
+            put(ModelDescDict, line._parent_doc_number, ModelDescString);
+        }
+        else{
+			ModelDescString = "Account Type: " + line.accountType_line;
+			put(ModelDescDict, line._parent_doc_number, ModelDescString);	
+        }		
+		
         deliveryPrice = 0.0;
         estLiftsPerMonth = 0.0;
         estTonsPerHaul = 0.0;
@@ -314,7 +311,7 @@ for line in line_process{
                 frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * estLiftsPerMonth);
                 frfTotalSell = frfTotalSell + (frfAmountSell * estLiftsPerMonth);
             }
-
+			print "ERF Total Haul " + string(erfTotalSell); print "FRF Total Haul " + string(frfTotalSell);
         }elif(line.rateType_line == "Disposal" AND line.isPartLineItem_line){
 
             // Disposal includes rate factor to account for different units of measure
@@ -624,28 +621,19 @@ for line in line_process{
             billingMethod = line.frequency_line;
             showOnProposal = line.adHocDisplayOnProposal_line;
 
-			//MPB
-	    print "Show On Proposal";
-	    print showOnProposal;
-
             if(showOnProposal == true) {
                 if(billingMethod == "Monthly") { 
-                    adHocMonthlyERFandFRF = adHocMonthlyERFandFRF + FRF_CONST + ERF_CONST;
-                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;
+                    adHocMonthlyERFandFRF = FRF_CONST + ERF_CONST;
+                    adHocMonthlyTotalSell = adHocMonthlyTotalSell + line.sellPrice_line + adHocMonthlyERFandFRF; 
                 }
                 if(billingMethod == "Per Haul") { 
-                    adHocMonthlyERFandFRF = adHocMonthlyERFandFRF + FRF_CONST + ERF_CONST;
-                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;  
+                    adHocPerHaulERFandFRF = FRF_CONST + ERF_CONST;
+                    adHocPerHaulTotalSell = adHocPerHaulTotalSell + line.sellPrice_line + adHocPerHaulERFandFRF;  
                 }
                 if(billingMethod == "One Time") { 
-                    adHocOneTimeERFandFRF = adHocOneTimeERFandFRF + FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
-                    adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + FRF_CONST + ERF_CONST;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+                    adHocOneTimeERFandFRF = FRF_CONST + ERF_CONST;//- added 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
+                    adHocOneTimeTotalSell = adHocOneTimeTotalSell + line.sellPrice_line + adHocOneTimeERFandFRF;//- updated 20150119 - GD - #322 - making delivery and removal "Per Service compared to "One time"
                 }
-		//MPB
-		print "Billing Method";
-		print billingMethod;
-		print "Monthly ERF and FRF";
-		print adHocMonthlyERFandFRF;
             }
         }
     }
@@ -728,16 +716,8 @@ if(hasLineItemsOnQuote_quote){
     
     //Create reporting values for the Proposal
     grandTotalInclAdHoc = grandTotalSell + adHocMonthlyTotalSell + adHocPerHaulTotalSell;
-    erfAndFrfTotalInclAdHoc = erfAndFrfTotalSell + adHocMonthlyERFandFRF;
+    erfAndFrfTotalInclAdHoc = erfAndFrfTotalSell + adHocMonthlyERFandFRF + adHocPerHaulERFandFRF;
     
-    //MPB
-    print "ERF and FRF Total Sell";
-    print erfAndFrfTotalSell;
-    print "Ad Hoc Monthly ERF and FRF";
-    print adHocMonthlyERFandFRF;
-    print "ERF and FRF Including Ad Hoc";
-    print erfAndFrfTotalInclAdHoc;
-
     //Get Commission Rate from commissionRate table for corresponding price band
     commissionRateRS = bmql("SELECT commissionRate FROM commissionRate WHERE ((priceBand = $priceBand OR priceBand = 'All' OR priceBand = '') AND (ERF = $includeERF_quote OR ERF = 'All') AND (FRF = $includeFRF_quote OR FRF = 'All'))");
     for eachRecord in commissionRateRS{

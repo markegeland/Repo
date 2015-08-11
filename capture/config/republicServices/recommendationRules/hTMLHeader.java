@@ -8,7 +8,7 @@ division_RO_quote = "";
 salesActivity_RO_quote = "";
 industry_readOnly_quote = "";
 segment_readOnly_quote = "";
-accountType_readOnly_quote = "";
+//accountType_readOnly_quote = "";//GD-accountType_move
 quoteNumber_RO_quote = "";
 siteName_readOnly_quote = "";
 siteAddress_readOnly_quote = "";
@@ -31,14 +31,17 @@ preparedByPhone_quote = "";
 preparedByEmail_quote = "";
 
 //Get all commerce attributes
-commerceRecordSet = bmql("SELECT division_RO_quote, salesActivity_RO_quote, industry_readOnly_quote, segment_readOnly_quote, accountType_readOnly_quote, quoteNumber_RO_quote, siteName_readOnly_quote, siteAddress_readOnly_quote, siteCity_readOnly_quote, siteState_readOnly_quote, siteZip_readOnly_quote, sitePhone_readOnly_quote, account_readOnly_quote, accountNumber_readOnly_quote, invoiceToAddress_readOnly_quote, fRF_readOnly_quote, eRFreadOnly_quote, admin_readOnly_quote, nRD_readOnly_quote, contID_readOnly_quote, nationalAccount_readOnly_quote, preparedByName_quote, preparedByTitle_quote, preparedByPhone_quote, preparedByEmail_quote FROM commerce.quote_process");
+/*commerceRecordSet = bmql("SELECT division_RO_quote, salesActivity_RO_quote, industry_readOnly_quote, segment_readOnly_quote, accountType_readOnly_quote, quoteNumber_RO_quote, siteName_readOnly_quote, siteAddress_readOnly_quote, siteCity_readOnly_quote, siteState_readOnly_quote, siteZip_readOnly_quote, sitePhone_readOnly_quote, account_readOnly_quote, accountNumber_readOnly_quote, invoiceToAddress_readOnly_quote, fRF_readOnly_quote, eRFreadOnly_quote, admin_readOnly_quote, nRD_readOnly_quote, contID_readOnly_quote, nationalAccount_readOnly_quote, preparedByName_quote, preparedByTitle_quote, preparedByPhone_quote, preparedByEmail_quote FROM commerce.quote_process");*/
+
+//GD-accountType_move
+commerceRecordSet = bmql("SELECT division_RO_quote, salesActivity_RO_quote, industry_readOnly_quote, segment_readOnly_quote, quoteNumber_RO_quote, siteName_readOnly_quote, siteAddress_readOnly_quote, siteCity_readOnly_quote, siteState_readOnly_quote, siteZip_readOnly_quote, sitePhone_readOnly_quote, account_readOnly_quote, accountNumber_readOnly_quote, invoiceToAddress_readOnly_quote, fRF_readOnly_quote, eRFreadOnly_quote, admin_readOnly_quote, nRD_readOnly_quote, contID_readOnly_quote, nationalAccount_readOnly_quote, preparedByName_quote, preparedByTitle_quote, preparedByPhone_quote, preparedByEmail_quote FROM commerce.quote_process");
 
 for each in commerceRecordSet{
 	division_RO_quote = get(each, "division_RO_quote");
 	salesActivity_RO_quote= get(each, "salesActivity_RO_quote"); 
 	industry_readOnly_quote= get(each, "industry_readOnly_quote"); 
 	segment_readOnly_quote= get(each, "segment_readOnly_quote"); 
-	accountType_readOnly_quote= get(each, "accountType_readOnly_quote"); 
+	//accountType_readOnly_quote= get(each, "accountType_readOnly_quote"); //GD-accountType_move
 	quoteNumber_RO_quote= get(each, "quoteNumber_RO_quote"); 
 	siteName_readOnly_quote= get(each, "siteName_readOnly_quote"); 
 	siteAddress_readOnly_quote= get(each, "siteAddress_readOnly_quote"); 
@@ -61,8 +64,14 @@ for each in commerceRecordSet{
 	preparedByEmail_quote= get(each, "preparedByEmail_quote"); 
 }
 
-col1LabelsArray = string[]{"Division", "Sales Activity", "Industry", "Segment", "Account Type", "Quote Number"};
-col1VariablesArray = string[]{division_RO_quote, salesActivity_RO_quote, industry_readOnly_quote, segment_readOnly_quote, accountType_readOnly_quote, quoteNumber_RO_quote};
+//col1LabelsArray = string[]{"Division", "Sales Activity", "Industry", "Segment", "Account Type", "Quote Number"};
+//GD-accountType_move
+col1LabelsArray = string[]{"Division", "Sales Activity", "Industry", "Segment", "Quote Number", ""};
+
+/*col1VariablesArray = string[]{division_RO_quote, salesActivity_RO_quote, industry_readOnly_quote, segment_readOnly_quote, accountType_readOnly_quote, quoteNumber_RO_quote};*/
+
+//GD-accountType_move
+col1VariablesArray = string[]{division_RO_quote, salesActivity_RO_quote, industry_readOnly_quote, segment_readOnly_quote, quoteNumber_RO_quote, ""};
 col2LabelsArray = string[]{"Site Name", "Address", "City", "State", "Zip Code", "Phone #"};
 col2VariablesArray = string[]{siteName_readOnly_quote, siteAddress_readOnly_quote, siteCity_readOnly_quote, siteState_readOnly_quote, siteZip_readOnly_quote, sitePhone_readOnly_quote};
 col3LabelsArray = string[]{"Account", "Account Number", "NRD", "National Account", "Invoice To", ""};// Add empty string to make all arrays same size

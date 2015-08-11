@@ -29,8 +29,6 @@ Updates:
 		04/01/15 - Gaurav Dawar - #474 - comp rental floor multiplied by quantity to reflect no. of units for rental.
 		04/03/15 - Gaurav Dawar - #145 - Fixed the guardrail calculation for haul and rental.
 		04/09/15 - Gaurav Dawar - #102 - Changed the data table for guardrail spread for large container disposal
-		05/21/15 - Gaurav Dawar - #595 - Applied the 5% spread to Disposal moving to Haul line in case of FlatRate + Overage
-		05/21/15 - Gaurav Dawar - #550 - Fixed the formulas for svc margins.
 		
 =====================================================================================================
 */
@@ -67,6 +65,8 @@ yardsPerMonthStr = "";
 competitorFactorStr = "";
 serviceChangeType = "";
 priceAdjustmentReason = "";
+serviceChangeReason = "";
+changeOfOwnerReason = "";
 cr_new_businessStr = "0";
 customer_id = "";
 containerGroup = "";
@@ -124,6 +124,12 @@ if(containskey(stringDict, "salesActivity_config")){
 }
 if(containskey(stringDict, "priceAdjustmentReason_config")){
 	priceAdjustmentReason = get(stringDict, "priceAdjustmentReason_config");
+}
+if(containskey(stringDict, "serviceChangeReason_config")){
+	serviceChangeReason = get(stringDict, "serviceChangeReason_config");
+}
+if(containskey(stringDict, "changeOfOwnerReason_config")){
+	changeOfOwnerReason = get(stringDict, "changeOfOwnerReason_config");
 }
 if(containskey(stringDict, "customer_id")){
 	customer_id = get(stringDict, "customer_id");
@@ -1025,8 +1031,14 @@ if(cr_new_business == 1 AND isExistingCustomer AND serviceChangeType <> ""){ //I
 	wasteCategory_current = "";
 	
 	//START - Get price adjustment flag & service change flag - for service change
-	if( lower(serviceChangeType) == "service level change"){
+	if( lower(serviceChangeType) == "service level change" OR lower(serviceChangeType) == "change of owner"){
 		cr_service_change = 1;
+		if(serviceChangeReason == "Service Change : Competitive Bid" OR changeOfOwnerReason == "Change of Owner : Competitive Bid"){
+			cr_competitive_bid = 1;
+		}
+		if(serviceChangeReason == "Service Change : General Save" OR changeOfOwnerReason == "Change of Owner : General Save"){
+			cr_general_save = 1;
+		}
 	}elif(lower(serviceChangeType) == "price adjustment"){
 		if(lower(priceAdjustmentReason) == "rollback of pi"){
 			cr_rollback_of_pi = 1;
@@ -1251,9 +1263,29 @@ priceBeforePI = revenue - pi_amount;
 pi_rollback = (cr_rollback_of_pi * ((revenue - (pi_amount * (1 + feePct))) + ((pi_amount * (1 + feePct)) * pi_retain_base)));
 put(returnDict, "pi_rollback_base", string(pi_rollback));
 
+
+//service change
+temp = curr_margin_percent + svc_base_marg_prem;
+costToServeBaseAdj = 0.0;
+if(temp <> 1.0 AND revenue > 0){
+	costToServeBaseAdj = (costToServeMonth / (1 - (curr_margin_percent + svc_base_marg_prem)));
+}
+
+tempArray = float[];
+append(tempArray, 0.0);
+if(baseMargin <> 1.0){
+	append(tempArray, (((costToServeMonth / (1 - baseMargin)) - costToServeBaseAdj) * svc_gap_recovery_pct));
+}
+service_change_amt = cr_service_change * (costToServeBaseAdj + max(tempArray));
+put(returnDict, "service_change_base", string(service_change_amt));
+
 //general save
 tempArray = float[];
-append(tempArray, revenue);
+if(cr_service_change == 1){
+	append(tempArray, service_change_amt);
+}else{
+	append(tempArray, revenue);
+}
 append(tempArray, costToServeMonth + (save_base_margin_adj * curr_margin_dollars));
 general_save_amt = min(tempArray);
 general_save = cr_general_save * general_save_amt; 
@@ -1276,23 +1308,11 @@ append(tempArray, revenue);
 competitive_bid = cr_competitive_bid * min(tempArray); 
 put(returnDict, "competitive_bid_base", string(competitive_bid));
 
-//service change
-temp = curr_margin_percent + svc_base_marg_prem;
-costToServeBaseAdj = 0.0;
-if(temp <> 1.0 AND revenue > 0){
-	costToServeBaseAdj = (costToServeMonth / (1 - (curr_margin_percent + svc_base_marg_prem)));
+if(cr_service_change == 1 AND (cr_general_save == 1 OR cr_competitive_bid == 1)){
+	basePrice = new_business_base + general_save + competitive_bid + pi_rollback;
+}else{
+	basePrice = new_business_base + general_save + competitive_bid + service_change_amt + pi_rollback;
 }
-
-tempArray = float[];
-append(tempArray, 0.0);
-if(baseMargin <> 1.0){
-	append(tempArray, (((costToServeMonth / (1 - baseMargin)) - costToServeBaseAdj) * svc_gap_recovery_pct));
-}
-service_change_amt = cr_service_change * (costToServeBaseAdj + max(tempArray));
-put(returnDict, "service_change_base", string(service_change_amt));
-
-
-basePrice = new_business_base + general_save + competitive_bid + service_change_amt + pi_rollback;
 print "basePrice: "; print basePrice;                
 put(returnDict, "basePrice", string(basePrice));
 //End of common calculations for both Small & Large containers
@@ -1402,22 +1422,9 @@ if(baseMargin <> -1.0){
 	pi_rollback_target_price = (cr_rollback_of_pi * ((revenue - (pi_amount * (1 + feePct))) + ((pi_amount * (1 + feePct)) * pi_retain_target)));
 	put(returnDict, "pi_rollback_target_price", string(pi_rollback_target_price));
 
-	//general save
-	tempArray = float[];
-	append(tempArray, costToServeMonth);
-	append(tempArray, basePriceAdj);
-	priceAdjMax = max(tempArray);
 	
-	priceAdjArray = float[];
-	append(priceAdjArray, basePriceAdj + fabs((revenue - priceAdjMax) * save_targ_pct_retain));
-	append(priceAdjArray, costToServeMonth);
-
-	general_save_target_price = cr_general_save * max(priceAdjArray);
-	put(returnDict, "general_save_target_price", string(general_save_target_price));
 				 
-	//competitive bid
-	competitive_bid_target_price = cr_competitive_bid * (basePriceAdj + (revenue - basePriceAdj) * comp_targ_pct_retain);
-	put(returnDict, "competitive_bid_target_price", string(competitive_bid_target_price));
+	
 
 	//Service change
 	temp = curr_margin_percent + svc_targ_marg_prem;
@@ -1437,8 +1444,37 @@ if(baseMargin <> -1.0){
 	}
 	service_change_target_price =  cr_service_change * (costToServeTargetAdj + max(tempArray));
 	put(returnDict, "service_change_target_price", string(service_change_target_price));
+	
+	//general save
+	tempArray = float[];
+	append(tempArray, costToServeMonth);
+	append(tempArray, basePriceAdj);
+	priceAdjMax = max(tempArray);
+	
+	priceAdjArray = float[];
+	if(cr_service_change == 1){
+		append(priceAdjArray, basePriceAdj + fabs((service_change_target_price - priceAdjMax) * save_targ_pct_retain));
+	}else{
+		append(priceAdjArray, basePriceAdj + fabs((revenue - priceAdjMax) * save_targ_pct_retain));
+	}	
+	append(priceAdjArray, costToServeMonth);
 
-	targetPriceAdj = new_business_target_price + pi_rollback_target_price + general_save_target_price + competitive_bid_target_price + service_change_target_price;
+	general_save_target_price = cr_general_save * max(priceAdjArray);
+	put(returnDict, "general_save_target_price", string(general_save_target_price));
+	
+	//competitive bid
+	if(cr_service_change == 1){
+		competitive_bid_target_price = cr_competitive_bid * (basePriceAdj + (service_change_target_price - basePriceAdj) * comp_targ_pct_retain);
+	}else{
+		competitive_bid_target_price = cr_competitive_bid * (basePriceAdj + (revenue - basePriceAdj) * comp_targ_pct_retain);
+	}
+	put(returnDict, "competitive_bid_target_price", string(competitive_bid_target_price));
+	
+	if(cr_service_change == 1 AND (cr_general_save == 1 OR cr_competitive_bid == 1)){
+		targetPriceAdj = new_business_target_price + pi_rollback_target_price + general_save_target_price + competitive_bid_target_price;
+	}else{
+		targetPriceAdj = new_business_target_price + pi_rollback_target_price + general_save_target_price + competitive_bid_target_price + service_change_target_price;
+	}
 	print "targetPriceAdj: "; print targetPriceAdj;
 }        
 put(returnDict, "targetPriceAdj1", string(targetPriceAdj));
@@ -1502,21 +1538,6 @@ if(baseMargin <> -1.0){
 	pi_rollback_stretch = (cr_rollback_of_pi * ((revenue - (pi_amount * (1 + feePct))) + ((pi_amount * (1 + feePct)) * pi_retain_stretch)));
 	put(returnDict, "pi_rollback_stretch", string(pi_rollback_stretch));
 	
-	//general save
-	tempArray = float[];
-	append(tempArray, basePriceAdj);
-	append(tempArray, costToServeMonth);
-	priceAdjMax = max(tempArray);
-	
-	priceAdjArray = float[];
-	append(priceAdjArray, costToServeMonth/(1-baseMargin));
-	append(priceAdjArray, basePriceAdj + (fabs(revenue - priceAdjMax) * save_str_pct_retain));
-	general_save_stretch = cr_general_save * max(priceAdjArray);
-	put(returnDict, "general_save_stretch", string(general_save_stretch));
-	
-	//Competitive Bid
-	competitive_bid_stretch = cr_competitive_bid * (basePriceAdj + (revenue - basePriceAdj) * comp_str_pct_retain);
-	put(returnDict, "competitive_bid_stretch", string(competitive_bid_stretch));
 	
 	//Service change
 	temp = curr_margin_percent + svc_str_marg_prem;
@@ -1535,9 +1556,38 @@ if(baseMargin <> -1.0){
 	}
 	
 	service_change_stretch = cr_service_change * (costToServeStretchFeeAdj + max(priceAdjArray));
-	put(returnDict, "service_change_stretch", string(service_change_stretch));
+	put(returnDict, "service_change_stretch", string(service_change_stretch));	
 	
-	stretchPriceAdj =  new_business_stretch +  pi_rollback_stretch + general_save_stretch + competitive_bid_stretch + service_change_stretch;               
+	
+	//general save
+	tempArray = float[];
+	append(tempArray, basePriceAdj);
+	append(tempArray, costToServeMonth);
+	priceAdjMax = max(tempArray);
+	
+	priceAdjArray = float[];
+	append(priceAdjArray, costToServeMonth/(1-baseMargin));
+	if(cr_service_change == 1){
+		append(priceAdjArray, basePriceAdj + (fabs(service_change_stretch - priceAdjMax) * save_str_pct_retain));
+	}else{
+		append(priceAdjArray, basePriceAdj + (fabs(revenue - priceAdjMax) * save_str_pct_retain));
+	}
+	general_save_stretch = cr_general_save * max(priceAdjArray);
+	put(returnDict, "general_save_stretch", string(general_save_stretch));
+	
+	//Competitive Bid
+	if(cr_service_change == 1){
+		competitive_bid_stretch = cr_competitive_bid * (basePriceAdj + (service_change_stretch - basePriceAdj) * comp_str_pct_retain);
+	}else{
+		competitive_bid_stretch = cr_competitive_bid * (basePriceAdj + (revenue - basePriceAdj) * comp_str_pct_retain);
+	}
+	put(returnDict, "competitive_bid_stretch", string(competitive_bid_stretch));
+	
+	if(cr_service_change == 1 AND (cr_general_save == 1 OR cr_competitive_bid == 1)){
+		stretchPriceAdj =  new_business_stretch +  pi_rollback_stretch + general_save_stretch + competitive_bid_stretch;
+	}else{
+		stretchPriceAdj =  new_business_stretch +  pi_rollback_stretch + general_save_stretch + competitive_bid_stretch + service_change_stretch;               
+	}
 	print "stretchPriceAdj: "; print stretchPriceAdj;
 }
 put(returnDict, "stretchPriceAdj1", string(stretchPriceAdj));
@@ -1983,14 +2033,14 @@ if(priceType == "Large Containers"){
 			//Calculation of monthly estimates for each guardrail
 			estimatedMonthlyDisposalFloor = disposalCostPerTon * haulsPerMonth * tonsPerHaul; 
 			estimatedMonthlyDisposalBase = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
-			estimatedMonthlyDisposalTarget = disposalRatePerTon * haulsPerMonth * tonsPerHaul * floorAvgSpread;
-			estimatedMonthlyDisposalStretch = disposalRatePerTon * haulsPerMonth * tonsPerHaul * avgTargetSpread;
+			estimatedMonthlyDisposalTarget = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
+			estimatedMonthlyDisposalStretch = disposalRatePerTon * haulsPerMonth * tonsPerHaul;
 			
 			//Calculation of per haul estimates for each guardrail
 			estimatedPerHaulDisposalFloor = disposalCostPerTon * tonsPerHaul; 
 			estimatedPerHaulDisposalBase = disposalRatePerTon * tonsPerHaul;
-			estimatedPerHaulDisposalTarget = disposalRatePerTon * tonsPerHaul * floorAvgSpread;
-			estimatedPerHaulDisposalStretch = disposalRatePerTon * tonsPerHaul * avgTargetSpread;			
+			estimatedPerHaulDisposalTarget = disposalRatePerTon * tonsPerHaul;
+			estimatedPerHaulDisposalStretch = disposalRatePerTon * tonsPerHaul;			
 		}elif(unitOfMeasure == "Per Yard"){
 			disposalFloor = (allocatedDisposalFlag * disposalCostPerYard); 
 				
@@ -2000,14 +2050,14 @@ if(priceType == "Large Containers"){
 			//Calculation of monthly estimates for each guardrail
 			estimatedMonthlyDisposalFloor = disposalCostPerYard * haulsPerMonth * containerSizeFloat; 
 			estimatedMonthlyDisposalBase = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
-			estimatedMonthlyDisposalTarget = disposalRatePerYard * haulsPerMonth * containerSizeFloat * floorAvgSpread;
-			estimatedMonthlyDisposalStretch = disposalRatePerYard * haulsPerMonth * containerSizeFloat * avgTargetSpread;
+			estimatedMonthlyDisposalTarget = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
+			estimatedMonthlyDisposalStretch = disposalRatePerYard * haulsPerMonth * containerSizeFloat;
 			
 			//Calculation of per haul estimates for each guardrail
 			estimatedPerHaulDisposalFloor = disposalCostPerYard * containerSizeFloat; 
 			estimatedPerHaulDisposalBase = disposalRatePerYard * containerSizeFloat;
-			estimatedPerHaulDisposalTarget = disposalRatePerYard * containerSizeFloat * floorAvgSpread;
-			estimatedPerHaulDisposalStretch = disposalRatePerYard * containerSizeFloat * avgTargetSpread;
+			estimatedPerHaulDisposalTarget = disposalRatePerYard * containerSizeFloat;
+			estimatedPerHaulDisposalStretch = disposalRatePerYard * containerSizeFloat;
 		}elif(unitOfMeasure == "Per Load"){
 			disposalFloor = (allocatedDisposalFlag * disposalCostPerLoad); 
 				
@@ -2017,14 +2067,14 @@ if(priceType == "Large Containers"){
 			//Calculation of monthly estimates for each guardrail
 			estimatedMonthlyDisposalFloor = disposalCostPerLoad * haulsPerMonth; 
 			estimatedMonthlyDisposalBase = disposalRatePerLoad * haulsPerMonth;
-			estimatedMonthlyDisposalTarget = disposalRatePerLoad * haulsPerMonth * floorAvgSpread;
-			estimatedMonthlyDisposalStretch = disposalRatePerLoad * haulsPerMonth * avgTargetSpread;
+			estimatedMonthlyDisposalTarget = disposalRatePerLoad * haulsPerMonth;
+			estimatedMonthlyDisposalStretch = disposalRatePerLoad * haulsPerMonth;
 			
 			//Calculation of per haul estimates for each guardrail
 			estimatedPerHaulDisposalFloor = disposalCostPerLoad; 
 			estimatedPerHaulDisposalBase = disposalRatePerLoad;
-			estimatedPerHaulDisposalTarget = disposalRatePerLoad * floorAvgSpread;
-			estimatedPerHaulDisposalStretch = disposalRatePerLoad * avgTargetSpread;
+			estimatedPerHaulDisposalTarget = disposalRatePerLoad;
+			estimatedPerHaulDisposalStretch = disposalRatePerLoad;
 		}
 		
 	}
@@ -2241,8 +2291,8 @@ if(priceType == "Large Containers"){
 		put(returnDict, "overagedisposalPerTonFeeAdj", string(overagedisposalPerTonFeeAdj));
 		
 		overageBase = overagedisposalPerTonFeeAdj * (1 + ((1-frfFlag) * haulbaseFRFPremium));
-		overageTarget = overagedisposalPerTonFeeAdj * (1 + ((1-frfFlag) * haultargetFRFPremium))* floorAvgSpread;
-		overageStretch = overagedisposalPerTonFeeAdj * (1 + ((1 - frfFlag) * haulstretchFRFPremium))* avgTargetSpread;
+		overageTarget = overagedisposalPerTonFeeAdj * (1 + ((1-frfFlag) * haultargetFRFPremium));
+		overageStretch = overagedisposalPerTonFeeAdj * (1 + ((1 - frfFlag) * haulstretchFRFPremium));
 		
 		//Round Disposal Base, Target, Stretch - Should we round even if Rental is not selected?
 		if(rounding_ind_dsp > 0){

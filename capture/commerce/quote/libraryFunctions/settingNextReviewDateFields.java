@@ -20,17 +20,36 @@ Updates:
 =====================================================================================================
 */
 
-retStr = "";
-dateSeparator="/";
-dateFormat="MM/dd/yyyy";
+dateFormat="%Y-%m-%d";
+formattedEffectiveServiceDate = getdate();
+counter = 0;
 nonEditableNRD = "";
 editableNRD = "";
+retStr = "";
+dateSeparator="/";
+
+for line in line_process{
+	counter = counter + 1;
+	if(counter==1){
+		formattedEffectiveServiceDate = strtodate(substring(line.effectiveServiceDate_line,0,10), dateFormat);
+	}
+	else{
+		if(line. _parent_doc_number == ""){
+			print line. _parent_doc_number;
+			print formattedEffectiveServiceDate;
+			print strtodate(substring(line.effectiveServiceDate_line,0,10), dateFormat);
+			if(comparedates(formattedEffectiveServiceDate,strtodate(substring(line.effectiveServiceDate_line,0,10), dateFormat)) <> -1){
+				formattedEffectiveServiceDate = strtodate(substring(line.effectiveServiceDate_line,0,10), dateFormat);
+			}
+		}
+	}
+}
 
 if(_system_current_step_var == "generateDocuments"){
 
     numOfDaysIn8Months = (365 * 8) / 12;
     numOfDaysIn10Months = (365 * 10) / 12;
-    formattedEffectiveServiceDate = strtojavadate(substring(effectiveServiceDate_quote,0,10), "yyyy-MM-dd");
+    
     dateAfterMonths = adddays(formattedEffectiveServiceDate, numOfDaysIn10Months);
 
     if(lower(salesActivity_quote) == "new/new"){
