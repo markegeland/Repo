@@ -10,6 +10,7 @@
  * 20150520 John Palubinskas - #518 remove call to hide CRM panel.  Moved to CSS.
  * 20150522 John Palubinskas - #622 handle hiding SFDC buttons on existing quotes that do not have sourceSystem_quote populated
  * 20150527 John Palubinskas - #609 Needed to refactor the document.form calls to handle undefined properly
+ * 20150730 Mark Egeland - #736 Added logic to launch config from the Electronic Recycling image in commerce
  *
  */
 require([], function() {
@@ -61,9 +62,13 @@ require([], function() {
             else if(model == "largeContainers"){
                 $('#large_container').closest("table").click();
             }
-            else{
+            else if(model == "adHocLineItems"){
+
                 $('#additional_items').closest("table").click();
-            }
+            }else{
+                $('#electronic_recycling').closest("table").click();
+			}
+
             
         }
         
@@ -81,11 +86,13 @@ require([], function() {
             var small = document.getElementById("small");
             var large = document.getElementById("large");
             var adhoc = document.getElementById("adhoc");
+			var electronic = document.getElementById("electronic");
             
-            if((typeof(small) !== "undefined" && small != null)|| (typeof(large) !== "undefined" && large != null)|| (typeof(adhoc) !== "undefined" && adhoc != null)){
+            if((typeof(small) !== "undefined" && small != null)|| (typeof(large) !== "undefined" && large != null)|| (typeof(adhoc) !== "undefined" && adhoc != null) || (typeof(electronic) !== "undefined" && electronic != null)){
                 $('#small').click(function () { configure('containers_m'); });
                 $('#large').click(function () { configure('largeContainers'); });
                 $('#adhoc').click(function () { configure('adHocLineItems'); });
+                $('#electronic').click(function () { configure('electronicRecycling'); });
             }
         
             var stepVarName = document.getElementsByName('_step_varname'); //Use Step Var Name instead of Step Id to keep it consistent across sites
