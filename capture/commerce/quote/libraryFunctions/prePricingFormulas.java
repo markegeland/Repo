@@ -561,7 +561,16 @@ for line in line_process{
 				put(stringDict, "includeFRF_quote", includeFRF_quote);
 				
 				LEOutputDict = util.dataPrepLargeExisting(stringDict);
-				LE_wasteType = get(LEOutputDict, "LE_wasteType");				
+				LE_wasteType = get(LEOutputDict, "LE_wasteType");			
+               
+                put(existingCustDataDict, docNum+":wasteCategory", get(LEOutputDict, "wasteCategory_LE"));
+				put(existingCustDataDict, docNum+":Is_FRF_On", get(LEOutputDict, "is_frf_charged_LE"));
+                put(existingCustDataDict, docNum+":FRF_Pct", get(LEOutputDict, "frfRate"));
+                put(existingCustDataDict, docNum+":Is_ERF_On", get(LEOutputDict, "is_erf_charged_LE"));
+                put(existingCustDataDict, docNum+":Is_ERF_On_FRF", get(LEOutputDict, "is_erf_on_frf_charged_LE"));
+                put(existingCustDataDict, docNum+":ERF_Pct", get(LEOutputDict, "erfRate"));
+				put(existingCustDataDict, docNum+":Is_Admin_On", get(LEOutputDict, "is_admn_on_db_LE"));
+                put(existingCustDataDict, docNum+":Admin_Rate", get(LEOutputDict, "adminRate_LE"));
 			}
 			
             //Anitha making changes to above query on 09/11/2014 to fix yardsPerMonth issue. Instead of using containerGroupForTransaction_quote, we must use currentContainerGrpNum
@@ -1594,7 +1603,10 @@ for line in line_process{
 				put(guardrailInputDict_LE,"quantity", get(LEOutputDict, "quantity_lc"));
 				put(guardrailInputDict_LE,"unitOfMeasure", ("Per "+get(LEOutputDict, "LE_unitOfMeasure")));
 				put(guardrailInputDict_LE,"containerSize", get(LEOutputDict, "LE_containerSize"));
-
+				routeTypeDervied = get(LEOutputDict, "routeTypeDervied_LE");
+				wasteType = get(LEOutputDict, "LE_wasteType");
+				frequencyAttribute = get(LEOutputDict, "LE_haulsPerContainer");
+				
 				guardrailOutputDict_LE = util.calculateGuardrails(guardrailInputDict_LE);
 				feePct = atof(get(guardrailOutputDict_LE, "feePct"));
 				haulbaseFRFPremium = get(guardrailOutputDict_LE, "haulbaseFRFPremium");
@@ -1666,12 +1678,6 @@ for line in line_process{
 				put(ChangeSecPassDict_LE, "EXC", get(guardrailOutputDict_LE, "EXC"));
 				put(ChangeSecPassDict_LE, "REM", get(guardrailOutputDict_LE, "REM"));
 				put(ChangeSecPassDict_LE, "WAS", get(guardrailOutputDict_LE, "WAS"));
-				//put(ChangeSecPassDict_LE, "frfRate", get(guardrailOutputDict_LE, "frfRate"));
-				//put(ChangeSecPassDict_LE, "erfRate", get(guardrailOutputDict_LE, "erfRate"));
-				//put(ChangeSecPassDict_LE, "adminAmount", get(guardrailOutputDict_LE, "adminAmount"));
-				//put(ChangeSecPassDict_LE, "erfOnFrfFlag", get(guardrailOutputDict_LE, "erfOnFrfFlag"));
-				//put(ChangeSecPassDict_LE, "salesActivity_quote", salesActivity_quote);
-				//put(ChangeSecPassDict_LE, "feesToCharge_quote", feesToCharge_quote);
 				put(ChangeSecPassDict_LE, "rateTypeLower", lower(rateType));
 				
 				returnStr = returnStr + line._document_number + "~" + "estimatedLifts_line" + "~" + get(LEOutputDict, "estHaulsPerMonthStr_LE") + "|"
@@ -2255,70 +2261,84 @@ for line in line_process{
             divisionWashoutStr_ui = get(washoutUIDict, line._parent_doc_number);
             
             divisionDelStr_ui = get(deliveryUIDict, line._parent_doc_number); // 20141201 AQ
-            
-            if(containskey(guardrailOutputDict, "DEL")){
-                divisionDeliveryStr = get(guardrailOutputDict, "DEL");
-                divisionDelStr_ui = get(guardrailOutputDict, "DEL"); // 20141201 AQ
-            }           
-            if(divisionExchangeStr == divisionExcStr_ui AND containskey(guardrailOutputDict, "EXC")){
-                divisionExchangeStr = get(guardrailOutputDict, "EXC");
-                divisionExcStr_ui = get(guardrailOutputDict, "EXC");
-            }
-            if(divisionExtLiftStr == divisionExtLiftStr_ui AND containskey(guardrailOutputDict, "EXT")){
-                divisionExtLiftStr = get(guardrailOutputDict, "EXT");
-                divisionExtLiftStr_ui = get(guardrailOutputDict, "EXT");
-            }
-            if(priceType == SMALL_CONTAINER OR container == SMALL_CONTAINER OR priceType == SERVICE_CHANGE){
-                //Specific to small container
-                if(divisionExtYardStr == divisionExtYdStr_ui AND containskey(guardrailOutputDict, "EXY")){
-                    divisionExtYardStr = get(guardrailOutputDict, "EXY");
-                    divisionExtYdStr_ui = get(guardrailOutputDict, "EXY");
-                }
-            }
-            
-            if(divisionRemoveStr == divisionRemStr_ui AND containskey(guardrailOutputDict, "REM")){
-                divisionRemoveStr = get(guardrailOutputDict, "REM");
-                divisionRemStr_ui = get(guardrailOutputDict, "REM");
-            }
-            if(divisionReloStr == divisionReloStr_ui AND containskey(guardrailOutputDict, "REL")){
-                divisionReloStr = get(guardrailOutputDict, "REL");
-                divisionReloStr_ui = get(guardrailOutputDict, "REL");
-            }
-            if(priceType == SMALL_CONTAINER OR container == SMALL_CONTAINER){
+			new2Dict = dict("string");
+			if(priceType == SERVICE_CHANGE AND contCat == "Industrial"){
+				put(guardrailOutputDict_LE, "divisionExchangeStr", divisionExchangeStr);
+				put(guardrailOutputDict_LE, "divisionExcStr_ui", divisionExcStr_ui);
+				put(guardrailOutputDict_LE, "divisionExtYdStr_ui", divisionExtYdStr_ui);
+				put(guardrailOutputDict_LE, "divisionExtLiftStr", divisionExtLiftStr);
+				put(guardrailOutputDict_LE, "divisionExtLiftStr_ui", divisionExtLiftStr_ui);
+				put(guardrailOutputDict_LE, "divisionExtYardStr", divisionExtYardStr);
+				put(guardrailOutputDict_LE, "divisionRemoveStr", divisionRemoveStr);
+				put(guardrailOutputDict_LE, "divisionRemStr_ui", divisionRemStr_ui);
+				put(guardrailOutputDict_LE, "divisionReloStr", divisionReloStr);
+				put(guardrailOutputDict_LE, "divisionReloStr_ui", divisionReloStr_ui);
+				put(guardrailOutputDict_LE, "divisionWASStr", divisionWASStr);
+				put(guardrailOutputDict_LE, "divisionWashoutStr_ui", divisionWashoutStr_ui);
+				put(guardrailOutputDict_LE, "contCat", contCat);
+				put(guardrailOutputDict_LE, "priceType", priceType);
+				put(guardrailOutputDict_LE, "rateType", rateType);
+				put(guardrailOutputDict_LE, "SMALL_CONTAINER", SMALL_CONTAINER);
+				put(guardrailOutputDict_LE, "container", container);
+				put(guardrailOutputDict_LE, "SERVICE_CHANGE", SERVICE_CHANGE);
+				put(guardrailOutputDict_LE, "LARGE_CONTAINER", LARGE_CONTAINER);
+				put(guardrailOutputDict_LE, "sellPrice_line", string(line.sellPrice_line));
+				new2Dict = util.delRemExcDryCalc(guardrailOutputDict_LE);
+			}else{
+				put(guardrailOutputDict, "divisionDeliveryStr", divisionDeliveryStr);
+				put(guardrailOutputDict, "divisionDelStr_ui", divisionDelStr_ui);
+				put(guardrailOutputDict, "divisionExchangeStr", divisionExchangeStr);
+				put(guardrailOutputDict, "divisionExcStr_ui", divisionExcStr_ui);
+				put(guardrailOutputDict, "divisionExtYdStr_ui", divisionExtYdStr_ui);
+				put(guardrailOutputDict, "divisionExtLiftStr", divisionExtLiftStr);
+				put(guardrailOutputDict, "divisionExtLiftStr_ui", divisionExtLiftStr_ui);
+				put(guardrailOutputDict, "divisionExtYardStr", divisionExtYardStr);
+				put(guardrailOutputDict, "divisionRemoveStr", divisionRemoveStr);
+				put(guardrailOutputDict, "divisionRemStr_ui", divisionRemStr_ui);
+				put(guardrailOutputDict, "divisionReloStr", divisionReloStr);
+				put(guardrailOutputDict, "divisionReloStr_ui", divisionReloStr_ui);
+				put(guardrailOutputDict, "divisionWASStr", divisionWASStr);
+				put(guardrailOutputDict, "divisionWashoutStr_ui", divisionWashoutStr_ui);
+				put(guardrailOutputDict, "contCat", contCat);
+				put(guardrailOutputDict, "priceType", priceType);
+				put(guardrailOutputDict, "rateType", rateType);
+				put(guardrailOutputDict, "SMALL_CONTAINER", SMALL_CONTAINER);
+				put(guardrailOutputDict, "container", container);
+				put(guardrailOutputDict, "SERVICE_CHANGE", SERVICE_CHANGE);
+				put(guardrailOutputDict, "LARGE_CONTAINER", LARGE_CONTAINER);
+				put(guardrailOutputDict, "sellPrice_line", string(line.sellPrice_line));
+				new2Dict = util.delRemExcDryCalc(guardrailOutputDict);
+			}
+			
+			divisionExchangeStr = get(new2Dict, "divisionExchangeStr");
+			divisionExcStr_ui = get(new2Dict, "divisionExcStr_ui");
+			divisionExtYdStr_ui = get(new2Dict, "divisionExtYdStr_ui");
+			divisionExtLiftStr = get(new2Dict, "divisionExtLiftStr");
+			divisionExtLiftStr_ui = get(new2Dict, "divisionExtLiftStr_ui");
+			divisionExtYardStr = get(new2Dict, "divisionExtYardStr");
+			divisionRemoveStr = get(new2Dict, "divisionRemoveStr");
+			divisionRemStr_ui = get(new2Dict, "divisionRemStr_ui");
+			divisionReloStr = get(new2Dict, "divisionReloStr");
+			divisionReloStr_ui = get(new2Dict, "divisionReloStr_ui");
+			divisionWASStr = get(new2Dict, "divisionWASStr");
+			divisionWashoutStr_ui = get(new2Dict, "divisionWashoutStr_ui");
+			divisionDeliveryStr = get(new2Dict, "divisionDeliveryStr");
+			divisionDelStr_ui = get(new2Dict, "divisionDelStr_ui");
+			
+			if(containskey(new2Dict, "divisionDRYStr")){
+				returnStr = returnStr +  parentDoc + "~" + "divisionDRY_line" + "~" + divisionDRYStr + "|";
+				returnStr = returnStr +  parentDoc + "~" + "divisionDRY_ui_line" + "~" + divisionDryStr_ui + "|";
+			}
+			if(priceType == SMALL_CONTAINER OR container == SMALL_CONTAINER){
 				installationChg = get(installChargeDict, parentDoc);
 				returnStr = returnStr + parentDoc + "~" + "installationCharge_line" + "~" + string(installationChg) + "|";
-			}      
-            if(priceType == LARGE_CONTAINER OR container == LARGE_CONTAINER){
-
-                //Specific to Large container
-                if(divisionWASStr == divisionWashoutStr_ui AND containskey(guardrailOutputDict, "WAS")){
-                    divisionWASStr = get(guardrailOutputDict, "WAS");
-                    divisionWashoutStr_ui = get(guardrailOutputDict, "WAS");
-                }
-
-                //divisionDRY is pulled from the division first.  If the division did not set the
-                //DRY rate, then set it to 1/2 the haul rate.
-                if(rateType == "Haul"){
-
-                    if(containskey(guardrailOutputDict, "DRY")){
-                        divisionDRYStr = get(guardrailOutputDict, "DRY");
-                        divisionDryStr_ui = divisionDRYStr;
-                    }
-                    else{
-                        divisionDRYStr = string(round(line.sellPrice_line/2.0, 2));
-                        divisionDryStr_ui = string(round(line.sellPrice_line/2.0, 2));                            
-                    }
-
-                    returnStr = returnStr +  parentDoc + "~" + "divisionDRY_line" + "~" + divisionDRYStr + "|";
-                    returnStr = returnStr +  parentDoc + "~" + "divisionDRY_ui_line" + "~" + divisionDryStr_ui + "|";
-                }
-            }
+			}
             
             //Overwrite ERF & FRF rates with guardrail output dict - this is required as existing customer may have a different erf & frf rates
-            frfRateStr = get(guardrailOutputDict, "frfRate");
-            erfRateStr = get(guardrailOutputDict, "erfRate");
-            adminRateStr = get(guardrailOutputDict, "adminAmount");
-            erfOnFrfStr = get(guardrailOutputDict, "erfOnFrfFlag");
+            frfRateStr = get(new2Dict, "frfRateStr");
+            erfRateStr = get(new2Dict, "erfRateStr");
+            adminRateStr = get(new2Dict, "adminRateStr");
+            erfOnFrfStr = get(new2Dict, "erfOnFrfStr");
             
             if(salesActivity_quote == "Existing Customer"){
                 isAdminCharged = false;
@@ -2329,13 +2349,9 @@ for line in line_process{
                     adminRateStr = "0.0";
                 }
             }
-            
-
             if(isnumber(frfRateStr)){
                 frfRate = atof(frfRateStr);
             }
-            print "This is the last frf " + string(frfRate);
-
             if(isnumber(erfRateStr)){
                 erfRate = atof(erfRateStr);
             }
@@ -2345,8 +2361,7 @@ for line in line_process{
                 }else{
                     adminRate = 0.0;
                 }
-            }
-            
+            }            
             //Update eRFOnFRF value
             if(isnumber(erfOnFrfStr)){
                 eRFOnFRF = atof(erfOnFrfStr);
@@ -2403,11 +2418,19 @@ for line in line_process{
             monthlyTotalDisposalSell = 0.0;
             customerTonsPerMonth = 0.0;
             if(line.rateType_line=="Disposal"){
-                if(containskey(outputDict, "customerTonsPerMonth")){
-                    if(isnumber(get(outputDict, "customerTonsPerMonth"))){ 
-                        customerTonsPerMonth = atof(get(outputDict, "customerTonsPerMonth"));
-                    }
-                }
+				if(contCat == "Industrial"){
+					if(containskey(outputDict_LE, "customerTonsPerMonth")){
+						if(isnumber(get(outputDict_LE, "customerTonsPerMonth"))){ 
+							customerTonsPerMonth = atof(get(outputDict_LE, "customerTonsPerMonth"));
+						}
+					}
+				}else{
+					if(containskey(outputDict, "customerTonsPerMonth")){
+						if(isnumber(get(outputDict, "customerTonsPerMonth"))){ 
+							customerTonsPerMonth = atof(get(outputDict, "customerTonsPerMonth"));
+						}
+					}
+				}
                 monthlyTotalDisposalSell  = line.sellPrice_line * customerTonsPerMonth;
             }
             
@@ -2455,20 +2478,31 @@ for line in line_process{
                 totalContCost = totalContCost + floorPrice;                 
             }
 
-            if((priceType == LARGE_CONTAINER) OR (container == LARGE_CONTAINER)){
+            if((priceType == LARGE_CONTAINER) OR (container == LARGE_CONTAINER) OR (priceType == SERVICE_CHANGE AND contCat == "Industrial")){
                 haulMultiplier = 1.0;
                 tonsMultiplier = 1.0;
                 // Haul and Disposal line items need to be multiplied by # hauls
                 if ((line.rateType_line == "Haul") OR (line.rateType_line == "Disposal")) {
                     estHaulsPerMonth = 1.0;
-                    if (isnumber(estHaulsPerMonthStr)) {
-                        estHaulsPerMonth = atof(estHaulsPerMonthStr);
-                    }
+					if(priceType == SERVICE_CHANGE AND contCat == "Industrial"){
+						if(isnumber(get(LEOutputDict, "estHaulsPerMonthStr_LE"))) {
+							estHaulsPerMonth = atof(get(LEOutputDict, "estHaulsPerMonthStr_LE"));
+						}
+					}else{
+						if(isnumber(estHaulsPerMonthStr)) {
+							estHaulsPerMonth = atof(estHaulsPerMonthStr);
+						}
+					}
                     haulMultiplier = estHaulsPerMonth;
                 }
                 // Disposal line items also need to be multiplied by # tons
                 if (line.rateType_line == "Disposal") {
-                    tonsPerHaul = getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l");
+					tonsPerHaul = "";
+                    if(priceType == SERVICE_CHANGE AND contCat == "Industrial"){
+						tonsPerHaul = getconfigattrvalue(line._parent_doc_number, "estTonsHaul_lc");
+					}else{
+						tonsPerHaul = getconfigattrvalue(line._parent_doc_number, "estTonsHaul_l");
+					}
                     if (isnumber(tonsPerHaul)) {
                         tonsMultiplier = atof(tonsPerHaul);
                     }
@@ -2542,7 +2576,7 @@ for line in line_process{
         returnStr = returnStr + line._document_number + "~" + "containerNumberOfCurrentService_line" + "~" + getconfigattrvalue(line._document_number, "containerGroup_readOnly") + "|";
         returnStr = returnStr + line._document_number + "~" + "routeTypeDerived_line" + "~" + getconfigattrvalue(line._document_number, "routeTypeDervied") + "|";
 		wasteType = "";
-		if(salesActivity_quote == "Existing Customer" AND contCat == "Industrial"){
+		if(priceType == SERVICE_CHANGE AND contCat == "Industrial"){
 			returnStr = returnStr + line._document_number + "~" + "wasteType_line" + "~" + LE_wasteType + "|";
 			wasteType = LE_wasteType;
 		}else{
@@ -2557,7 +2591,7 @@ for line in line_process{
         if(containskey(existingCustDataDict, line._document_number+":containerType")){
             containerType = get(existingCustDataDict, line._document_number+":containerType");
         }
-		if(containskey(serviceChangeDataDict, line._document_number+":containerType") AND salesActivity_quote == "Existing Customer" AND contCat == "Industrial"){
+		if(containskey(serviceChangeDataDict, line._document_number+":containerType") AND priceType == SERVICE_CHANGE AND contCat == "Industrial"){
 			containerType = get(serviceChangeDataDict, line._document_number+":containerType");
 		}
         smallContainer = false;
@@ -2617,13 +2651,13 @@ for line in line_process{
                 }
             }
         }
-        elif(line._model_name == LARGE_CONTAINER){
+        elif(line._model_name == LARGE_CONTAINER OR (priceType == SERVICE_CHANGE AND contCat == "Industrial")){
             industrialExists = true;            
             containerCode = getconfigattrvalue(line._document_number, "routeTypeDervied");
             
         }
         returnStr = returnStr + line._document_number + "~" + "routeTypeDerived_line" + "~" + routeTypeDerived + "|";
-        if(salesActivity_quote == "Existing Customer" AND contCat == "Industrial"){
+        if(priceType == SERVICE_CHANGE AND contCat == "Industrial"){
 			returnStr = returnStr + line._document_number + "~" + "wasteType_line" + "~" + LE_wasteType + "|";
 		}else{
 			returnStr = returnStr + line._document_number + "~" + "wasteType_line" + "~" + getconfigattrvalue(line._document_number, "wasteType") + "|";
