@@ -1,4 +1,3 @@
-/*Large Existing Data Prep*/
 returnDict = dict("string");
 
 /*Industrial Existing Variables */
@@ -87,6 +86,9 @@ curr_haul_margin_dol_LE = 0.0;
 curr_dsp_margin_dol_LE = 0.0;
 curr_ovr_margin_dol_LE = 0.0;
 curr_ren_margin_dol_LE = 0.0;
+existing_operating_expense = 0.0;
+existing_cts_month_incl_oh = 0.0;
+existing_cost_disp_xfer_proc = 0.0;
 isERFOnFRFChargedAtDivisionLevel = false;
 serviceChangeQuote = false;
 competitiveBidQuote = false;
@@ -97,6 +99,7 @@ contCat = get(stringDict, "contCat");
 containerType_sc = get(stringDict, "containerType_sc");
 cat_yards_per_month_LE = get(stringDict, "cat_yards_per_month_LE");
 currentContainerGrpNum = get(stringDict, "currentContainerGrpNum");
+salesActivity = get(stringDict, "salesActivity");
 priceAdjustmentReason = get(stringDict, "priceAdjustmentReason");
 serviceChangeReason = get(stringDict, "serviceChangeReason");
 changeOfOwnerReason = get(stringDict, "changeOfOwnerReason");
@@ -518,8 +521,11 @@ for rec in accountStatusRecsLargeM1{
 }
 curr_margin_percentile = 0.0;
 rate_pct_base = 0.0;
-accountStatusRecsLarge = bmql("SELECT haul_cost_components,curr_haul_margin_dol,curr_dsp_margin_dol,curr_ovr_margin_dol,curr_ren_margin_dol,container_roi,container_depr,margin_percentile,curr_haul_margin_pct,curr_rate_pct_base,haul_rate,dsp_rate,ovr_rate,ren_rate FROM Acct_Status_Ind_M2 WHERE Acct_Status_Ind_SK = $key");
+accountStatusRecsLarge = bmql("SELECT ttl_mnth_all_in_cost,fin_mnth_dsp_expense,fin_mnth_opex,haul_cost_components,curr_haul_margin_dol,curr_dsp_margin_dol,curr_ovr_margin_dol,curr_ren_margin_dol,container_roi,container_depr,margin_percentile,curr_haul_margin_pct,curr_rate_pct_base,haul_rate,dsp_rate,ovr_rate,ren_rate FROM Acct_Status_Ind_M2 WHERE Acct_Status_Ind_SK = $key");
 for rec in accountStatusRecsLarge{
+	existing_operating_expense = getFloat(rec,"fin_mnth_opex");
+	existing_cts_month_incl_oh = getFloat(rec,"ttl_mnth_all_in_cost");
+	existing_cost_disp_xfer_proc = getFloat(rec,"fin_mnth_dsp_expense");
 	haul_cost_components_LE = getFloat(rec,"haul_cost_components");
 	container_roi_LE = getFloat(rec,"container_roi");
 	container_depr_LE = getFloat(rec,"container_depr");
@@ -700,5 +706,17 @@ put(returnDict, "curr_haul_margin_dol_LE", string(curr_haul_margin_dol_LE));
 put(returnDict, "curr_dsp_margin_dol_LE", string(curr_dsp_margin_dol_LE));
 put(returnDict, "curr_ovr_margin_dol_LE", string(curr_ovr_margin_dol_LE));
 put(returnDict, "curr_ren_margin_dol_LE", string(curr_ren_margin_dol_LE));
+
+put(returnDict, "changeType_LE", changeType_LE);
+put(returnDict, "salesActivity", salesActivity);
+put(returnDict, "priceAdjustmentReason", priceAdjustmentReason);
+put(returnDict, "is_frf_charged_LE", is_frf_charged_LE);
+put(returnDict, "is_erf_charged_LE", is_erf_charged_LE);
+
+put(returnDict, "adminRate_LE", string(adminRate_LE));
+put(returnDict, "is_admn_on_db_LE", is_admn_on_db_LE);
+put(returnDict, "existing_operating_expense", string(existing_operating_expense));
+put(returnDict, "existing_cts_month_incl_oh", string(existing_cts_month_incl_oh));
+put(returnDict, "existing_cost_disp_xfer_proc", string(existing_cost_disp_xfer_proc));
 
 return returnDict;
