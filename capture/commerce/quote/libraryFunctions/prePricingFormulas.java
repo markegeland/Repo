@@ -1603,7 +1603,10 @@ for line in line_process{
 				put(guardrailInputDict_LE,"quantity", get(LEOutputDict, "quantity_lc"));
 				put(guardrailInputDict_LE,"unitOfMeasure", ("Per "+get(LEOutputDict, "LE_unitOfMeasure")));
 				put(guardrailInputDict_LE,"containerSize", get(LEOutputDict, "LE_containerSize"));
-
+				routeTypeDervied = get(LEOutputDict, "routeTypeDervied_LE");
+				wasteType = get(LEOutputDict, "LE_wasteType");
+				frequencyAttribute = get(LEOutputDict, "LE_haulsPerContainer");
+				
 				guardrailOutputDict_LE = util.calculateGuardrails(guardrailInputDict_LE);
 				feePct = atof(get(guardrailOutputDict_LE, "feePct"));
 				haulbaseFRFPremium = get(guardrailOutputDict_LE, "haulbaseFRFPremium");
