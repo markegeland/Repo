@@ -2576,7 +2576,7 @@ for line in line_process{
         returnStr = returnStr + line._document_number + "~" + "containerNumberOfCurrentService_line" + "~" + getconfigattrvalue(line._document_number, "containerGroup_readOnly") + "|";
         returnStr = returnStr + line._document_number + "~" + "routeTypeDerived_line" + "~" + getconfigattrvalue(line._document_number, "routeTypeDervied") + "|";
 		wasteType = "";
-		if(salesActivity_quote == "Existing Customer" AND contCat == "Industrial"){
+		if(priceType == SERVICE_CHANGE AND contCat == "Industrial"){
 			returnStr = returnStr + line._document_number + "~" + "wasteType_line" + "~" + LE_wasteType + "|";
 			wasteType = LE_wasteType;
 		}else{
@@ -2591,7 +2591,7 @@ for line in line_process{
         if(containskey(existingCustDataDict, line._document_number+":containerType")){
             containerType = get(existingCustDataDict, line._document_number+":containerType");
         }
-		if(containskey(serviceChangeDataDict, line._document_number+":containerType") AND salesActivity_quote == "Existing Customer" AND contCat == "Industrial"){
+		if(containskey(serviceChangeDataDict, line._document_number+":containerType") AND priceType == SERVICE_CHANGE AND contCat == "Industrial"){
 			containerType = get(serviceChangeDataDict, line._document_number+":containerType");
 		}
         smallContainer = false;
@@ -2651,13 +2651,13 @@ for line in line_process{
                 }
             }
         }
-        elif(line._model_name == LARGE_CONTAINER){
+        elif(line._model_name == LARGE_CONTAINER OR (priceType == SERVICE_CHANGE AND contCat == "Industrial")){
             industrialExists = true;            
             containerCode = getconfigattrvalue(line._document_number, "routeTypeDervied");
             
         }
         returnStr = returnStr + line._document_number + "~" + "routeTypeDerived_line" + "~" + routeTypeDerived + "|";
-        if(salesActivity_quote == "Existing Customer" AND contCat == "Industrial"){
+        if(priceType == SERVICE_CHANGE AND contCat == "Industrial"){
 			returnStr = returnStr + line._document_number + "~" + "wasteType_line" + "~" + LE_wasteType + "|";
 		}else{
 			returnStr = returnStr + line._document_number + "~" + "wasteType_line" + "~" + getconfigattrvalue(line._document_number, "wasteType") + "|";
