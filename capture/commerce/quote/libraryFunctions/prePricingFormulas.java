@@ -1606,6 +1606,9 @@ for line in line_process{
 				routeTypeDervied = get(LEOutputDict, "routeTypeDervied_LE");
 				wasteType = get(LEOutputDict, "LE_wasteType");
 				frequencyAttribute = get(LEOutputDict, "LE_haulsPerContainer");
+				existing_operating_expense = atof(get(LEOutputDict, "existing_operating_expense"));
+				existing_cts_month_incl_oh = atof(get(LEOutputDict, "existing_cts_month_incl_oh"));
+				existing_cost_disp_xfer_proc = atof(get(LEOutputDict, "existing_cost_disp_xfer_proc"));
 				
 				guardrailOutputDict_LE = util.calculateGuardrails(guardrailInputDict_LE);
 				feePct = atof(get(guardrailOutputDict_LE, "feePct"));

@@ -473,14 +473,14 @@ if(competitiveBidQuote == true){
 		append(tempArray, nb_dsp_floor);
 		append(tempArray, cb_dsp_amt * comp_bid_markup);
 		dsp_base = max(tempArray);
-		if(billingType <> "Haul + Disposal"){
-			tempArray = float[];
-			append(tempArray, nb_ovr_floor);
-			append(tempArray, cb_dsp_amt * comp_bid_markup);
-			ovr_base = max(tempArray);
-		}else{
-			ovr_base = 0.0;
-		}
+	}
+	if(billingType <> "Haul + Disposal"){
+		tempArray = float[];
+		append(tempArray, nb_ovr_floor);
+		append(tempArray, cb_dsp_amt * comp_bid_markup);
+		ovr_base = max(tempArray);
+	}else{
+		ovr_base = 0.0;
 	}
 	if(not(isnull(cb_ren_amt)) AND cb_ren_amt <> 0.0){
 		tempArray = float[];
