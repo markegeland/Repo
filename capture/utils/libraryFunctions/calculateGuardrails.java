@@ -1284,7 +1284,10 @@ tempArray = float[];
 if(cr_service_change == 1){
 	append(tempArray, service_change_amt);
 }else{
-	append(tempArray, revenue);
+	tempArray2 = float[];
+	append(tempArray2, revenue);
+	append(tempArray2, costToServeMonth);
+	append(tempArray, max(tempArray2));
 }
 append(tempArray, costToServeMonth + (save_base_margin_adj * curr_margin_dollars));
 general_save_amt = min(tempArray);
@@ -2214,14 +2217,21 @@ if(priceType == "Large Containers"){
 	
 }
 //Round Haul Base, Target & Stretch but not floor
+
 if(priceType == "Large Containers" AND rounding_ind_haul > 0){  //Should we round even if Rental is not selected?
 	haulBase = ceil(haulBase/rounding_ind_haul) * rounding_ind_haul;
 	haulTarget = ceil(haulTarget/rounding_ind_haul) * rounding_ind_haul;
 	haulStretch = ceil(haulStretch/rounding_ind_haul) * rounding_ind_haul;
 }elif(priceType == "Containers" AND rounding_com_rate > 0){ //Remove rounding from pre pricing
-	haulBase = ceil(haulBase/rounding_com_rate) * rounding_com_rate;
-	haulTarget = ceil(haulTarget/rounding_com_rate) * rounding_com_rate;
-	haulStretch = ceil(haulStretch/rounding_com_rate) * rounding_com_rate;
+	if(modelName <> "Service Change"){
+		haulBase = ceil(haulBase/rounding_com_rate) * rounding_com_rate;
+		haulTarget = ceil(haulTarget/rounding_com_rate) * rounding_com_rate;
+		haulStretch = ceil(haulStretch/rounding_com_rate) * rounding_com_rate;
+	}else{
+		haulBase = round(haulBase, 2);
+		haulTarget = round(haulTarget, 2);
+		haulStretch = round(haulStretch, 2);
+	}
 	
 //Round Rental Guardrails
 	compactorRentalFloor = ceil(compactorRentalFloor/rounding_com_rate) * rounding_com_rate;
