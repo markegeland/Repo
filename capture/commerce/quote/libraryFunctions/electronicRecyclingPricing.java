@@ -11,10 +11,14 @@ Output:  		String describing the prices for all of the configuration
 
 Updates:		Zaj - #731 Added Box Mail Pricing 
 			20150817 - Zaj - #731 Added initialization of ER base/floor/average/target
+			20150817 - Zaj - #731 Added line item comments for Box Mail
+			20150818 - Mark Egeland - #731 Added occurrence to return string
 ====
 */
 
 //strings attributes
+COMM_VALUE_DELIM = "^_^";
+FIELD_DELIM = "@_@";
 liftGateFee = "";
 onSiteTrailerFee = "";
 commodityMix = "";
@@ -28,10 +32,9 @@ fuelSurcharge = "";
 additionalStopFee = "";
 specificPickupTime = "";
 electronicRecyclingCategory = "";
+occurrence = "";
 
 //integer attributes	
-		
-	
 
 //float attributes
 rateOfPallets = 0.0;					
@@ -61,7 +64,6 @@ erTargetPrice = 0.0;
 
 //boolean attributes
 
-
 //dict attributes
 
 //Electronic Recycling Margins
@@ -75,32 +77,23 @@ erTargetPrice = 0.0;
 //bmql to gather Electronic Recycling Prices
 recordSet = bmql("Select rate, numberOfPallets, charge, maxFreight, minFreight, condVarName FROM ERPrice");
 
-
-
-
 for line in line_process{
 
 	if(line._parent_doc_number <> ""){
 	
+		electronicRecyclingCategory = getconfigattrvalue(line._parent_doc_number, "electronicRecyclingCategory_er");	
 		inputDict = dict("string");	//Build the input dict to parse Config line item comments. inputStr, COMM_VALUE_DELIM, and FIELD_DELIM are constant for all inputs
+		
+		put(inputDict, "inputStr", line._line_item_comment);
+        put(inputDict, "COMM_VALUE_DELIM", COMM_VALUE_DELIM);
+        put(inputDict, "FIELD_DELIM", FIELD_DELIM);
+		
+        put(inputDict,"key","Occurrence");
+		occurrence = util.parseThroughLineItemComment(inputDict);
 		
 		put(inputDict, "key", "boxSize");
 		boxSize = util.parseThroughLineItemComment(inputDict);
 		query = bmql("SELECT price FROM BoxMailBackBoxInfo WHERE box = $boxSize");
-		
-		
-		//gather config information
-		numberOfPallets = getconfigattrvalue(line._parent_doc_number, "numberOfPallets_er");
-		totalWeight = getconfigattrvalue(line._parent_doc_number, "totalWeight_er");
-		liftGateFee = getconfigattrvalue(line._parent_doc_number, "liftGateFee_er");
-		commidityMix = getconfigattrvalue(line._parent_doc_number, "commidityMix_er");
-		assetQuantity = getconfigattrvalue(line._parent_doc_number, "assetQuantity_er");
-		businessType = getconfigattrvalue(line._parent_doc_number, "businessType_er");
-		stairCarry = getconfigattrvalue(line._parent_doc_number, "stairCarry_er");
-		additionaStopFee = getconfigattrvalue(line._parent_doc_number, "additionalStopFee_er");
-		fuelSurcharge = getconfigattrvalue(line._parent_doc_number, "fuelSurcharge_er");
-		specificPickupTime = getconfigattrvalue(line._parent_doc_number, "specificPickupTime_er");
-		electronicRecyclingCategory = getconfigattrvalue(line._parent_doc_number, "electronicRecyclingCategory_er");
 		
 		if(electronicRecyclingCategory == "Box Mail-Back"){
 			for each in query{
@@ -109,6 +102,19 @@ for line in line_process{
 		}
 		
 		if(electronicRecyclingCategory == "Pack-Up and Pick-Up" OR electronicRecyclingCategory == "Full Service"){
+			
+			//gather config information
+			numberOfPallets = getconfigattrvalue(line._parent_doc_number, "numberOfPallets_er");
+			totalWeight = getconfigattrvalue(line._parent_doc_number, "totalWeight_er");
+			liftGateFee = getconfigattrvalue(line._parent_doc_number, "liftGateFee_er");
+			commidityMix = getconfigattrvalue(line._parent_doc_number, "commidityMix_er");
+			assetQuantity = getconfigattrvalue(line._parent_doc_number, "assetQuantity_er");
+			businessType = getconfigattrvalue(line._parent_doc_number, "businessType_er");
+			stairCarry = getconfigattrvalue(line._parent_doc_number, "stairCarry_er");
+			additionaStopFee = getconfigattrvalue(line._parent_doc_number, "additionalStopFee_er");
+			fuelSurcharge = getconfigattrvalue(line._parent_doc_number, "fuelSurcharge_er");
+			specificPickupTime = getconfigattrvalue(line._parent_doc_number, "specificPickupTime_er");
+			
 			for record in recordSet{
 			
 				if(totalWeight > get(record, "minFreight") AND totalWeight < get(record, "maxFreight")){
@@ -175,9 +181,6 @@ for line in line_process{
 					specificPickupTimeRate = atof(get(record, "rate"));
 				}
 			}
-		
-
-		
 
 			//Calculations of configuration
 			totalRateOfPallets = rateOfPallets;
@@ -206,12 +209,13 @@ for line in line_process{
 		erAveragePrice = erBasePrice * (1.0 + erAverageMargin);
 		erTargetPrice = erBasePrice * (1.0 + erTargetMargin);
 		
-		
-		
 		retStr = retStr + line._document_number + "~" + "totalFloorPrice_line" + "~" + string(erBasePrice) + "|"
-				+ line._document_number + "~" + "totalBasePrice_line" + "~" + string(erFloorPrice) + "|"
-				+ line._document_number + "~" + "totalTargetPrice_line" + "~" + string(erTargetPrice) + "|"
-				+ line._document_number + "~" + "totalStretchPrice_line" + "~" + string(erTargetPrice) + "|";
+								+ line._document_number + "~" + "totalBasePrice_line" + "~" + string(erFloorPrice) + "|"
+								+ line._document_number + "~" + "totalTargetPrice_line" + "~" + string(erAveragePrice) + "|"
+								+ line._document_number + "~" + "targetPrice_line" + "~" + string(erAveragePrice) + "|"
+								+ line._document_number + "~" + "totalStretchPrice_line" + "~" + string(erTargetPrice) + "|"
+								+ line._document_number + "~" + "frequency_line" + "~" + occurrence + "|"
+								+ line._document_number + "~" + "billingType_line" + "~" + occurrence + "|";
 	}
 }
 
