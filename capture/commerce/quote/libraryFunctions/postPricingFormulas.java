@@ -44,6 +44,7 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
              04/30/15 - Mike (Republic) - #508 Restructuring totals by omitting adhoc fees.  Fixed several existing bugs.  Added variables 
 	                                  for adhoc fees on CSA and Proposal.
+			 08/19/15 - Mark Egeland - #731 Add electronic recycling totals to grand total calculations
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -693,11 +694,11 @@ if(hasLineItemsOnQuote_quote){
     
     //Guard rails need to be present even for a zero total.  I left the condition in to account for negative rates (should never happen) - MPB
         if(smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote >= 0){
-        grandTotalFloor = smallMonthlyTotalFloor_quote + largeMonthlyTotalFloor_quote + erfTotalSellFloor + frfTotalSellFloor + adminRate_quote;
-        grandTotalBase = smallMonthlyTotalBase_quote + largeMonthlyTotalBase_quote + erfTotalSellBase + frfTotalSellBase + adminRate_quote;
-        grandTotalTarget = smallMonthlyTotalTarget_quote + largeMonthlyTotalTarget_quote + erfTotalSellTarget + frfTotalSellTarget + adminRate_quote;
-        grandTotalStretch = smallMonthlyTotalStretch_quote + largeMonthlyTotalStretch_quote + erfTotalSellStretch + frfTotalSellStretch + adminRate_quote;
-        grandTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote + erfTotalSell + frfTotalSell + adminRate_quote;
+        grandTotalFloor = smallMonthlyTotalFloor_quote + largeMonthlyTotalFloor_quote + erfTotalSellFloor + frfTotalSellFloor + adminRate_quote + electronicRecyclingTotalFloor_quote;
+        grandTotalBase = smallMonthlyTotalBase_quote + largeMonthlyTotalBase_quote + erfTotalSellBase + frfTotalSellBase + adminRate_quote + electronicRecyclingTotalBase_quote;
+        grandTotalTarget = smallMonthlyTotalTarget_quote + largeMonthlyTotalTarget_quote + erfTotalSellTarget + frfTotalSellTarget + adminRate_quote + electronicRecyclingTotalTarget_quote;
+        grandTotalStretch = smallMonthlyTotalStretch_quote + largeMonthlyTotalStretch_quote + erfTotalSellStretch + frfTotalSellStretch + adminRate_quote + electronicRecyclingTotalStretch_quote;
+        grandTotalSell = smallMonthlyTotalProposed_quote + largeMonthlyTotalProposed_quote + erfTotalSell + frfTotalSell + adminRate_quote + electronicRecyclingTotalProposed_quote;
     }
     else {
         returnStr = returnStr   + "1~" + "adminRate_quote" + "~" + "0.0" + "|";

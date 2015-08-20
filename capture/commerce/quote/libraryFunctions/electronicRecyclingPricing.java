@@ -12,7 +12,7 @@ Output:  		String describing the prices for all of the configuration
 Updates:		Zaj - #731 Added Box Mail Pricing 
 			20150817 - Zaj - #731 Added initialization of ER base/floor/average/target
 			20150817 - Zaj - #731 Added line item comments for Box Mail
-			20150818 - Mark Egeland - #731 Added occurrence to return string
+			20150818 - Mark Egeland - #731 Added occurrence to return string, edited sell price logic
 ====
 */
 
@@ -61,6 +61,10 @@ erBasePrice = 0.0;
 erFloorPrice = 0.0;
 erAveragePrice = 0.0;
 erTargetPrice = 0.0;
+electonicRecyclingTotalFloor = 0.0;
+electonicRecyclingTotalBase = 0.0;
+electonicRecyclingTotalTarget = 0.0;
+electonicRecyclingTotalStretch = 0.0;
 
 //boolean attributes
 
@@ -79,29 +83,28 @@ recordSet = bmql("Select rate, numberOfPallets, charge, maxFreight, minFreight, 
 
 for line in line_process{
 
-	if(line._parent_doc_number <> ""){
-	
+	if(line._parent_doc_number <> "" AND line._parent_line_item == "Electronic Recycling"){
 		electronicRecyclingCategory = getconfigattrvalue(line._parent_doc_number, "electronicRecyclingCategory_er");	
-		inputDict = dict("string");	//Build the input dict to parse Config line item comments. inputStr, COMM_VALUE_DELIM, and FIELD_DELIM are constant for all inputs
-		
-		put(inputDict, "inputStr", line._line_item_comment);
-        put(inputDict, "COMM_VALUE_DELIM", COMM_VALUE_DELIM);
-        put(inputDict, "FIELD_DELIM", FIELD_DELIM);
-		
-        put(inputDict,"key","Occurrence");
-		occurrence = util.parseThroughLineItemComment(inputDict);
-		
-		put(inputDict, "key", "boxSize");
-		boxSize = util.parseThroughLineItemComment(inputDict);
-		query = bmql("SELECT price FROM BoxMailBackBoxInfo WHERE box = $boxSize");
-		
+			
 		if(electronicRecyclingCategory == "Box Mail-Back"){
+			inputDict = dict("string");	//Build the input dict to parse Config line item comments. inputStr, COMM_VALUE_DELIM, and FIELD_DELIM are constant for all inputs
+			
+			put(inputDict, "inputStr", line._line_item_comment);
+			put(inputDict, "COMM_VALUE_DELIM", COMM_VALUE_DELIM);
+			put(inputDict, "FIELD_DELIM", FIELD_DELIM);
+			
+			put(inputDict,"key","Occurrence");
+			occurrence = util.parseThroughLineItemComment(inputDict);
+			
+			put(inputDict, "key", "boxSize");
+			boxSize = util.parseThroughLineItemComment(inputDict);
+			query = bmql("SELECT price FROM BoxMailBackBoxInfo WHERE box = $boxSize");
+
 			for each in query{
 				erBasePrice = getfloat(each, "price") * line._price_quantity;
 			}
-		}
-		
-		if(electronicRecyclingCategory == "Pack-Up and Pick-Up" OR electronicRecyclingCategory == "Full Service"){
+			
+		}elif(electronicRecyclingCategory == "Pack-Up and Pick-Up" OR electronicRecyclingCategory == "Full Service"){
 			
 			//gather config information
 			numberOfPallets = getconfigattrvalue(line._parent_doc_number, "numberOfPallets_er");
@@ -209,14 +212,27 @@ for line in line_process{
 		erAveragePrice = erBasePrice * (1.0 + erAverageMargin);
 		erTargetPrice = erBasePrice * (1.0 + erTargetMargin);
 		
+		electonicRecyclingTotalFloor = electonicRecyclingTotalFloor + erBasePrice;
+		electonicRecyclingTotalBase = electonicRecyclingTotalBase + erFloorPrice;
+		electonicRecyclingTotalTarget = electonicRecyclingTotalTarget + erAveragePrice;
+		electonicRecyclingTotalStretch = electonicRecyclingTotalStretch + erTargetPrice;
+		
+		
 		retStr = retStr + line._document_number + "~" + "totalFloorPrice_line" + "~" + string(erBasePrice) + "|"
 								+ line._document_number + "~" + "totalBasePrice_line" + "~" + string(erFloorPrice) + "|"
 								+ line._document_number + "~" + "totalTargetPrice_line" + "~" + string(erAveragePrice) + "|"
 								+ line._document_number + "~" + "targetPrice_line" + "~" + string(erAveragePrice) + "|"
 								+ line._document_number + "~" + "totalStretchPrice_line" + "~" + string(erTargetPrice) + "|"
 								+ line._document_number + "~" + "frequency_line" + "~" + occurrence + "|"
-								+ line._document_number + "~" + "billingType_line" + "~" + occurrence + "|";
+								+ line._document_number + "~" + "billingType_line" + "~" + occurrence + "|"
+								+ line._document_number + "~" + "isSellPriceDefaultSetCopy_line" + "~" + line.isSellPriceDefaultSet_line + "|"
+								+ line._document_number + "~" + "sellPriceTemp_line" + "~" + string(line.sellPrice_line) + "|";
 	}
 }
+
+retStr = retStr + "1" + "~" + "electronicRecyclingTotalFloor_quote" + "~" + string(electonicRecyclingTotalFloor) + "|"
+						+ "1" + "~" + "electronicRecyclingTotalBase_quote" + "~" + string(electonicRecyclingTotalBase) + "|"
+						+ "1" + "~" + "electronicRecyclingTotalTarget_quote" + "~" + string(electonicRecyclingTotalTarget) + "|"
+						+ "1" + "~" + "electronicRecyclingTotalStretch_quote" + "~" + string(electonicRecyclingTotalStretch) + "|";
 
 return retStr;
