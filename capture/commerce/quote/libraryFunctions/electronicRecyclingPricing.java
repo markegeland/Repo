@@ -13,6 +13,7 @@ Updates:		Zaj - #731 Added Box Mail Pricing
 			20150817 - Zaj - #731 Added initialization of ER base/floor/average/target
 			20150817 - Zaj - #731 Added line item comments for Box Mail
 			20150818 - Mark Egeland - #731 Added occurrence to return string, edited sell price logic
+			20150815 - Zaj - #731 Added return string for commerce attributes
 ====
 */
 
@@ -104,7 +105,8 @@ for line in line_process{
 				erBasePrice = getfloat(each, "price") * line._price_quantity;
 			}
 			
-		}elif(electronicRecyclingCategory == "Pack-Up and Pick-Up" OR electronicRecyclingCategory == "Full Service"){
+		}
+		elif(electronicRecyclingCategory == "Pack-Up and Pick-Up" OR electronicRecyclingCategory == "Full Service"){
 			
 			//gather config information
 			numberOfPallets = getconfigattrvalue(line._parent_doc_number, "numberOfPallets_er");
@@ -205,6 +207,18 @@ for line in line_process{
 			//Sum of configuration 
 			erBasePrice = totalRateOfPallets + totalRateTotalWeight + totalLiftGateFee + totalCommodityMix + totalAssetQuantity + totalBusinessType + totalStairCarry 
 										+ totalAdditionalStopFee + totalFuelSurcharge + totalSpecificPickupTime;
+										
+			retStr = retStr + "1" + "~" + "electronicRecyclingCategory_quote" + "~" + electronicRecyclingCategory + "|"
+					+ "1" + "~" + "numberOfPallets_quote" + "~" + string(totalRateOfPallets) + "|"
+					+ "1" + "~" + "liftGateFee_quote" + "~" + string(totalLiftGateFee) + "|"
+					+ "1" + "~" + "assetQuantity_quote" + "~" + string(totalAssetQuantity) + "|"
+					+ "1" + "~" + "stairCarry_quote" + "~" + string(totalStairCarry) + "|"
+					+ "1" + "~" + "additionalStopFee_quote" + "~" + string(totalAdditionalStopFee) + "|"
+					+ "1" + "~" + "fuelSurcharge_quote" + "~" + string(totalFuelSurcharge) + "|"
+					+ "1" + "~" + "specificPickupTime_quote" + "~" + string(totalSpecificPickupTime) + "|"
+					+ "1" + "~" + "videoDisplayDevices_quote" + "~" + string(totalvideoDisplayDevices) + "|"
+					+ "1" + "~" + "highGrade_quote" + "~" + string(totalHighGrade) + "|"
+					+ "1" + "~" + "lowGrade_quote" + "~" + string(totalLowGrade) + "|";							
 		}
 		
 		//Calculations of Margins
