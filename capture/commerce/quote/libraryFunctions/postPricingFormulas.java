@@ -44,7 +44,6 @@ Updates:     11/21/13 - Zach Schlieder - Removed Sell Price calculations (moved 
              03/27/15 - Mike (Republic) - #145 Small Container Compactor - split small containers into sets of Base and Compactor Rental.
              04/30/15 - Mike (Republic) - #508 Restructuring totals by omitting adhoc fees.  Fixed several existing bugs.  Added variables 
 	                                  for adhoc fees on CSA and Proposal.
-			 08/19/15 - Mark Egeland - #731 Add electronic recycling totals to grand total calculations
 
 Debugging:   Under "System" set _system_user_login and _system_current_step_var=adjustPricing
     
@@ -178,7 +177,7 @@ for line in line_process{
             estLiftsPerMonth = atof(line.estimatedLifts_line);
         }
         estTonsPerHaul = line.estTonsHaul_Line;
-
+		
         erfAmountTarget = 0.0;
         erfAmountFloor = 0.0;
         erfAmountBase = 0.0;
@@ -191,203 +190,203 @@ for line in line_process{
         frfAmountBase = 0.0;
         frfAmountStretch = 0.0;
         
-        
-        // Begin Calculate ERF & FRF Fees
-
-        //ERF Fees per line item
-        if(isFRFWaived_quote == 1){ //If FRF Waived
-
-            if(includeAdmin_quote == "No" OR adminRateAlreadyAppliedOnLine){
-                erfAmountSell = line.sellPrice_line * erfRate_quote;    
-                erfAmountTarget = line.targetPrice_line *  erfRate_quote;
-                erfAmountFloor = line.floorPrice_line * erfRate_quote;
-                erfAmountBase = line.basePrice_line * erfRate_quote;
-                erfAmountStretch = line.stretchPrice_line * erfRate_quote;
-            }
-            else{
-
-                if(NOT(adminRateAlreadyAppliedOnLine)){
-                    erfAmountSell = (line.sellPrice_line + adminRate_quote) * erfRate_quote;    
-                    erfAmountTarget = (line.targetPrice_line + adminRate_quote) *  erfRate_quote;
-                    erfAmountFloor = (line.floorPrice_line + adminRate_quote) * erfRate_quote;
-                    erfAmountBase = (line.basePrice_line + adminRate_quote) * erfRate_quote;
-                    erfAmountStretch = (line.stretchPrice_line + adminRate_quote) * erfRate_quote;
-                    adminRateAlreadyAppliedOnLine = true;
-                    docNumOfLineAdminRateApplied = line._document_number;
-                }   
-
-            }
-
-        }else{
-
-            if(includeAdmin_quote == "No" OR adminRateAlreadyAppliedOnLine){
-                erfAmountSell = (line.sellPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
-                erfAmountTarget = (line.targetPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
-                erfAmountFloor = (line.floorPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
-                erfAmountBase = (line.basePrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
-                erfAmountStretch = (line.stretchPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
-            }
-            else{
-                erfAmountSell = (line.sellPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
-                erfAmountTarget = (line.targetPrice_line + adminRate_quote) *  (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
-                erfAmountFloor = (line.floorPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
-                erfAmountBase = (line.basePrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
-                erfAmountStretch = (line.stretchPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
-                docNumOfLineAdminRateApplied = line._document_number;
-                adminRateAlreadyAppliedOnLine = true;
-            }
-
-        }
-        
-        //FRF Fees per line item
-        if(includeAdmin_quote == "No" OR (adminRateAlreadyAppliedOnLine AND docNumOfLineAdminRateApplied <> line._document_number)){
-            frfAmountTarget = line.targetPrice_line * frfRate_quote;
-            frfAmountFloor = line.floorPrice_line * frfRate_quote;
-            frfAmountSell = line.sellPrice_line * frfRate_quote;
-            frfAmountBase = line.basePrice_line * frfRate_quote;
-            frfAmountStretch = line.stretchPrice_line * frfRate_quote;
-        }
-        else{
-            frfAmountTarget = (line.targetPrice_line + adminRate_quote) * frfRate_quote;
-            frfAmountFloor = (line.floorPrice_line + adminRate_quote)* frfRate_quote;
-            frfAmountSell = (line.sellPrice_line + adminRate_quote)* frfRate_quote;
-            frfAmountBase = (line.basePrice_line + adminRate_quote)* frfRate_quote;
-            frfAmountStretch = (line.stretchPrice_line + adminRate_quote)* frfRate_quote;
-            docNumOfLineAdminRateApplied = line._document_number;
-            adminRateAlreadyAppliedOnLine = true;
-        }
-        
-        
-        //Calculate Monthly Total ERF Fees - Calculate these only for Core/ Base line item
-        if(line.rateType_line == "Base" AND line.isPartLineItem_line){ //if  the line item is smallcontainer base or largecontainer rental, the fee values on line item grid can be directly used as there is no multiplication factor of estimatedLifts/esthaulspermonth or disposal tons per haul that need to be applied on these line items
-
-            if(isERFWaived_quote == 0){
-                erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
-                erfTotalSellBase = erfTotalSellBase + erfAmountBase;
-                erfTotalSellTarget = erfTotalSellTarget + erfAmountTarget;
-                erfTotalSellStretch = erfTotalSellStretch + erfAmountStretch;
-                erfTotalSell = erfTotalSell + erfAmountSell;
-            }
-            
-            if(isFRFWaived_quote == 0){
-                frfTotalSellTarget = frfTotalSellTarget + frfAmountTarget;
-                frfTotalSellFloor = frfTotalSellFloor + frfAmountFloor;
-                frfTotalSellBase = frfTotalSellBase + frfAmountBase;
-                frfTotalSellStretch = frfTotalSellStretch + frfAmountStretch;
-                frfTotalSell = frfTotalSell + frfAmountSell;
-            }
-
-	}elif(line.rateType_line == "Compactor Rental" AND line.isPartLineItem_line){ 
-
-            if(isERFWaived_quote == 0){
-                erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
-                erfTotalSellBase = erfTotalSellBase + erfAmountBase;
-                erfTotalSellTarget = erfTotalSellTarget + erfAmountTarget;
-                erfTotalSellStretch = erfTotalSellStretch + erfAmountStretch;
-                erfTotalSell = erfTotalSell + erfAmountSell;
-            }
-            
-            if(isFRFWaived_quote == 0){
-                frfTotalSellTarget = frfTotalSellTarget + frfAmountTarget;
-                frfTotalSellFloor = frfTotalSellFloor + frfAmountFloor;
-                frfTotalSellBase = frfTotalSellBase + frfAmountBase;
-                frfTotalSellStretch = frfTotalSellStretch + frfAmountStretch;
-                frfTotalSell = frfTotalSell + frfAmountSell;
-            }
-
-        }elif(line.rateType_line == "Haul" AND line.isPartLineItem_line){
-
-            if(isERFWaived_quote == 0){
-                erfTotalSellFloor = erfTotalSellFloor + (erfAmountFloor * estLiftsPerMonth);
-                erfTotalSellBase = erfTotalSellBase + (erfAmountBase * estLiftsPerMonth);
-                erfTotalSellTarget = erfTotalSellTarget + (erfAmountTarget * estLiftsPerMonth);
-                erfTotalSellStretch = erfTotalSellStretch + (erfAmountStretch * estLiftsPerMonth);
-                erfTotalSell = erfTotalSell + (erfAmountSell * estLiftsPerMonth);
-            }
-            
-            if(isFRFWaived_quote == 0){
-                frfTotalSellTarget = frfTotalSellTarget + (frfAmountTarget * estLiftsPerMonth);
-                frfTotalSellFloor = frfTotalSellFloor + (frfAmountFloor * estLiftsPerMonth);
-                frfTotalSellBase = frfTotalSellBase + (frfAmountBase * estLiftsPerMonth);
-                frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * estLiftsPerMonth);
-                frfTotalSell = frfTotalSell + (frfAmountSell * estLiftsPerMonth);
-            }
-			print "ERF Total Haul " + string(erfTotalSell); print "FRF Total Haul " + string(frfTotalSell);
-        }elif(line.rateType_line == "Disposal" AND line.isPartLineItem_line){
-
-            // Disposal includes rate factor to account for different units of measure
-			rateFactor = 0.0;
-			containerSize = "";
-			containerSizeFloat = 0.0; print line.billingType_line;
-			if(line.billingType_line == "Per Ton"){
-				rateFactor = estLiftsPerMonth * estTonsPerHaul;
-			}elif(line.billingType_line == "Per Load"){
-				rateFactor = estLiftsPerMonth;
-			}elif(line.billingType_line == "Per Yard"){
-				if(NOT isnull(getconfigattrvalue(line._parent_doc_number, "equipmentSize_l"))){
-                        containerSize=getconfigattrvalue(line._parent_doc_number, "equipmentSize_l");
-				}
-				if(isnumber(containerSize)){
-					containerSizeFloat = atof(containerSize);
-				}
-				rateFactor = containerSizeFloat * estLiftsPerMonth;
-				
-			} print "rateFactor " + string(rateFactor);
+		if(line._parent_line_item <> "Electronic Recycling"){
 			
-            if(isERFWaived_quote == 0){
-                erfTotalSellFloor = erfTotalSellFloor + (erfAmountFloor * rateFactor);
-                erfTotalSellBase = erfTotalSellBase + (erfAmountBase * rateFactor);
-                erfTotalSellTarget = erfTotalSellTarget + (erfAmountTarget * rateFactor);
-                erfTotalSellStretch = erfTotalSellStretch + (erfAmountStretch * rateFactor);
-                erfTotalSell = erfTotalSell + (erfAmountSell * rateFactor);
-            }
-            
-            if(isFRFWaived_quote == 0){
-                frfTotalSellTarget = frfTotalSellTarget + (frfAmountTarget * rateFactor);
-                frfTotalSellFloor = frfTotalSellFloor + (frfAmountFloor * rateFactor);
-                frfTotalSellBase = frfTotalSellBase + (frfAmountBase * rateFactor);
-                frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * rateFactor);
-                frfTotalSell = frfTotalSell + (frfAmountSell * rateFactor);
-            }
-			print "ERF Total Disp " + string(erfTotalSell) + " ERF Amount: " + string(erfAmountSell); print "FRF Total Disp " + string(frfTotalSell) + " FRF Amount: " + string(frfAmountSell);
+			// Begin Calculate ERF & FRF Fees
 
-        }elif(line.rateType_line == "Rental" AND line.isPartLineItem_line){ 
+			//ERF Fees per line item
+			if(isFRFWaived_quote == 1){ //If FRF Waived
 
-            //Monthly Rental is the default. Daily Rental should be multiplied by factor 365/12.
-            if(isERFWaived_quote == 0){
-                if(line.billingType_line == "Monthly"){
-                    erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
-                    erfTotalSellBase = erfTotalSellBase + erfAmountBase;
-                    erfTotalSellTarget = erfTotalSellTarget + erfAmountTarget;
-                    erfTotalSellStretch = erfTotalSellStretch + erfAmountStretch;
-                    erfTotalSell = erfTotalSell + erfAmountSell;
-                }elif(line.billingType_line == "Daily"){
-                    erfTotalSellFloor = erfTotalSellFloor + (erfAmountFloor * 365/12);
-                    erfTotalSellBase = erfTotalSellBase + (erfAmountBase * 365/12);
-                    erfTotalSellTarget = erfTotalSellTarget + (erfAmountTarget * 365/12);
-                    erfTotalSellStretch = erfTotalSellStretch + (erfAmountStretch * 365/12);
-                    erfTotalSell = erfTotalSell + (erfAmountSell * 365/12);
-                }   
-            }
-            
-            if(isFRFWaived_quote == 0){
-                if(line.billingType_line == "Monthly"){
-                    frfTotalSellTarget = frfTotalSellTarget + frfAmountTarget;
-                    frfTotalSellFloor = frfTotalSellFloor + frfAmountFloor;
-                    frfTotalSellBase = frfTotalSellBase + frfAmountBase;
-                    frfTotalSellStretch = frfTotalSellStretch + frfAmountStretch;
-                    frfTotalSell = frfTotalSell + frfAmountSell;
-                }elif(line.billingType_line == "Daily"){
-                    frfTotalSellTarget = frfTotalSellTarget + (frfAmountTarget * 365/12);
-                    frfTotalSellFloor = frfTotalSellFloor + (frfAmountFloor * 365/12);
-                    frfTotalSellBase = frfTotalSellBase + (frfAmountBase * 365/12);
-                    frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * 365/12);
-                    frfTotalSell = frfTotalSell + (frfAmountSell * 365/12);
-                }   
-            } 			print "ERF Total Rent " + string(erfTotalSell); print "FRF Total Rent " + string(frfTotalSell);
+				if(includeAdmin_quote == "No" OR adminRateAlreadyAppliedOnLine){
+					erfAmountSell = line.sellPrice_line * erfRate_quote;    
+					erfAmountTarget = line.targetPrice_line *  erfRate_quote;
+					erfAmountFloor = line.floorPrice_line * erfRate_quote;
+					erfAmountBase = line.basePrice_line * erfRate_quote;
+					erfAmountStretch = line.stretchPrice_line * erfRate_quote;
+				}
+				else{
 
-        }
-        
+					if(NOT(adminRateAlreadyAppliedOnLine)){
+						erfAmountSell = (line.sellPrice_line + adminRate_quote) * erfRate_quote;    
+						erfAmountTarget = (line.targetPrice_line + adminRate_quote) *  erfRate_quote;
+						erfAmountFloor = (line.floorPrice_line + adminRate_quote) * erfRate_quote;
+						erfAmountBase = (line.basePrice_line + adminRate_quote) * erfRate_quote;
+						erfAmountStretch = (line.stretchPrice_line + adminRate_quote) * erfRate_quote;
+						adminRateAlreadyAppliedOnLine = true;
+						docNumOfLineAdminRateApplied = line._document_number;
+					}   
+
+				}
+
+			}else{
+
+				if(includeAdmin_quote == "No" OR adminRateAlreadyAppliedOnLine){
+					erfAmountSell = (line.sellPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+					erfAmountTarget = (line.targetPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+					erfAmountFloor = (line.floorPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+					erfAmountBase = (line.basePrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+					erfAmountStretch = (line.stretchPrice_line * (1 + (frfRate_quote * eRFOnFRF_quote))) * erfRate_quote;
+				}
+				else{
+					erfAmountSell = (line.sellPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+					erfAmountTarget = (line.targetPrice_line + adminRate_quote) *  (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+					erfAmountFloor = (line.floorPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+					erfAmountBase = (line.basePrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+					erfAmountStretch = (line.stretchPrice_line + adminRate_quote) * (1 + (frfRate_quote * eRFOnFRF_quote)) * erfRate_quote;
+					docNumOfLineAdminRateApplied = line._document_number;
+					adminRateAlreadyAppliedOnLine = true;
+				}
+
+			}
+			
+			//FRF Fees per line item
+			if(includeAdmin_quote == "No" OR (adminRateAlreadyAppliedOnLine AND docNumOfLineAdminRateApplied <> line._document_number)){
+				frfAmountTarget = line.targetPrice_line * frfRate_quote;
+				frfAmountFloor = line.floorPrice_line * frfRate_quote;
+				frfAmountSell = line.sellPrice_line * frfRate_quote;
+				frfAmountBase = line.basePrice_line * frfRate_quote;
+				frfAmountStretch = line.stretchPrice_line * frfRate_quote;
+			}
+			else{
+				frfAmountTarget = (line.targetPrice_line + adminRate_quote) * frfRate_quote;
+				frfAmountFloor = (line.floorPrice_line + adminRate_quote)* frfRate_quote;
+				frfAmountSell = (line.sellPrice_line + adminRate_quote)* frfRate_quote;
+				frfAmountBase = (line.basePrice_line + adminRate_quote)* frfRate_quote;
+				frfAmountStretch = (line.stretchPrice_line + adminRate_quote)* frfRate_quote;
+				docNumOfLineAdminRateApplied = line._document_number;
+				adminRateAlreadyAppliedOnLine = true;
+			}
+			
+			
+			//Calculate Monthly Total ERF Fees - Calculate these only for Core/ Base line item
+			if(line.rateType_line == "Base" AND line.isPartLineItem_line){ //if  the line item is smallcontainer base or largecontainer rental, the fee values on line item grid can be directly used as there is no multiplication factor of estimatedLifts/esthaulspermonth or disposal tons per haul that need to be applied on these line items
+
+				if(isERFWaived_quote == 0){
+					erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
+					erfTotalSellBase = erfTotalSellBase + erfAmountBase;
+					erfTotalSellTarget = erfTotalSellTarget + erfAmountTarget;
+					erfTotalSellStretch = erfTotalSellStretch + erfAmountStretch;
+					erfTotalSell = erfTotalSell + erfAmountSell;
+				}
+				
+				if(isFRFWaived_quote == 0){
+					frfTotalSellTarget = frfTotalSellTarget + frfAmountTarget;
+					frfTotalSellFloor = frfTotalSellFloor + frfAmountFloor;
+					frfTotalSellBase = frfTotalSellBase + frfAmountBase;
+					frfTotalSellStretch = frfTotalSellStretch + frfAmountStretch;
+					frfTotalSell = frfTotalSell + frfAmountSell;
+				}
+
+		}elif(line.rateType_line == "Compactor Rental" AND line.isPartLineItem_line){ 
+
+				if(isERFWaived_quote == 0){
+					erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
+					erfTotalSellBase = erfTotalSellBase + erfAmountBase;
+					erfTotalSellTarget = erfTotalSellTarget + erfAmountTarget;
+					erfTotalSellStretch = erfTotalSellStretch + erfAmountStretch;
+					erfTotalSell = erfTotalSell + erfAmountSell;
+				}
+				
+				if(isFRFWaived_quote == 0){
+					frfTotalSellTarget = frfTotalSellTarget + frfAmountTarget;
+					frfTotalSellFloor = frfTotalSellFloor + frfAmountFloor;
+					frfTotalSellBase = frfTotalSellBase + frfAmountBase;
+					frfTotalSellStretch = frfTotalSellStretch + frfAmountStretch;
+					frfTotalSell = frfTotalSell + frfAmountSell;
+				}
+
+			}elif(line.rateType_line == "Haul" AND line.isPartLineItem_line){
+
+				if(isERFWaived_quote == 0){
+					erfTotalSellFloor = erfTotalSellFloor + (erfAmountFloor * estLiftsPerMonth);
+					erfTotalSellBase = erfTotalSellBase + (erfAmountBase * estLiftsPerMonth);
+					erfTotalSellTarget = erfTotalSellTarget + (erfAmountTarget * estLiftsPerMonth);
+					erfTotalSellStretch = erfTotalSellStretch + (erfAmountStretch * estLiftsPerMonth);
+					erfTotalSell = erfTotalSell + (erfAmountSell * estLiftsPerMonth);
+				}
+				
+				if(isFRFWaived_quote == 0){
+					frfTotalSellTarget = frfTotalSellTarget + (frfAmountTarget * estLiftsPerMonth);
+					frfTotalSellFloor = frfTotalSellFloor + (frfAmountFloor * estLiftsPerMonth);
+					frfTotalSellBase = frfTotalSellBase + (frfAmountBase * estLiftsPerMonth);
+					frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * estLiftsPerMonth);
+					frfTotalSell = frfTotalSell + (frfAmountSell * estLiftsPerMonth);
+				}
+				print "ERF Total Haul " + string(erfTotalSell); print "FRF Total Haul " + string(frfTotalSell);
+			}elif(line.rateType_line == "Disposal" AND line.isPartLineItem_line){
+
+				// Disposal includes rate factor to account for different units of measure
+				rateFactor = 0.0;
+				containerSize = "";
+				containerSizeFloat = 0.0; print line.billingType_line;
+				if(line.billingType_line == "Per Ton"){
+					rateFactor = estLiftsPerMonth * estTonsPerHaul;
+				}elif(line.billingType_line == "Per Load"){
+					rateFactor = estLiftsPerMonth;
+				}elif(line.billingType_line == "Per Yard"){
+					if(NOT isnull(getconfigattrvalue(line._parent_doc_number, "equipmentSize_l"))){
+							containerSize=getconfigattrvalue(line._parent_doc_number, "equipmentSize_l");
+					}
+					if(isnumber(containerSize)){
+						containerSizeFloat = atof(containerSize);
+					}
+					rateFactor = containerSizeFloat * estLiftsPerMonth;
+					
+				} print "rateFactor " + string(rateFactor);
+				
+				if(isERFWaived_quote == 0){
+					erfTotalSellFloor = erfTotalSellFloor + (erfAmountFloor * rateFactor);
+					erfTotalSellBase = erfTotalSellBase + (erfAmountBase * rateFactor);
+					erfTotalSellTarget = erfTotalSellTarget + (erfAmountTarget * rateFactor);
+					erfTotalSellStretch = erfTotalSellStretch + (erfAmountStretch * rateFactor);
+					erfTotalSell = erfTotalSell + (erfAmountSell * rateFactor);
+				}
+				
+				if(isFRFWaived_quote == 0){
+					frfTotalSellTarget = frfTotalSellTarget + (frfAmountTarget * rateFactor);
+					frfTotalSellFloor = frfTotalSellFloor + (frfAmountFloor * rateFactor);
+					frfTotalSellBase = frfTotalSellBase + (frfAmountBase * rateFactor);
+					frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * rateFactor);
+					frfTotalSell = frfTotalSell + (frfAmountSell * rateFactor);
+				}
+				print "ERF Total Disp " + string(erfTotalSell) + " ERF Amount: " + string(erfAmountSell); print "FRF Total Disp " + string(frfTotalSell) + " FRF Amount: " + string(frfAmountSell);
+
+			}elif(line.rateType_line == "Rental" AND line.isPartLineItem_line){ 
+
+				//Monthly Rental is the default. Daily Rental should be multiplied by factor 365/12.
+				if(isERFWaived_quote == 0){
+					if(line.billingType_line == "Monthly"){
+						erfTotalSellFloor = erfTotalSellFloor + erfAmountFloor;
+						erfTotalSellBase = erfTotalSellBase + erfAmountBase;
+						erfTotalSellTarget = erfTotalSellTarget + erfAmountTarget;
+						erfTotalSellStretch = erfTotalSellStretch + erfAmountStretch;
+						erfTotalSell = erfTotalSell + erfAmountSell;
+					}elif(line.billingType_line == "Daily"){
+						erfTotalSellFloor = erfTotalSellFloor + (erfAmountFloor * 365/12);
+						erfTotalSellBase = erfTotalSellBase + (erfAmountBase * 365/12);
+						erfTotalSellTarget = erfTotalSellTarget + (erfAmountTarget * 365/12);
+						erfTotalSellStretch = erfTotalSellStretch + (erfAmountStretch * 365/12);
+						erfTotalSell = erfTotalSell + (erfAmountSell * 365/12);
+					}   
+				}
+				
+				if(isFRFWaived_quote == 0){
+					if(line.billingType_line == "Monthly"){
+						frfTotalSellTarget = frfTotalSellTarget + frfAmountTarget;
+						frfTotalSellFloor = frfTotalSellFloor + frfAmountFloor;
+						frfTotalSellBase = frfTotalSellBase + frfAmountBase;
+						frfTotalSellStretch = frfTotalSellStretch + frfAmountStretch;
+						frfTotalSell = frfTotalSell + frfAmountSell;
+					}elif(line.billingType_line == "Daily"){
+						frfTotalSellTarget = frfTotalSellTarget + (frfAmountTarget * 365/12);
+						frfTotalSellFloor = frfTotalSellFloor + (frfAmountFloor * 365/12);
+						frfTotalSellBase = frfTotalSellBase + (frfAmountBase * 365/12);
+						frfTotalSellStretch = frfTotalSellStretch + (frfAmountStretch * 365/12);
+						frfTotalSell = frfTotalSell + (frfAmountSell * 365/12);
+					}   
+				} 			print "ERF Total Rent " + string(erfTotalSell); print "FRF Total Rent " + string(frfTotalSell);
+			}
+		}
         //Calculate Total Price of the line item; Price + FRF + ERF
         FRF_CONST = frfAmountSell;
         ERF_CONST = erfAmountSell;
