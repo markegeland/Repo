@@ -78,10 +78,6 @@ for each in orderedLimits{
 }
 /* ======================  End Calculate Boxes Needed ========================= */
 
-if(remainingWeight > 0){
-	test=0;
-}
-
 /* ======================  Build Return Value  ============================== */
 counter = range(sizeofarray(boxMailBoxLimit_er));
 for each in counter{
