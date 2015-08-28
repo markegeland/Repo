@@ -208,8 +208,8 @@ for line in line_process{
 			erBasePrice = totalRateOfPallets + totalRateTotalWeight + totalLiftGateFee + totalCommodityMix + totalAssetQuantity + totalBusinessType + totalStairCarry 
 										+ totalAdditionalStopFee + totalFuelSurcharge + totalSpecificPickupTime;
 										
-			retStr = retStr + "1" + "~" + "electronicRecyclingCategory_quote" + "~" + electronicRecyclingCategory + "|"
-					+ "1" + "~" + "numberOfPallets_quote" + "~" + string(totalRateOfPallets) + "|"
+		/*
+		retStr = retStr + "1" + "~" + "numberOfPallets_quote" + "~" + string(totalRateOfPallets) + "|"
 					+ "1" + "~" + "liftGateFee_quote" + "~" + string(totalLiftGateFee) + "|"
 					+ "1" + "~" + "assetQuantity_quote" + "~" + string(totalAssetQuantity) + "|"
 					+ "1" + "~" + "stairCarry_quote" + "~" + string(totalStairCarry) + "|"
@@ -218,7 +218,8 @@ for line in line_process{
 					+ "1" + "~" + "specificPickupTime_quote" + "~" + string(totalSpecificPickupTime) + "|"
 					+ "1" + "~" + "videoDisplayDevices_quote" + "~" + string(totalvideoDisplayDevices) + "|"
 					+ "1" + "~" + "highGrade_quote" + "~" + string(totalHighGrade) + "|"
-					+ "1" + "~" + "lowGrade_quote" + "~" + string(totalLowGrade) + "|";							
+					+ "1" + "~" + "lowGrade_quote" + "~" + string(totalLowGrade) + "|";
+		*/
 		}
 		
 		//Calculations of Margins
@@ -242,6 +243,8 @@ for line in line_process{
 								+ line._document_number + "~" + "isSellPriceDefaultSetCopy_line" + "~" + line.isSellPriceDefaultSet_line + "|"
 								+ line._document_number + "~" + "sellPriceTemp_line" + "~" + string(line.sellPrice_line) + "|";
 	}
+	
+	retStr = retStr + line._document_number + "~" + "electronicRecyclingCategory_line" + "~" + electronicRecyclingCategory + "|"
 }
 
 retStr = retStr + "1" + "~" + "electronicRecyclingTotalFloor_quote" + "~" + string(electonicRecyclingTotalFloor) + "|"

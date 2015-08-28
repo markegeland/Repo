@@ -153,20 +153,6 @@ for line in line_process{
 	
     if(line._parent_doc_number <> ""){ //Only part line items
 		print "GD2 " + line.accountType_line;
-		modelDescString = "";
-		//Check if it is a large container		
-		append(ModelDescArray, line._parent_doc_number);
-		ModelSiteString = getconfigattrvalue(line._parent_doc_number, "site_disposalSite");
-		ModelSiteArray = split(ModelSiteString, "$,$");
-        siteIndex = getconfigattrvalue(line._parent_doc_number, "alternateSite_l");
-        if(isnumber(siteIndex) AND (atoi(siteIndex) > 0)){
-            ModelDescString = "Disposal Site: " + ModelSiteArray[atoi(siteIndex) - 1] + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + " min, Account Type: " + line.accountType_line;
-            put(ModelDescDict, line._parent_doc_number, ModelDescString);
-        }
-        else{
-			ModelDescString = "Account Type: " + line.accountType_line;
-			put(ModelDescDict, line._parent_doc_number, ModelDescString);	
-        }		
 		
         deliveryPrice = 0.0;
         estLiftsPerMonth = 0.0;
@@ -191,6 +177,21 @@ for line in line_process{
         frfAmountStretch = 0.0;
         
 		if(line._parent_line_item <> "Electronic Recycling"){
+			
+			modelDescString = "";
+			//Check if it is a large container
+			append(ModelDescArray, line._parent_doc_number);
+			ModelSiteString = getconfigattrvalue(line._parent_doc_number, "site_disposalSite");
+			ModelSiteArray = split(ModelSiteString, "$,$");
+			siteIndex = getconfigattrvalue(line._parent_doc_number, "alternateSite_l");
+			if(isnumber(siteIndex) AND (atoi(siteIndex) > 0)){
+				ModelDescString = "Disposal Site: " + ModelSiteArray[atoi(siteIndex) - 1] + ", Time: " + getconfigattrvalue(line._parent_doc_number, "adjustedTotalTime_l") + " min, Account Type: " + line.accountType_line;
+				put(ModelDescDict, line._parent_doc_number, ModelDescString);
+			}
+			else{
+				ModelDescString = "Account Type: " + line.accountType_line;
+				put(ModelDescDict, line._parent_doc_number, ModelDescString);	
+			}
 			
 			// Begin Calculate ERF & FRF Fees
 
